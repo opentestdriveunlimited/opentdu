@@ -1,0 +1,7 @@
+project/*
+build/*
+project_darwin/*
+*/CMakeFiles/*
+*.cmake
+*.DS_Store
+*.vscode/*
