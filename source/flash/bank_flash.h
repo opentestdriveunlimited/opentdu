@@ -16,7 +16,7 @@ class Render2DB;
 class BankFlash : public Bank, public StreamedResource
 {
 public:
-    using UserCallback_t = std::function<void(char *, FlashPlayer*)>;
+    using UserCallback_t = std::function<void(const char *, FlashPlayer*)>;
 
     // TODO: Looks the same as eBankCommonFlashInit. 
     // Quantify to avoid useless dupe?
@@ -35,14 +35,20 @@ public:
     inline bool isInUse() const { return bInUse; }
     inline BankFlash::eBankFlashInit getState() const { return state; }
     inline FlashPlayer* getFlashPlayer() const { return pFlashPlayer; }
+    inline void setPlayerCallback( UserCallback_t callback ) { playerCallback = callback; }
 
 public:
     BankFlash();
     ~BankFlash();
 
+    void setUsed();
+    void updateFilePaths( const char* pFilePath, const char* pFileName );
+    void setCommonBankRef( BankCommonFlash* pBankRef );
+    void setMaxNumVars( const uint32_t numMaxVertices, const uint32_t numMaxStrips, const uint32_t numMaxVars );
+
 private:
-    const char* pFilepath;
-    const char* pFilename;
+    std::string filepath;
+    std::string filename;
     BankCommonFlash* pCommonBank;
     FlashPlayer* pFlashPlayer;
     DrawList* drawList;

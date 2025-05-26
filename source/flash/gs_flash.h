@@ -8,11 +8,7 @@
 #include "flash_resources.h"
 #include "movie_player.h"
 #include "flash_entity.h"
-
-struct FlashPlayer
-{
-    // TODO:
-};
+#include "flash_player.h"
 
 class GSFlash : public GameSystem {
 public:
@@ -37,6 +33,12 @@ public:
     bool getFlashMovieIndex(uint32_t *pOutIsValidGameMode,uint32_t *pOutMovieIndex, const char *param_4);
 
     int32_t getNumMovies( const int32_t param_1 );
+    MoviePlayer* getMoviePlayer(int32_t levelIndex, int32_t movieIndex);
+
+    void addMovieForGameMode(const int32_t param_1, FlashEntity* pEntity);
+    void addMovie(FlashMovie& movie, FlashEntity* pEntity);
+
+    void flashCallback(const char* param_1, FlashPlayer* param_2);
 
 private:
     std::string commonPath;
@@ -57,10 +59,15 @@ private:
     BankCommonFlash commonResources;
     BankCommonFlash fontResources;
     
+    MoviePlayer* pActiveMoviePlayer;
+
     uint8_t bInitialized : 1;
+    uint8_t bLevelSetupInProgress : 1;
 
 private:
-    MoviePlayer* getMoviePlayer(int32_t levelIndex, int32_t movieIndex);
+    void initLevel(FlashEntity* param_1);
+    void updateUnicodeFontBank();
+    void setupLevel(const bool param_1);
 };
 
 extern GSFlash* gpFlash;

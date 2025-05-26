@@ -126,6 +126,91 @@ void GSFile::terminate()
     pFilemapMutex->terminate();
 }
 
+bool GSFile::loadFile(char *pFilename, void **pOutContent, uint *pOutContentSize)
+{
+    *pOutContent = (void *)0x0;
+    if (pOutContentSize != nullptr) {
+        *pOutContentSize = 0u;
+    }
+
+    int32_t fileSize = 0;
+    FileIterator it;
+    if (!bFilemapActive) {
+        bool bVar2 = it.findFirstMatch(pFilename);
+        if (!bVar2) {
+            return false;
+        }
+        
+        fileSize = it.getSize();
+    }
+
+//   edFileFind::edFileFind(&local_620);
+//   if (inContentSize != (uint *)0x0) {
+//     *inContentSize = 0;
+//   }
+//   local_628 = (undefined1  [4])0x0;
+//   local_624 = (CFileMapSet *)0x0;
+//   if (pGSFile->bFilemapActive == false) {
+// LAB_009a5e0d:
+//     bVar2 = edFileFind::FindFirst(&local_620,pContentName);
+//     if (!bVar2) goto LAB_009a5dee;
+//     peVar6 = (edFileDevice *)edFileFind::GetSize(&local_620);
+//     edFileFind::FindClose(&local_620);
+//     if (peVar6 == (edFileDevice *)0x0) goto LAB_009a5dee;
+//   }
+//   else {
+//     bVar2 = GSFile::FindEntryInSet(pGSFile,pContentName,(t_filemap_entry **)local_628,&local_624);
+//     if (!bVar2) {
+//       pcVar4 = gGSConfig.pDVDPath;
+//       if ((gGSConfig.super.pGameInstance)->bUseDVDVFS == false) {
+//         pcVar4 = gGSConfig.pResPath;
+//       }
+//       pcVar1 = pcVar4 + 1;
+//       do {
+//         cVar3 = *pcVar4;
+//         pcVar4 = pcVar4 + 1;
+//       } while (cVar3 != '\0');
+//       _Str1 = gGSConfig.pDVDPath;
+//       if ((gGSConfig.super.pGameInstance)->bUseDVDVFS == false) {
+//         _Str1 = gGSConfig.pResPath;
+//       }
+//       iVar5 = _strnicmp(_Str1,pContentName,(int)pcVar4 - (int)pcVar1);
+//       if (iVar5 == 0) goto LAB_009a5dee;
+//       goto LAB_009a5e0d;
+//     }
+//     peVar6 = *(edFileDevice **)((int)local_628 + 0xc);
+//     if (peVar6 == (edFileDevice *)0x0) goto LAB_009a5e0d;
+//   }
+//   if (pAllocator == (edMemMaster *)0x0) {
+//     pAllocator = (edMemMaster *)&gEdMemMaster;
+//   }
+//   pvVar7 = (*((edMemMaster_vtable *)(pAllocator->super).lpVtbl)->AlignedMalloc)
+//                      ((int)(peVar6[3].pDefaultUnit + 0x1a1),0x10);
+//   *pOutContent = pvVar7;
+//   if (pvVar7 != (void *)0x0) {
+//     if (pOutContent != (void **)0x0) {
+//       *pOutContent = peVar6;
+//     }
+//     cVar3 = GSFile::LoadFileDirectAccess
+//                       (pGSFile,pGSFile,*pOutContent,(int)peVar6,unaff_EBP,unaff_EBX);
+//     pvVar7 = *pOutContent;
+//     if (cVar3 != '\0') {
+//       *(undefined1 *)((int)pvVar7 + (int)(peVar6->pDefaultUnit + -0x18)) = 0;
+//       edFileFind::~edFileFind((edFileFind *)local_628);
+//       return (bool)cVar3;
+//     }
+//     if (pvVar7 != (void *)0x0) {
+//       _aligned_free(pvVar7);
+//     }
+//     *pOutContent = (void *)0x0;
+//     edFileFind::~edFileFind((edFileFind *)local_628);
+//     return false;
+//   }
+// LAB_009a5dee:
+//   edFileFind::~edFileFind((edFileFind *)local_628);
+  return false;
+}
+
 bool GSFile::retrieveSaveFolder()
 {
     savegameFolder = L"\\";
@@ -166,22 +251,6 @@ bool GSFile::retrieveSaveFolder()
     OTDU_LOG_DEBUG("Active savegame folder: '%S'\n", savegameFolder.c_str());
 
     return true;
-}
-
-FileDevice::FileDevice()
-    : pDeviceName( nullptr )
-    , pPreviousDevice( nullptr )
-    , pNextDevice( nullptr )
-    , pFirstDeviceHandle( nullptr )
-    , flagCaps( eFileOpenMode::FOM_Default )
-    , name( "" )
-{
-
-}
-
-FileDevice::~FileDevice()
-{
-
 }
 
 AsyncFileOpen::AsyncFileOpen()
@@ -350,4 +419,61 @@ bool FileDirectAccess::openContext( const uint64_t hashcode, const char* pFilena
     //}
     
     return false;
+}
+
+FileIterator::FileIterator()
+    : pVFS( nullptr )
+    , ItHandle( 0 )
+    , ItInfos()
+    , SearchPattern("")
+    , SearchDirectory("")
+{
+}
+
+bool FileIterator::findFirstMatch(const char *pPattern)
+{
+    // if (pVFS != nullptr) {
+    //     // (**(code **)(param_1_00->pDevice->lpVtbl + 0x54))(param_1_00,2);
+    // }
+    // pVFS = nullptr;
+    // ItHandle = 0u;
+    
+    // pVFS = gpVirtualFileSystemRegister->find
+    // peVar2 = edFileDeviceManager::GetDevice
+    //                    (&gFileDeviceManager,param_1_00->pSearchPattern,param_2,false);
+    // param_1_00->pDevice = peVar2;
+    // if (peVar2 != (edFileDevice *)0x0) {
+    //   cVar1 = (**(code **)(peVar2->lpVtbl + 0x54))(param_1_00,0);
+    //   if (cVar1 != '\0') {
+    //     return true;
+    //   }
+    //   if (param_1_00->pDevice != (edFileDevice *)0x0) {
+    //     (**(code **)(param_1_00->pDevice->lpVtbl + 0x54))(param_1_00,2);
+    //     param_1_00->pDevice = (edFileDevice *)0x0;
+    //   }
+    // }
+    return false;
+}
+
+bool FileIterator::closeHandle()
+{
+    // if (pVFS == nullptr) {
+    //     return false;
+    // }
+
+    // bool 
+    // pDevice = nullptr;
+
+
+    // if (param_1->pDevice == (edFileDevice *)0x0) {
+    //     return false;
+    //   }
+    //   uVar1 = (**(code **)(param_1->pDevice->lpVtbl + 0x54))(param_1,2);
+    //   param_1->pDevice = (edFileDevice *)0x0;
+    //   return (bool)uVar1;
+}
+
+int32_t FileIterator::getSize() const
+{
+    return ItInfos.Size;
 }

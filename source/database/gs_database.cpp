@@ -30,3 +30,17 @@ void GSDatabase::terminate()
 {
 
 }
+
+char *GSDatabase::getStringByHashcode(const uint32_t dbIndex, const uint64_t hashcode)
+{
+    OTDU_ASSERT( dbIndex < kNumDatabases );
+    const DBEntryList& dbEntry = gameDatabase.Databases[dbIndex];
+
+    for (const DBEntry& entry : dbEntry.List) {
+        if (entry.Hashcode == hashcode) {
+            return &dbEntry.pData[entry.Offset];
+        }
+    }
+
+    return nullptr;
+}

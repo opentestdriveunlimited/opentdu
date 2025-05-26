@@ -4,87 +4,14 @@
 #include <stack>
 #include <queue>
 
+#include "file_handle.h"
+#include "virtual_file_system.h"
+
 class TestDriveMutex;
 class TestDriveEvent;
 class TestDriveThread;
 
 struct FileHandle;
-
-enum class eFileOpenMode {
-    FOM_Default = 0,
-    FOM_Read = 1,
-    FOM_Write = 2,
-    FOM_NoWait = 8,
-    FOM_VideoStream = 16,
-    FOM_NoRelease = 32
-};
-
-class FileDevice {
-public:
-    FileDevice();
-    ~FileDevice();
-
-private:
-    char*           pDeviceName;
-    FileDevice*     pPreviousDevice;
-    FileDevice*     pNextDevice;
-    FileHandle*     pFirstDeviceHandle;
-    eFileOpenMode   flagCaps;
-    std::string     name;
-};
-
-enum class eFileCommandType {
-    FCT_Default	= 0,
-    FCT_FileSeek = 1,
-    FCT_FileRead = 2,
-    FCT_FileWrite = 3,
-    FCT_FileClose = 4,
-    FCT_FileOpen = 5,
-    FCT_Count
-};
-
-struct FileCommand {
-    using PostExecCallback_t = bool  ( * )( FileHandle*, FileCommand*, bool );
-
-    eFileCommandType    Type;
-    FileHandle*         pFileHandle;
-    PostExecCallback_t  pCallback;
-
-    const char*         pFilepathToOpen;
-    void*               pBuffer;
-    uint32_t            SizeToReadOrWrite;
-    uint32_t            SeekOffset;
-};
-
-enum class eFileQueueState {
-    FQS_Idle	= 0,
-    FQS_Process = 1,
-    FQS_Last	= 2
-};
-
-struct FileQueue {
-    eFileQueueState             State;
-    std::stack< FileCommand >   Commands;
-};
-
-struct FileHandle {
-    eFileOpenMode   OpenMode;
-    uint32_t        FilePosition;
-    int32_t         CurrentComandIndex;
-    int32_t         NumPendingCommands;
-
-    void*           pLocalHandle;
-    void*           pUserData;
-    FileDevice*     pDevice;
-    FileHandle*     pNextFile;
-
-    std::string     NormalizedFilename;
-
-    FileQueue       CommandStack;
-
-    uint8_t         bActive : 1;
-    uint8_t         bCommandStatus : 1;
-};
 
 struct FileMapEntry {
     uint32_t CRC;
@@ -169,6 +96,21 @@ struct FileFindInfos {
     }
 };
 
+struct FileIterator 
+{
+    VirtualFileSystem*  pVFS;
+    int32_t             ItHandle;
+    FileFindInfos       ItInfos;
+    std::string         SearchPattern;
+    std::string         SearchDirectory;
+
+    FileIterator();
+
+    bool findFirstMatch(const char* pPattern);
+    bool closeHandle();
+    int32_t getSize() const;
+};
+
 struct FileDirectAccess {
     std::string NormalizedFilename;
     std::string AbsoluteFilename;
@@ -247,6 +189,8 @@ public:
     bool initialize( TestDriveGameInstance* ) override;
     void tick() override;
     void terminate() override;
+
+    bool loadFile(char *pFilename, void **pOutContent, uint *pOutContentSize);
 
 private:
     std::vector<AsyncFileOpen>  asyncData;

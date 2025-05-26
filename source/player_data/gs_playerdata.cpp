@@ -3,15 +3,19 @@
 
 #include "game/mng_hud.h"
 #include "input/gs_device.h"
+#include "config/gs_config.h"
 
 #include "core/mutex.h"
+#include "core/locale.h"
 
 #include "tdu_instance.h"
 
 GSPlayerData* gpPlayerData = nullptr;
 
 GSPlayerData::GSPlayerData()
-    : bInitialized( false )
+    : GameSystem()
+    , Notifiable()
+    , bInitialized( false )
     , bUnknownBoolLanguage( false )
     , bUseUSFontPage( true )
     , bTutorialCompleted( false )
@@ -92,6 +96,11 @@ void GSPlayerData::setDefaultLanguage( const char* pDefaultLanguage, bool bUnkno
 void GSPlayerData::setDefaultSeatPosition( const float height, const float depth )
 {
 
+}
+
+char *GSPlayerData::getLanguage()
+{
+    return language.Str;
 }
 
 void GSPlayerData::updateFontPage()

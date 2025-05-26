@@ -89,6 +89,7 @@ public:
 
     void mainLoop();
     void setGameMode( eGameMode newGameMode );
+    void setNextGameMode( eGameMode nextGameMode );
 
 private:
     std::vector< GameSystem* > registeredServices;
@@ -126,8 +127,6 @@ private:
 
     template<typename TGS>
     bool registerService();
-
-    void changeGameMode( eGameMode nextGameMode );
 };
 
 extern TestDriveGameInstance* gpTestDriveInstance;

@@ -251,7 +251,7 @@ bool TestDriveGameInstance::registerService()
     return true;
 }
 
-void TestDriveGameInstance::changeGameMode( eGameMode nextGameMode )
+void TestDriveGameInstance::setNextGameMode( eGameMode nextGameMode )
 {
     if ( bPendingGameModeChange ) {
         OTDU_LOG_WARN( "Failed to submit GM change: GM change already in progress!\n" );

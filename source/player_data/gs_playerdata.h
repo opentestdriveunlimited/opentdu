@@ -2,29 +2,10 @@
 
 #include "game/gs_base.h"
 #include "core/mutex.h"
+#include "core/locale.h"
+#include "core/notifier.h"
 
-// TODO: Move to a separate header
-struct PlayerDataLanguage {
-    union {
-        uint16_t ID;
-        char Str[2];
-    };
-
-    constexpr PlayerDataLanguage( const uint16_t langID ) : ID( langID ) {}
-    PlayerDataLanguage( const char* langStr ) { Str[0] = langStr[0]; Str[1] = langStr[1]; }
-};
-
-static bool operator == ( PlayerDataLanguage l, PlayerDataLanguage r )
-{
-    return l.ID == r.ID;
-}
-
-static constexpr PlayerDataLanguage kLangUS( 0x7573 );
-static constexpr PlayerDataLanguage kLangSP( 0x7370 );
-static constexpr PlayerDataLanguage kLangKO( 0x6b6f );
-static constexpr PlayerDataLanguage kLangJP( 0x6a61 );
-
-class GSPlayerData : public GameSystem {
+class GSPlayerData : public GameSystem, public Notifiable {
 public:
     const char* getName() const override { return "Service : PlayerData"; }
 
@@ -38,6 +19,8 @@ public:
 
     void setDefaultLanguage( const char* pDefaultLanguage, bool bUnknownBoolean = false );
     void setDefaultSeatPosition( const float height, const float depth );
+
+    char* getLanguage();
 
 private:
     uint8_t bInitialized : 1;

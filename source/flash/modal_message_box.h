@@ -26,7 +26,7 @@ public:
     ModalMessageBox();
     ~ModalMessageBox();
 
-    bool display(uint64_t hashcode, float waitDuration, int32_t param_5, UserCallback_t& pCallback, void *pCallbackData, bool param_7);
+    bool display(uint64_t hashcode, float param_2, int32_t param_5, UserCallback_t& pCallback, void *pCallbackData, bool param_7);
 
 private:
     FlashPlayer* pFlashPlayer;
@@ -38,5 +38,10 @@ private:
     float displayTime;
     float closeAfterDuration;
 
+    uint8_t bUnknownFlag : 1;
     uint8_t bGameMessageBox : 1;
+
+private:
+    const char* getFrameToDisplay(const float param_1) const;
+    void updateInputState(const float param_1);
 };

@@ -10,6 +10,8 @@ public:
     void unsubscribe(Notifier* pNotifier);
     void removeAll();
 
+    virtual bool isValid() { return false; }
+
 protected:
     std::vector<Notifier*> notifiers;
 };

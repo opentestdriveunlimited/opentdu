@@ -2,7 +2,8 @@
 
 #include "shared.h"
 
-enum eLocale : uint32_t {
+enum eLocale : uint32_t 
+{
     L_Japenese = 0,
     L_English = 1,
     L_French = 2,
@@ -20,6 +21,67 @@ enum eLocale : uint32_t {
 
     L_Unknown = 0xffffffff,
 };
+
+struct PlayerDataLanguage 
+{
+    union 
+    {
+        uint16_t ID = 0;
+        char Str[2];
+    };
+
+    constexpr PlayerDataLanguage( const uint16_t langID ) : ID( langID ) {}
+    constexpr PlayerDataLanguage( const char* langStr ) { Str[0] = langStr[0]; Str[1] = langStr[1]; }
+
+    constexpr operator uint16_t() const
+    {
+        return ID;
+    }
+
+    constexpr bool operator == ( PlayerDataLanguage r )
+    {
+        return ID == r.ID;
+    }
+
+    constexpr bool operator == ( const char* r )
+    {
+        return Str[0] == r[0] && Str[1] == r[1];
+    }
+
+    constexpr operator eLocale() const 
+    {
+        switch(ID)
+        {
+            case 0x6a61:                return eLocale::L_Japenese;
+            case 0x6762: case 0x7573:   return eLocale::L_English;
+            case 0x6672:                return eLocale::L_French;
+            case 0x7370:                return eLocale::L_Spanish;
+            case 0x6765:                return eLocale::L_German;
+            case 0x6974:                return eLocale::L_Italian;
+            case 0x6368:                return eLocale::L_Chinese;
+            case 0x6b6f:                return eLocale::L_Korean;
+            case 0x7275:                return eLocale::L_Russian;
+            case 0x706f:                return eLocale::L_Polish;
+            case 0x7074:                return eLocale::L_Portuguese;
+            case 0x6465:                return eLocale::L_Dutch;
+            default:                    return eLocale::L_English;
+        }
+    }
+};
+
+static constexpr PlayerDataLanguage kLangUS( 0x7573 );
+static constexpr PlayerDataLanguage kLangGB( 0x6762 );
+static constexpr PlayerDataLanguage kLangFR( 0x6672 );
+static constexpr PlayerDataLanguage kLangIT( 0x6974 );
+static constexpr PlayerDataLanguage kLangGE( 0x6765 );
+static constexpr PlayerDataLanguage kLangSP( 0x7370 );
+static constexpr PlayerDataLanguage kLangKO( 0x6b6f );
+static constexpr PlayerDataLanguage kLangJP( 0x6a61 );
+static constexpr PlayerDataLanguage kLangCH( 0x6368 );
+static constexpr PlayerDataLanguage kLangRU( 0x7275 );
+static constexpr PlayerDataLanguage kLangPO( 0x706f );
+static constexpr PlayerDataLanguage kLangPT( 0x7074 );
+static constexpr PlayerDataLanguage kLangDE( 0x6465 );
 
 #if OTDU_WIN32
 static eLocale GetLocaleFromSystem()

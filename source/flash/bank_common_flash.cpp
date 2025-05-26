@@ -21,10 +21,11 @@ BankCommonFlash::eBankCommonFlashInit BankCommonFlash::initialize(const bool par
         return eBankCommonFlashInit::BCFI_Unknown2;
     }
 
+    std::string bankPath = filepath + filename;
     OTDU_UNIMPLEMENTED; // TODO:
     return eBankCommonFlashInit::BCFI_Unknown;
 
-    // std::string bankPath = filepath + filename;
+    // 
     // bVar1 = GSFile::LoadFile(&gGSFile,&param_1->pBankFile,local_400,&param_1->BankSize,
     // &param_1->pMemory->super,".\\Sources\\FlashLoader.cpp",0x4a);
     // if (!bVar1) {
