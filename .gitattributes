@@ -1,0 +1,9 @@
+* text eol=crlf
+
+*.cpp text
+*.h text
+*.inl text
+*.txt text
+
+*.lib binary
+*.dylib binary
