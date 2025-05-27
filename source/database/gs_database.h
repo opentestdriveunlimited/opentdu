@@ -1,6 +1,8 @@
 #pragma once
 
+#include "core/locale.h"
 #include "game/gs_base.h"
+#include "game/vehicle/car_desc.h"
 
 #include "db_achievement.h"
 #include "db_aftermarket_pack.h"
@@ -107,6 +109,8 @@ public:
 
 public:
     const char* getName() const override { return "DataBase"; }
+    inline const uint32_t getNumCars() const { return cars.size(); }
+    inline const std::vector<CarConfig>& getCarList() const { return cars; }
 
 public:
     GSDatabase();
@@ -116,6 +120,7 @@ public:
     void tick() override;
     void terminate() override;
 
+    bool reloadDatabases( const char* pLanguage, const bool bForceReload = false );
     char* getStringByHashcode(const uint32_t dbIndex, const uint64_t hashcode);
 
 private:
@@ -123,6 +128,9 @@ private:
     GameDatabase gameDatabase;
 
     std::array<DBInstallRequest, kNumDatabases> dbInstallRequests;
+
+    std::vector<CarConfig> cars;
+    eLocale activeLocale;
 
     uint8_t bInitialized : 1;
 };
