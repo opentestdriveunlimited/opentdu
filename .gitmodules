@@ -1,0 +1,24 @@
+[submodule "third_party/cityhash"]
+	path = third_party/cityhash
+	url = https://github.com/google/cityhash.git
+[submodule "third_party/glfw"]
+	path = third_party/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "third_party/volk"]
+	path = third_party/volk
+	url = https://github.com/zeux/volk.git
+[submodule "third_party/VulkanMemoryAllocator"]
+	path = third_party/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "third_party/Vulkan-Headers"]
+	path = third_party/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "third_party/MoltenVK"]
+	path = third_party/MoltenVK
+	url = https://github.com/KhronosGroup/MoltenVK.git
+[submodule "third_party/HLSLCrossCompiler"]
+	path = third_party/HLSLCrossCompiler
+	url = https://github.com/James-Jones/HLSLCrossCompiler.git
+[submodule "third_party/eigen"]
+	path = third_party/eigen
+	url = https://gitlab.com/libeigen/eigen.git
