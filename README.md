@@ -13,6 +13,7 @@ If you do not want to build from source, prebuilt executables are available here
 ## Build instructions
 ### Requirements
 -CMake 3.15 (or newer)
+
 -C++17 compatible compiler (e.g. Visual Studio 2022)
 
 ### Instructions
