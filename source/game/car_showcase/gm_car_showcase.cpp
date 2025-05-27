@@ -2,19 +2,58 @@
 #include "gm_car_showcase.h"
 
 #include "tdu_instance.h"
+#include "render/draw_list.h"
+#include "database/gs_database.h"
 
 GMCarShowcase::GMCarShowcase()
     : GameMode()
+    , pDrawList( new DrawList() )
+    , rotationAngleY( 0.0f )
+    , wheelRotationSpeed( 0.0f )
+    , floorHeight( -0.25f )
+    , backgroundColor( 29, 41, 44, 0xff )
+    , clearColor( 0u )
+    , currentCarHashcode( 0 )
+    , doorAngle( 0.0f )
+    , doorSpeed( 1.0f )
+    , doorMinAngle( 0.3f )
+    , numLights( 0 )
+    , flashList( this )
+    , mngFlash()
+    , mngNumber()
+    , currentCarID( 0 )
+    , currentCarColor( 0 )
+    , currentCarInterior( 0 )
+    , currentCarRims( 0 )
+    , ambient( 0.0f )
+    , diffuse( 0.0f )
+    , specular( 0.0f )
+    , streamOrigin( 0.0f )
+    , bUsePhysicsInput( false )
+    , bFreezeCarSwitch( false ) 
 {
 
 }
 
 GMCarShowcase::~GMCarShowcase()
 {
-
+    delete pDrawList;
 }
 
-bool GMCarShowcase::onMessage(FlashMessage& pMessage, FlashPlayer *pPlayer)
+void GMCarShowcase::initialize()
+{
+    uint32_t numCars = gpDatabase->getNumCars();
+    carHashes.resize(numCars);
+    const auto& carList = gpDatabase->getCarList();
+    for (uint32_t i = 0; i < numCars; i++) {
+        carHashes[i] = carList[i].Hash;
+    }
+    OTDU_LOG_DEBUG("Found %u vehicles in database\n");
+
+    pDrawList->initialize(0x20, 0x200, 0, true, nullptr, nullptr, false);
+}
+
+bool GMCarShowcase::onMessage(FlashMessage &pMessage, FlashPlayer *pPlayer)
 {
     if (bFreezeCarSwitch) {
         return false;

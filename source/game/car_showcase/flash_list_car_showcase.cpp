@@ -3,9 +3,9 @@
 
 #include "gm_car_showcase.h"
 
-FlashListCarShowcase::FlashListCarShowcase()
+FlashListCarShowcase::FlashListCarShowcase(GMCarShowcase* pInstance)
     : FlashList()
-    , pGameModeInstance( nullptr )
+    , pGameModeInstance( pInstance )
 {
 
 }

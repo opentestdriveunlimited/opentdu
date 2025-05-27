@@ -6,6 +6,7 @@
 
 #include "flash_list_car_showcase.h"
 #include "mng_flash_car_showcase.h"
+#include "render/mng_number.h"
 
 class FlashPlayer;
 
@@ -14,6 +15,7 @@ public:
     GMCarShowcase();
     ~GMCarShowcase();
 
+    void initialize();
     bool onMessage(FlashMessage& pMessage, FlashPlayer* pPlayer);
 
 private:
@@ -24,31 +26,32 @@ private:
     
 private:
     DrawList*   pDrawList;
-    float       RotationAngleY;
-    float       WheelRotationSpeed;
-    float       FloorHeight;
-    ColorRGBA   BackgroundColor;
-    ColorRGBA   ClearColor;
-    uint32_t    MaxNumCar;
-    uint32_t    CurrentCar;
-    float       DoorAngle;
-    float       DoorSpeed;
-    float       DoorMinAngle;
-    uint32_t    NumLights;
+    float       rotationAngleY;
+    float       wheelRotationSpeed;
+    float       floorHeight;
+    ColorRGBA   backgroundColor;
+    ColorRGBA   clearColor;
+    uint32_t    currentCarHashcode;
+    float       doorAngle;
+    float       doorSpeed;
+    float       doorMinAngle;
+    uint32_t    numLights;
 
+    std::vector<uint32_t> carHashes;
     FlashListCarShowcase flashList;
     MngFlashCarShowcase  mngFlash;
+    MngNumber mngNumber;
 
-    uint32_t    CurrentCarID;
-    uint32_t    CurrentCarColor;
-    uint32_t    CurrentCarInterior;
-    uint32_t    CurrentCarRims;
+    uint32_t    currentCarID;
+    uint32_t    currentCarColor;
+    uint32_t    currentCarInterior;
+    uint32_t    currentCarRims;
     
-    Eigen::Vector4f Ambient;
-    Eigen::Vector4f Diffuse;
-    Eigen::Vector4f Specular;
+    Eigen::Vector4f ambient;
+    Eigen::Vector4f diffuse;
+    Eigen::Vector4f specular;
     
-    Eigen::Vector4f StreamOrigin;
+    Eigen::Vector4f streamOrigin;
 
     uint8_t     bUsePhysicsInput : 1;
     uint8_t     bFreezeCarSwitch : 1;

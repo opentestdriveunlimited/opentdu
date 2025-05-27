@@ -7,7 +7,7 @@ class GMCarShowcase;
 class FlashListCarShowcase : public FlashList 
 {
 public:
-    FlashListCarShowcase();
+    FlashListCarShowcase(GMCarShowcase* pInstance);
     virtual ~FlashListCarShowcase();
 
 private:
