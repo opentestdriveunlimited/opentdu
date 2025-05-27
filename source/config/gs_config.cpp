@@ -9,7 +9,7 @@
 #include "online/gs_online.h"
 #include "player_data/gs_playerdata.h"
 #include "game/game_cheats.h"
-#include "game/camera/gs_camera.h"
+#include "render/camera/gs_camera.h"
 #include "game/scenaric/gs_scenaric.h"
 #include "database/gs_database.h"
 #include "input/gs_device.h"
@@ -1188,11 +1188,14 @@ void GSConfig::registerDeviceCommands()
         // 
         // gFFBLoadFactor[]
     } );
+
     registerCommandFloat( "STEERINGDEADZONE", &gSteeringDeadZone );
     registerCommandFloat( "BRAKEDEADZONE", &gBrakeDeadZone );
     registerCommandFloat( "STEERINGTURN", &gSteeringTurn );
     registerCommandFloat( "STEERINGLINEARITY", &gSteeringLinearity );
-    registerCommandFloat( "CAMERADEADZONE", &gpCamera->DeadZone );
+    registerCommand( "CAMERADEADZONE", [&]( const char* pArg ) {
+        gpCamera->setDeadZone( static_cast< float >( atof( pArg ) ) );
+    } );
 
     registerCommand( "INVERTACCEL", [&]( const char* pArg ) {
         OTDU_UNIMPLEMENTED
