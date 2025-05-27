@@ -49,7 +49,8 @@ GSRender::GSRender()
     , hmapFadeLength( 3000.0f )
     , nearPlane( 0.8f )
     , farPlane( 40000.0f )
-    , halfFarPlane( 40000.0f )
+    , interiorNearPlane( 0.1f )
+    , interiorFarPlane( 40.0f )
 {
 
 }

@@ -12,6 +12,11 @@ public:
     const char* getName() const override { return "Service : Render"; }
     inline RenderDevice* getRenderDevice() const { return pRenderDevice; }
 
+    inline float getDefaultNearPlane() const { return nearPlane; }
+    inline float getDefaultFarPlane() const { return farPlane; }
+    inline float getDefaultInteriorNearPlane() const { return interiorNearPlane; }
+    inline float getDefaultInteriorFarPlane() const { return interiorFarPlane; }
+
 public:
     GSRender();
     ~GSRender();
@@ -80,7 +85,8 @@ private:
     
     float nearPlane;
     float farPlane;
-    float halfFarPlane; // TODO: Not sure what's the point of this (yet)
+    float interiorNearPlane;
+    float interiorFarPlane;
 
 private:
     void allocateRenderTargets();
