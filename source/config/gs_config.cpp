@@ -18,7 +18,7 @@
 
 #include "tdu_instance.h"
 
-#include "cityhash/city.h"
+#include "city.h"
 
 GSConfig* gpConfig = nullptr;
 

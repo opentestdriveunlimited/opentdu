@@ -142,10 +142,10 @@ file( GLOB OTDU_INC "${OTDU_SRC_FOLDER}/tdu_instance.h"
                     "${OTDU_SRC_FOLDER}/filesystem/gs_boot_datas.h"
                     "${OTDU_SRC_FOLDER}/gs_timer.h"  )
 
-file( GLOB OTDU_THIRDPARTY_SRC "${OTDU_THIRDPARTY_FOLDER}/cityhash/city.cc"
-                               "${OTDU_THIRDPARTY_FOLDER}/cityhash/city.h"
+file( GLOB OTDU_THIRDPARTY_SRC "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/city.cc"
+                               "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/city.h"
                                "${OTDU_THIRDPARTY_FOLDER}/cityhash/config.h"
-                               "${OTDU_THIRDPARTY_FOLDER}/cityhash/citycrc.h" )
+                               "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/citycrc.h" )
 
 set( OTDU_SOURCES ${OTDU_SRC} ${OTDU_INC} ${OTDU_THIRDPARTY_SRC} )
 add_ide_filters( "${OTDU_SOURCES}" )
@@ -157,6 +157,7 @@ set_property(TARGET opentdu PROPERTY FOLDER "Projects")
 include_directories( "${OTDU_SRC_FOLDER}" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/cityhash/" )
+include_directories( "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/glfw/include/" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/Vulkan-Headers/include/" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/volk/" )
