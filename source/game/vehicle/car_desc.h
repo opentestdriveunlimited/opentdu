@@ -37,7 +37,7 @@ struct CarConfig
     {
         
     }
-}
+};
 
 class CarDesc : public Notifiable
 {
@@ -51,6 +51,9 @@ public:
         CDS_TestDrive = 6,
         CDS_SoldOnEbay = 7
     };
+
+public:
+    inline uint32_t getCarID() const { return carID; }
 
 public:
     CarDesc();
