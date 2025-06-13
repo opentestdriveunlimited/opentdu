@@ -72,12 +72,14 @@ jobs:
       with:
           name: opentdu_savedecryptor.exe
           path: "${{ github.workspace }}/build/opentdu_savedecryptor.exe"
-          
+
+    - uses: actions/upload-artifact@v4
     - name: Deploy Asset Extractor
       with:
           name: opentdu_assetExtractor.exe
           path: "${{ github.workspace }}/build/opentdu_assetExtractor.exe"
        
+    - uses: actions/upload-artifact@v4
     - name: Deploy OpenTDU
       with:
           name: opentdu.exe
