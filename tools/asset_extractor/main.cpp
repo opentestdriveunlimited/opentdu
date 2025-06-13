@@ -7,8 +7,8 @@
 #include <fstream>
 #include <filesystem>
 
-#define EXCLUDE_PSTDINT
-#include "hlslcc.h"
+//#define EXCLUDE_PSTDINT
+//#include "hlslcc.h"
 
 static char gpPathToExecutable[OTDU_MAX_PATH]; // Path to TestDriveUnlimited.exe
 static CmdLineArg CmdLineArgsExecutablePath( "executable", []( const char* pArg ) {
@@ -106,16 +106,6 @@ static void CheckAndCreateOutputFolder( const std::string& folder ) {
     exit( 1 );
 }
 
-uint32_t EvaluateBinding(
-    void* userData,
-    GLSLResourceBinding* dstBinding,
-    ResourceBinding* srcResBinding,
-    ConstantBuffer* srcCBBinding,
-    uint32_t bindPoint, uint32_t shaderStage )
-{
-    return 0;
-}
-
 int main( int argc, char* argv[] ) {
     // Parse cmdline args
     memset( gpPathToExecutable, 0, sizeof( char ) * OTDU_MAX_PATH );
@@ -187,19 +177,19 @@ int main( int argc, char* argv[] ) {
             }
 
             // Write to disk
-            std::string filename = IntegerToHexString( shaderOffset ) + ".glsl";
+            std::string filename = IntegerToHexString( shaderOffset ) + ".dxso";
             std::string fileOutputPath = GetShaderOutputPath() + filename;
 
             std::filesystem::path folderFS = std::filesystem::path( fileOutputPath );
             if ( !std::filesystem::exists( folderFS ) ) {
-                GLSLShader shader = { 0 };
-                TranslateHLSLFromMem( ( const char* )shaderBytecode.data(), 0x0, GLLang::LANG_440, nullptr, nullptr, EvaluateBinding, nullptr, &shader );
+                /* GLSLShader shader = { 0 };
+                 TranslateHLSLFromMem( ( const char* )shaderBytecode.data(), 0x0, GLLang::LANG_440, nullptr, nullptr, &shader );
 
-                OTDU_ASSERT( shader.sourceCode );
+                 OTDU_ASSERT( shader.sourceCode );*/
 
                 std::ofstream outputFileStream;
-                outputFileStream.open( fileOutputPath.c_str(), std::ios_base::out/* | std::ios_base::binary*/ );
-                outputFileStream.write( shader.sourceCode, strlen( shader.sourceCode ) ); // ( char* )shaderBytecode.data(), sizeof( char )* shaderBytecode.size() );
+                outputFileStream.open( fileOutputPath.c_str(), std::ios_base::out | std::ios_base::binary );
+                outputFileStream.write( ( char* )shaderBytecode.data(), sizeof( char )* shaderBytecode.size() );
                 outputFileStream.close();
 
                 OTDU_LOG_INFO( "Wrote shader to '%s'\n", fileOutputPath.c_str() );

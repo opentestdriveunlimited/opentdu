@@ -9,7 +9,7 @@ if ( WIN32 )
     target_link_libraries( opentdu_assetExtractor winmm Pathcch Shlwapi )
 endif ( WIN32 )
 
-target_link_libraries( opentdu_assetExtractor "${OTDU_THIRDPARTY_FOLDER}/HLSLCrossCompiler/lib64/RelWithDebInfo/libHLSLcc.lib" )
-include_directories( "${OTDU_THIRDPARTY_FOLDER}/HLSLCrossCompiler/include" )
+#target_link_libraries( opentdu_assetExtractor "${OTDU_THIRDPARTY_FOLDER}/HLSLCrossCompiler/lib64/RelWithDebInfo/libHLSLcc.lib" )
+#include_directories( "${OTDU_THIRDPARTY_FOLDER}/HLSLCrossCompiler/include" )
 
 add_definitions( -DOTDU_LOG_STDOUT )
