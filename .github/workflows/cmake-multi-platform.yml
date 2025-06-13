@@ -62,36 +62,38 @@ jobs:
 
     # Turns out the make script won't run for Win32 builds so let's emit an hardcoded pregenerated config instead...
     - name: Configure cityhash
-      run: >
-         echo "#pragma once\n#if WIN32 || WIN64\n#	define HAVE_BUILTIN_EXPECT 0\n
-                #else\n
-                #	define HAVE_BUILTIN_EXPECT 1\n
-                #endif\n
-                #define HAVE_DLFCN_H 1\n
-                #define HAVE_INTTYPES_H 1\n
-                #define HAVE_MEMORY_H 1\n
-                #define HAVE_STDINT_H 1\n
-                #define HAVE_STDLIB_H 1\n
-                #define HAVE_STRINGS_H 1\n
-                #define HAVE_STRING_H 1\n
-                #define HAVE_SYS_STAT_H 1\n
-                #define HAVE_SYS_TYPES_H 1\n
-                #define HAVE_UNISTD_H 1\n
-                #define LT_OBJDIR ".libs/"\n
-                #define PACKAGE_BUGREPORT "cityhash-discuss@googlegroups.com"\n
-                #define PACKAGE_NAME "CityHash"\n
-                #define PACKAGE_STRING "CityHash 1.1.1"\n
-                #define PACKAGE_TARNAME "cityhash"\n
-                #define PACKAGE_URL ""\n
-                #define PACKAGE_VERSION "1.1.1"\n
-                #define STDC_HEADERS 1\n
-                #if defined AC_APPLE_UNIVERSAL_BUILD\n
-                # if defined __BIG_ENDIAN__\n
-                #  define WORDS_BIGENDIAN 1\n
-                # endif\n
-                #else\n
-                # ifndef WORDS_BIGENDIAN\n
-                # endif\n
+      run: > 
+       echo "#pragma once\
+        #if WIN32 || WIN64\
+        #	define HAVE_BUILTIN_EXPECT 0\
+                #else\
+                #	define HAVE_BUILTIN_EXPECT 1\
+                #endif\
+                #define HAVE_DLFCN_H 1\
+                #define HAVE_INTTYPES_H 1\
+                #define HAVE_MEMORY_H 1\
+                #define HAVE_STDINT_H 1\
+                #define HAVE_STDLIB_H 1\
+                #define HAVE_STRINGS_H 1\
+                #define HAVE_STRING_H 1\
+                #define HAVE_SYS_STAT_H 1\
+                #define HAVE_SYS_TYPES_H 1\
+                #define HAVE_UNISTD_H 1\
+                #define LT_OBJDIR ".libs/"\
+                #define PACKAGE_BUGREPORT "cityhash-discuss@googlegroups.com"\
+                #define PACKAGE_NAME "CityHash"\
+                #define PACKAGE_STRING "CityHash 1.1.1"\
+                #define PACKAGE_TARNAME "cityhash"\
+                #define PACKAGE_URL ""\
+                #define PACKAGE_VERSION "1.1.1"\
+                #define STDC_HEADERS 1\
+                #if defined AC_APPLE_UNIVERSAL_BUILD\
+                # if defined __BIG_ENDIAN__\
+                #  define WORDS_BIGENDIAN 1\
+                # endif\
+                #else\
+                # ifndef WORDS_BIGENDIAN\
+                # endif\
                 #endif" > "${{ github.workspace }}/third_party/cityhash/src/config.h"
     
     - name: Configure CMake (GLFW3)
@@ -106,7 +108,7 @@ jobs:
 
     - name: Build GLFW3
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build "${{ steps.strings.outputs.build-output-dir }}/glfw" --config ${{ matrix.build_type }}
+      run: cmake --build "${{ github.workspace }}/third_party/glfw/" --config ${{ matrix.build_type }}
 
     - name: Configure CMake (opentdu)
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -127,17 +129,17 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
           name: opentdu_savedecryptor.exe
-          path: "${{ github.workspace }}/build/opentdu_savedecryptor.exe"
+          path: "${{ github.workspace }}/build/bin/opentdu_savedecryptor.exe"
 
     - name: Deploy Asset Extractor
       uses: actions/upload-artifact@v4
       with:
           name: opentdu_assetExtractor.exe
-          path: "${{ github.workspace }}/build/opentdu_assetExtractor.exe"
+          path: "${{ github.workspace }}/build/bin/opentdu_assetExtractor.exe"
        
     - name: Deploy OpenTDU
       uses: actions/upload-artifact@v4
       with:
           name: opentdu.exe
-          path: "${{ github.workspace }}/build/opentdu.exe"
+          path: "${{ github.workspace }}/build/bin/opentdu.exe"
     
