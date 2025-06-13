@@ -132,8 +132,8 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-            "${{ github.workspace }}/build/bin/opentdu_savedecryptor.exe"
-            "${{ github.workspace }}/build/bin/opentdu_assetExtractor.exe"
+            "${{ github.workspace }}\build\bin\opentdu_savedecryptor.exe"
+            "${{ github.workspace }}\build\bin\opentdu_assetExtractor.exe"
           
     # - name: Deploy Save Decryptor
     #   uses: actions/upload-artifact@v4
