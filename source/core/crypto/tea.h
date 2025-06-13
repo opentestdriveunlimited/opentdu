@@ -1,8 +1,8 @@
 #pragma once
 
-static uint32_t gTEAk[4] = { 0x64EA432C,    0xF8A35B24,     0x18ECD81,    0x8326BEAC };
+static constexpr uint32_t kTEAKeysDefault[4] = { 0x64EA432C,    0xF8A35B24,     0x18ECD81,    0x8326BEAC };
 
-static void TestDriveTEADecrypt( uint32_t* pOutV, const uint32_t* pInV, uint32_t k[4] )
+static void TestDriveTEADecrypt( uint32_t* pOutV, const uint32_t* pInV, const uint32_t k[4] )
 {
     uint32_t sum = 0xc6ef3720;
 
@@ -19,7 +19,7 @@ static void TestDriveTEADecrypt( uint32_t* pOutV, const uint32_t* pInV, uint32_t
     pOutV[1] = v1;
 }
 
-static void TestDriveTEAEncrypt( uint32_t* pOutV, const uint32_t* pInV, uint32_t k[4] )
+static void TestDriveTEAEncrypt( uint32_t* pOutV, const uint32_t* pInV, const uint32_t k[4] )
 {
     uint32_t sum = 0;
 
@@ -38,10 +38,10 @@ static void TestDriveTEAEncrypt( uint32_t* pOutV, const uint32_t* pInV, uint32_t
 
 inline void TestDriveTEADecrypt( uint32_t* pOutV, const uint32_t* pInV )
 {
-    TestDriveTEADecrypt( pOutV, pInV, gTEAk );
+    TestDriveTEADecrypt( pOutV, pInV, kTEAKeysDefault );
 }
 
 inline void TestDriveTEAEncrypt( uint32_t* pOutV, const uint32_t* pInV )
 {
-    TestDriveTEAEncrypt( pOutV, pInV, gTEAk );
+    TestDriveTEAEncrypt( pOutV, pInV, kTEAKeysDefault );
 }

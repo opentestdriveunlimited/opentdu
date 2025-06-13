@@ -11,6 +11,12 @@ struct ColorRGBA {
         uint32_t Color;
     };
 
+    constexpr ColorRGBA& operator = (const ColorRGBA other)
+    {
+        this->Color = other.Color;
+        return *this;
+    }
+
     constexpr uint8_t& operator[] (const int32_t i)
     {
         switch(i) {
@@ -42,6 +48,7 @@ struct ColorRGBA {
     }
 };
 
+static constexpr ColorRGBA gColorBlackNoAlpha( 0x00, 0x00, 0x00, 0x00 );
 static constexpr ColorRGBA gColorBlack( 0x00, 0x00, 0x00 );
 static constexpr ColorRGBA gColorRed(   0xff, 0x00, 0x00 );
 static constexpr ColorRGBA gColorBlue(  0x00, 0xff, 0x00 );

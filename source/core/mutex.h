@@ -27,3 +27,20 @@ private:
     uint8_t bInitialized : 1;
     uint8_t bMarkedForDeletion : 1;
 };
+
+struct ScopedMutexLock {
+    ScopedMutexLock(TestDriveMutex* pMutex)
+        : pLockedMutex(pMutex)
+    {
+        pMutex->lock();
+    }
+
+    ~ScopedMutexLock()
+    {
+        pLockedMutex->unlock();
+        pLockedMutex = nullptr;
+    }
+
+private:
+    TestDriveMutex* pLockedMutex;
+};

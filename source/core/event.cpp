@@ -26,10 +26,10 @@ void TestDriveEvent::destroy()
     if ( semaphore ) {
 #if defined( OTDU_WIN32 )
         CloseHandle( semaphore );
-#elif defined( OTDU_MACOS )
-        sem_destroy( &semaphore );
-#endif
         semaphore = NULL;
+#elif defined( OTDU_MACOS )
+        semaphore = false;
+#endif
     }
 }
 
@@ -46,7 +46,7 @@ void TestDriveEvent::initialize( const char* pEventName )
 #if defined( OTDU_WIN32 )
     semaphore = CreateSemaphoreA( 0, 0, 0x7fff, 0 );
 #elif defined( OTDU_MACOS )
-    sem_init(&semaphore, 0, 0);
+    semaphore = true;
 #endif
 
     bInitialized = true;
@@ -64,6 +64,7 @@ bool TestDriveEvent::waitForEvent()
     DVar1 = WaitForSingleObject( semaphore, 0xffffffff );
     return DVar1 == 0;
 #elif defined( OTDU_MACOS )
-    return sem_wait(&semaphore) == 0;
+    while (semaphore.load()) {}
+    return true;
 #endif
 }

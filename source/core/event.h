@@ -13,7 +13,9 @@ private:
 #if defined( OTDU_WIN32 )
     HANDLE          semaphore;
 #elif defined( OTDU_MACOS )
-    sem_t           semaphore;
+    // TODO: macOS doesnt support POSIX unamed semaphore (special snowflake OS)
+    // Using spinlock to emulate semaphore...
+    std::atomic<bool> semaphore;
 #endif
 
     std::string     name;
