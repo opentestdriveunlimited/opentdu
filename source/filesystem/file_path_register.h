@@ -9,10 +9,12 @@ public:
     void registerPath(const std::string& param_1);
     void setDefaultPath(const std::string &param_1);
 
+    size_t getFiler(const char *param_1);
+
 private:
     struct PathEntry {
         std::string Path;
-        int32_t Priority;
+        size_t Priority;
     };
 
 private:
@@ -20,4 +22,4 @@ private:
     std::string defaultPath;
 };
 
-extern FilePathRegister* gpFilePathRegister;
+extern FilePathRegister gFilePathRegister;

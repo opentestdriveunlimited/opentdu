@@ -1,5 +1,47 @@
 #pragma once
 
+struct Timestamp {
+    int32_t Years;
+    int32_t Months;
+    int32_t Days;
+    int32_t Hours;
+    int32_t Minutes;
+    int32_t Seconds;
+
+    inline void reset()
+    {
+        Years = 0;
+        Months = 0;
+        Days = 0;
+        Hours = 0;
+        Minutes = 0;
+        Seconds = 0;
+    }
+
+    std::string toString();
+};
+
+struct ParsedBankEntry
+{
+    int32_t     Type;
+    int32_t     SubType;
+    int32_t     Size;
+    int32_t     SizeWithPadding;
+    int32_t     CRC;
+    void*       pData;
+    int32_t     IndexEntry;
+    uint8_t     bMandatory : 1;
+    uint8_t     bResolveFilename : 1;
+    
+    Timestamp   CreationDate;
+    std::string Filename;
+    std::string Date;
+
+                ParsedBankEntry();
+
+    void        Clear();
+};
+
 struct BankHeader
 {
     uint8_t         Magic[4];
@@ -30,7 +72,7 @@ struct BankHeader
     int32_t         SectionOffsetDirectory;
     int32_t         SectionOffsetIndexes;
     int32_t         SectionOffsetReversedIndexes;
-    int32_t         SectionOffsetData;
+    uint32_t        SectionOffsetData;
 
     inline bool     isVersionValid() const { return Version == 0; }
 };
@@ -39,7 +81,7 @@ struct BankSection
 {
     int32_t         Offset;
     int32_t         Size;
-    int32_t         Unknown;
+    int32_t         Date;
     int32_t         CRC;
 };
 
@@ -52,6 +94,9 @@ struct BankType
 class BankInstance
 {
 public:
+    inline int32_t  getFirstEntry( ParsedBankEntry& outEntry ) { return getEntry( 0, outEntry ); }
+
+public:
                     BankInstance();
                     ~BankInstance();
 
@@ -60,6 +105,10 @@ public:
         const uint32_t bankSize, 
         const bool param_4 
     );
+
+    int32_t         getNumElements();
+    int32_t         getEntry( int32_t entryIndex, ParsedBankEntry& outEntry );
+    int32_t         resolveIndex( int32_t param_2, bool param_3 );
 
 private:
     void*           pMemory;
@@ -96,29 +145,22 @@ private:
         void** ppSectionAddress,
         const bool bValidate 
     );
-};
 
-struct ParsedBankEntry
-{
-    int32_t     Type;
-    int32_t     SubType;
-    int32_t     Size;
-    int32_t     SizeWithPadding;
-    int32_t     CRC;
-    void*       pData;
-    int32_t     IndexEntry;
-    uint8_t     bMandatory : 1;
-    uint8_t     bResolveFilename : 1;
-    
-    std::string Filename;
-    std::string Date;
-
-                ParsedBankEntry();
-
-    void        Clear();
+    void getFilename(
+        int32_t fileIndex,
+        std::string& filename
+    );
 };
 
 class GSFile;
+
+enum class eBankEntryType {
+    BET_COMMON = 0xe,
+};
+
+enum class eBankEntrySubtype {
+    BES_2DM = 0x2,
+};
 
 class Bank
 {
@@ -126,13 +168,17 @@ public:
                     Bank();
                     ~Bank();
 
-    void            loadAsync();
-    virtual void    load();
+    void            loadContentAsync();
     void            loadBank( 
         GSFile* pGSFile, 
-        const char* pBankPath, 
-        const uint32_t bankSize 
+        const char* pBankPath
     );
+    virtual void    loadContent() { OTDU_LOG_WARN( "loadContent() is unimplemented; bank resources won't be loaded!\n" ); OTDU_ASSERT(); }
+
+    // For TEA encrypted resources (e.g. DBs). Done in place.
+    static void     DecryptTEA(void* pBankData, const uint32_t bankSize, uint32_t* pOutDataPointer);
+
+    void* getFirstEntry( const eBankEntryType type, const eBankEntrySubtype subType, uint32_t* pOutEntrySize );
 
 protected:
     BankInstance    bank;

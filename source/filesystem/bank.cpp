@@ -1,6 +1,9 @@
 #include "shared.h"
 #include "bank.h"
 
+#include "core/crypto/tea.h"
+#include "core/hash/crc32.h"
+
 static constexpr const uint32_t gCRC32BankLUT[256] = {
     0,             0x77073096,    0xEE0E612C,    0x990951BA,
     0x76DC419,     0x706AF48F,    0xE963A535,    0x9E6495A3,
@@ -73,7 +76,7 @@ static uint32_t CaclulateBankCRC( const uint8_t* pBankMemory, uint32_t numBytes 
     uint32_t param_3 = 0xffffffff;
     if (numBytes != 0) {
         do {
-            param_3 = param_3 >> 8 ^ gCRC32BankLUT[(*pBankMemory ^ param_3) + 1];
+            param_3 = param_3 >> 8 ^ gCRC32BankLUT[( *pBankMemory ^ param_3 ) & 0xff];
             pBankMemory++;
             numBytes--;
         } while (numBytes != 0);
@@ -126,6 +129,125 @@ int32_t BankInstance::getSectionAddress( const void* pBankMemory,
     }
 
     return 0;
+}
+
+char* BankDirectoryRecurse(char *param_1,int *param_2,char **param_3)
+{
+  char cVar1;
+  char *pcVar2;
+  char *pcVar3;
+  uint32_t uVar4;
+  int iVar5;
+  
+  cVar1 = *param_1;
+  pcVar2 = param_1 + 1;
+  if (cVar1 < '\0') {
+    iVar5 = -(int)cVar1;
+    if (cVar1 == -0x80) {
+      iVar5 = *pcVar2 + 0x80;
+      pcVar2 = param_1 + 2;
+    }
+    uVar4 = 0;
+    param_1 = (char *)0x0;
+    do {
+      cVar1 = *pcVar2;
+      pcVar2 = pcVar2 + 1;
+      uVar4 = uVar4 | ((int)cVar1 & 0x7fU) << (*param_1 & 0x1f);
+      param_1 = param_1 + 7;
+    } while (cVar1 < 0);
+    pcVar2 = pcVar2 + iVar5;
+    pcVar3 = pcVar2;
+    do {
+      if (uVar4 == 0) {
+        return pcVar3;
+      }
+      uVar4 = uVar4 - 1;
+      pcVar3 = BankDirectoryRecurse(pcVar3,param_2,param_3);
+    } while (pcVar3 != (char *)0x0);
+    for (; iVar5 != 0; iVar5 = iVar5 + -1) {
+      *param_3 = *param_3 + -1;
+      pcVar2 = pcVar2 + -1;
+      **param_3 = *pcVar2;
+    }
+    *param_3 = *param_3 + -1;
+    **param_3 = '\\';
+  }
+  else {
+    iVar5 = (int)cVar1;
+    if (iVar5 == 0x7f) {
+      iVar5 = *pcVar2 + 0x7f;
+      pcVar2 = param_1 + 2;
+    }
+    if (*param_2 != 0) {
+      *param_2 = *param_2 + -1;
+      return pcVar2 + iVar5;
+    }
+    pcVar2 = pcVar2 + iVar5;
+    for (; iVar5 != 0; iVar5 = iVar5 + -1) {
+      *param_3 = *param_3 + -1;
+      pcVar2 = pcVar2 + -1;
+      **param_3 = *pcVar2;
+    }
+    *param_3 = *param_3 + -1;
+    **param_3 = '\\';
+  }
+  return (char *)0x0;
+}
+
+void DecodeFilePath(std::string& param_1,char *param_2)
+{
+  char *pcVar1;
+  char *pcVar2;
+  char cVar3;
+  
+  cVar3 = *param_2;
+  pcVar1 = param_2;
+  if (cVar3 != '\0') {
+    do {
+      param_2 = param_2 + 1;
+      pcVar2 = pcVar1;
+      if (cVar3 == '\\') {
+        if (*pcVar1 == '.') {
+          while ((pcVar2 = param_2, cVar3 = *pcVar2, cVar3 != '\0' && (cVar3 != '\\'))) {
+            param_1 += cVar3;
+            param_2 = pcVar2 + 1;
+          }
+          for (; (cVar3 = *pcVar1, param_2 = pcVar2, cVar3 != '\0' && (cVar3 != '\\'));
+              pcVar1 = pcVar1 + 1) {
+            param_1 += cVar3;
+          }
+        } else {
+          for (; pcVar2 < param_2; pcVar2 = pcVar2 + 1) {
+            param_1 += *pcVar2;
+          }
+        }
+      }
+      cVar3 = *param_2;
+      pcVar1 = pcVar2;
+    } while (cVar3 != '\0');
+    for (; pcVar2 < param_2; pcVar2 = pcVar2 + 1) {
+        param_1 += *pcVar2;
+    }
+  }
+  param_1 += '\0';
+}
+
+void BankInstance::getFilename(int32_t param_1, std::string &param_2)
+{
+    char *local_20c [128];
+    *local_20c[0] = '\0';
+
+    char* pDirectoryContent = (char*)pDirectory;
+    do {
+        pDirectoryContent = BankDirectoryRecurse(pDirectoryContent,&param_1,local_20c);
+        if (pDirectoryContent == (char *)0x0) break;
+    } while (*pDirectoryContent != '\0');
+
+    if (*local_20c[0] == '\\') {
+        local_20c[0] = local_20c[0] + 1;
+    }
+       
+    DecodeFilePath(param_2,local_20c[0]);
 }
 
 int32_t BankInstance::load( const uint8_t* pBankMemory, 
@@ -182,21 +304,115 @@ int32_t BankInstance::load( const uint8_t* pBankMemory,
     return 5;
 }
 
+int32_t BankInstance::getNumElements()
+{
+    return pHeader != nullptr ? pHeader->NumEntries : 0;
+}
+
+void ParseFromPackedTimestamp(const uint32_t uVar1, const uint32_t param_2, Timestamp& outTimestamp)
+{
+    outTimestamp.reset();
+
+    outTimestamp.Seconds = uVar1 & 0x3f;
+    outTimestamp.Minutes = uVar1 >> 6 & 0x3f;
+    outTimestamp.Hours = uVar1 >> 0xc & 0x1f;
+    outTimestamp.Days = uVar1 >> 0x11 & 0x1f;
+    outTimestamp.Years = (uVar1 >> 0x1a) + param_2;
+    outTimestamp.Months = uVar1 >> 0x16 & 0xf;
+}
+
+int32_t BankInstance::getEntry(int32_t param_2, ParsedBankEntry &outEntry)
+{
+    outEntry.Clear();
+
+    uint32_t uVar4 = 0;
+    int32_t iVar5 = 0;
+    if (pHeader == nullptr ) {
+        iVar5 = 1;
+    } else if ((param_2 < 0) || (pHeader->NumEntries <= param_2)) {
+        iVar5 = 6;
+    } else if (size < pHeader->SectionOffsetData) {
+        iVar5 = 2;
+    } else {
+        if (outEntry.bResolveFilename && pDirectory != nullptr && pHeader->NumEntries != 0) {
+            for (int32_t i = 0; i < pHeader->NumEntries; i++) {
+                 int32_t iVar2 = resolveIndex(i, false);
+                 if (iVar2 == param_2) {
+                    getFilename(iVar5, outEntry.Filename);
+                    break;
+                 }
+            }
+        }
+        
+        if (pEntry != nullptr) {
+            BankSection* pSection = &pEntry[param_2];
+
+            ParseFromPackedTimestamp(pSection->Date, pHeader->CreationDate, outEntry.CreationDate);
+            outEntry.Date = outEntry.CreationDate.toString();
+
+            uVar4 = pSection->Size;
+            outEntry.Size = uVar4;
+
+            // TODO: How tf is that safe? Is it some bad decomp or bad code?
+            // 00621ec9 8b 46 10        MOV        EAX,dword ptr [ESI + 0x10]
+            // 00621ecc 2b 06           SUB        EAX,dword ptr [ESI]
+            uint32_t uVar3 = (pSection + 1)->Offset - pSection->Offset;
+            if (uVar3 < uVar4) {
+                outEntry.SizeWithPadding = uVar3;
+            } else {
+                outEntry.SizeWithPadding = uVar4;
+            }
+
+            outEntry.pData = (uint8_t*)pMemory + pSection->Offset;
+        }
+
+        if (pType == nullptr) {
+            outEntry.SubType = pHeader->TypeUnknown;
+            uVar4 = pHeader->Type;
+        } else {
+            outEntry.SubType = pType[param_2].Type;
+            uVar4 = pType[param_2].TypeUnknown;
+        }
+
+        outEntry.Type = uVar4;
+        outEntry.IndexEntry = param_2;
+        iVar5 = 0;
+    }
+    return iVar5;
+}
+
+int32_t BankInstance::resolveIndex(int32_t param_2, bool param_3)
+{
+  void *pvVar1 = param_3 ? pIndexReverse : pIndex;
+  uint32_t uVar2 = pHeader->NumEntries;
+  
+  uint32_t* pIndexes = (uint32_t*)pvVar1;
+  if (uVar2 < 0x100) {
+    uVar2 = pIndexes[param_2];
+  } else if (uVar2 < 0x10000) {
+    uVar2 = pIndexes[param_2 * 2];
+  } else {
+    uVar2 = pIndexes[param_2 * 4];
+  }
+  return uVar2;
+}
+
 int32_t BankInstance::validateChecksum( const uint8_t* pMemoryBegin, 
     const uint8_t* pMemoryEnd, 
     const bool bValidate )
 {
     const uint8_t *pcVar1 = pMemoryBegin + 8;
-    const uint32_t dataSize = *(uint32_t*)pcVar1;
+    const uint32_t dataSize = *(uint32_t*)pMemoryBegin;
     if ( pMemoryEnd < pcVar1 || (pMemoryEnd < ( pMemoryBegin + dataSize ) ) ) {
         return 2;
     }
 
     if ( bValidate ) {
         const uint32_t bankCRC = *(uint32_t*)(pMemoryBegin + 4);
-        uint32_t memoryCRC = CaclulateBankCRC(pMemoryBegin, dataSize);
+        uint32_t memoryCRC = CaclulateBankCRC(pcVar1, dataSize);
 
         if ( bankCRC != memoryCRC ) {
+            OTDU_LOG_WARN("CRC mismatch! (calculated %x found %x)\n", memoryCRC, bankCRC);
             return 3;
         }
     }
@@ -267,7 +483,7 @@ Bank::~Bank()
     
 }
 
-void Bank::loadAsync()
+void Bank::loadContentAsync()
 {
     bResolveFilename = true;
     if (bLoaded) {
@@ -285,21 +501,113 @@ void Bank::loadAsync()
         bResolveFilename = false;
         bLoaded = true;
 
-        OTDU_UNIMPLEMENTED;
-        /* WARNING: Could not recover jumptable at 0x009a6cc0. Too many branches */
-        /* WARNING: Treating indirect jump as call */
-        // (**(code **)param_1->lpVtbl)();
+        loadContent();
     }
 
     return;
 }
 
-void Bank::load()
+bool Bank::loadBank( GSFile* pGSFile, const char* pBankPath )
 {
+    OTDU_ASSERT( pGSFile );
+    bool bLoadingResult = pGSFile->loadFile( pBankPath, pBankFile, &bankFileSize );
 
+    if ( !bLoadingResult ) {
+        OTDU_LOG_WARN( "Failed to load bank '%s'\n", pBankPath );
+        return false;
+    }
+
+    return true;
 }
 
-void Bank::loadBank( GSFile* pGSFile, const char* pBankPath, const uint32_t bankSize )
-{
+static constexpr uint32_t kTEAKeysBank[4] = {
+    0x4FE23C4A,
+    0x80BAC211,
+    0x6917BD3A,
+    0xF0528EBD
+};
 
+void Bank::DecryptTEA(void *pBankData, const uint32_t bankSize, uint32_t *pOutDataPointer)
+{
+    OTDU_ASSERT(pBankData);
+    OTDU_ASSERT(pOutDataPointer);
+    
+    uint32_t roundedSize =  (((bankSize - 8) + ((bankSize - 8) >> 0x1f & 7U)) >> 3);
+
+    // Not sure wtf is going on here
+    uint32_t* puVar1 = pOutDataPointer;
+    *pOutDataPointer = roundedSize;
+    //pOutDataPointer = (uint32_t*)roundedSize;
+
+    uint32_t output[2] = { 0, 0 };
+    uint32_t* pBankDataAsDword = (uint32_t*)pBankData;
+    while ( *pOutDataPointer != 0) {
+        TestDriveTEADecrypt( output, pBankDataAsDword + 2, kTEAKeysBank );
+
+        pBankDataAsDword[0] ^= output[0];
+        pBankDataAsDword[1] ^= output[1];
+
+        *pOutDataPointer = *pOutDataPointer - 1;
+        pBankDataAsDword += 2;
+    }
+    #if 0
+    if (*puVar1 < bankSize) {
+        uint32_t uVar3 = bankSize - *puVar1;
+        uint8_t* pBankDataAsBytes = (uint8_t*)pBankDataAsDword;
+        for (uint32_t uVar4 = uVar3 >> 2; uVar4 != 0; uVar4 = uVar4 - 1) {
+            *pBankDataAsBytes = 0;
+            pBankDataAsBytes++;
+        }
+        for (uVar3 = uVar3 & 3; uVar3 != 0; uVar3 = uVar3 - 1) {
+            *pBankDataAsBytes = 0;
+            pBankDataAsBytes++;
+        }
+    }
+    #endif
+}
+
+void* Bank::getFirstEntry( const eBankEntryType type, const eBankEntrySubtype subType, uint32_t* pOutEntrySize )
+{
+    if ( !bLoaded ) {
+        return nullptr;
+    }
+
+    currentBankEntry.Clear();
+    currentBankEntry.bResolveFilename = bResolveFilename;
+
+    void* pResourceContent = nullptr;
+    bank.getFirstEntry( currentBankEntry );
+    if ( currentBankEntry.IndexEntry != -1 ) {
+        while ( ( currentBankEntry.Type != type || ( currentBankEntry.SubType != subType ) ) ) {
+            bank.getFirstEntry( currentBankEntry );
+            if ( currentBankEntry.IndexEntry == -1 ) {
+                return nullptr;
+            }
+        }
+        
+        pResourceContent = currentBankEntry.pData;
+        if ( pOutEntrySize != nullptr ) {
+            *pOutEntrySize = currentBankEntry.Size;
+        }
+    }
+
+    return pResourceContent;
+}
+
+std::string Timestamp::toString()
+{
+    std::string output;
+    output += Days;
+    output += "/";
+    output += Months;
+    output += "/";
+    output += Years;
+    output += " ";
+    output += Hours;
+    output += ":";
+    output += Minutes;
+    output += ":";
+    output += Seconds;
+    
+    return output;
 }

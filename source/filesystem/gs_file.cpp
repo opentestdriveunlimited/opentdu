@@ -3,78 +3,91 @@
 
 #include "core/mutex.h"
 #include "tdu_instance.h"
+#include "config/gs_config.h"
+#include "player_data/user_profile.h"
+#include "gs_dirty_disk.h"
+#include "flash/modal_message_box.h"
+#include "file_path_register.h"
 
 #if defined( OTDU_WIN32 )
 #include <Shlobj.h>
 #endif
 
+#include <locale>
+#include <codecvt>
+
 GSFile* gpFile = nullptr;
 
-wchar_t GSFile::SaveFolder[OTDU_MAX_PATH];
+static TestDriveMutex gUnknownMutex = {};
 
-static TestDriveMutex gFilemapMutex = {};
+TestDriveMutex* gpFilemapMutex = nullptr; // TODO: Define the thread routine in GSFile to avoid doing this crap
 
-static bool CreateFolderWin32( char* pFolderPath, const size_t pathLength )
+static constexpr const char* kCameraBinPath = "Euro/BNK/DataBase/Cameras.bin";
+
+static bool CreateFolders( const std::wstring& path ) 
 {
-    /*char cVar1;
-    int iVar2;
-    char* pcVar3;
-    int iVar4;
-    BOOL BVar5;
-    DWORD DVar6;
-    int iVar7;
-    char local_200[512];
+    std::error_code ec;
 
-    iVar7 = 0;
-    pcVar3 = pFolderPath;
-    if ( pathLength < 0x1fe ) {
-        iVar2 = -( int )pFolderPath;
-        do {
-            cVar1 = *pFolderPath;
-            pFolderPath[( int )( local_200 + iVar2 )] = cVar1;
-            pFolderPath = pFolderPath + 1;
-        } while ( cVar1 != '\0' );
-        if ( ( local_200[iVar4 + -1] != '\\' ) && ( local_200[iVar4 + -1] != '/' ) ) {
-            local_200[iVar4] = '\\';
-            local_200[iVar4 + 1] = '\0';
-        }
-        do {
-            if ( local_200[0] == '\0' ) {
-                return true;
-            }
-            if ( ( ( ( local_200[iVar7] == '\\' ) || ( local_200[iVar7] == '/' ) ) && ( 0 < iVar7 ) ) &&
-                 ( local_200[iVar7 + -1] != ':' ) ) {
-                local_200[iVar7] = '\0';
-                BVar5 = CreateDirectory( local_200, ( LPSECURITY_ATTRIBUTES )0x0 );
-                if ( ( BVar5 == 0 ) && ( DVar6 = GetLastError(), DVar6 != 0xb7 ) ) {
-                    return false;
-                }
-                local_200[iVar7] = '\\';
-            }
-            local_200[0] = local_200[iVar7 + 1];
-            iVar7 = iVar7 + 1;
-        } while ( true );
-    }*/
-    OTDU_UNIMPLEMENTED; // TODO:
-    return false;
+    bool bSuccess = std::filesystem::create_directories(path, ec);
+    if (!bSuccess) {
+        OTDU_LOG_ERROR("Failed to create directory '%S': %s\n", path.c_str(), ec.message().c_str());
+    }
+
+    return bSuccess;
 }
 
 static uint32_t ThreadRoutine( WorkerThreadContext* param_1 )
 {
-    AsyncFileOpen* pAVar1;
-    //FileMap* pCVar2;
-    //bool bVar3;
-    //char cVar4;
-    //uint32_t uVar5;
     FileDirectAccess local_c48 = {};
 
     do {
         param_1->pEvent->waitForEvent();
+        gpFilemapMutex->lock();
+        if (param_1->pAsyncData->pFilemap == nullptr) {
+            local_c48.bNeedName = true;
+        } else {
+            local_c48.bNeedName = param_1->pAsyncData->pFilemap->bNeedName;
 
-        pAVar1 = param_1->pAsyncData;
-        gFilemapMutex.lock();
-        OTDU_UNIMPLEMENTED; // TODO:
-        gFilemapMutex.unlock();
+            if (param_1->pAsyncData->pFilemap->Context.bIsValid) {
+                bool bVar3 = local_c48.openContext(0ull, 
+                    param_1->pAsyncData->pFilemap->Context.Filename.c_str(), 
+                    param_1->pAsyncData->pFilemap->Context.Source
+                );
+
+                if (!bVar3) {
+                    param_1->bJobDone = true;
+                    gpFilemapMutex->unlock();
+                    continue;
+                }
+            }
+        }
+
+        bool bVar4 = false;
+        {
+            ScopedMutexLock unknownLock(&gUnknownMutex);
+
+            if (param_1->pAsyncData->bCompressed) {
+                OTDU_UNIMPLEMENTED; // TODO: AFAIK zlib compressed banks are only used on Xbox (we'll keep this assert around just in case)
+            } else {
+                bVar4 = local_c48.loadContentIntoMemory(
+                    param_1->pAsyncData->Filename.c_str(),
+                    param_1->pAsyncData->Size,
+                    param_1->pAsyncData->Offset,
+                    &param_1->pAsyncData->pBuffer,
+                    nullptr
+                );
+            }
+        }
+        
+        if (!bVar4 && param_1->pAsyncData->pFilemap != nullptr) {
+            gpDirtyDisk->onDataLoadFailure();
+        }
+
+        if (param_1->pAsyncData->pFilemap != nullptr && param_1->pAsyncData->pFilemap->Context.bIsValid) {
+            local_c48.reset();
+        }
+        
+        gpFilemapMutex->unlock();
         param_1->bJobDone = true;
     } while ( true );
 
@@ -84,6 +97,7 @@ static uint32_t ThreadRoutine( WorkerThreadContext* param_1 )
 GSFile::GSFile()
     : pFilemapMutex( new TestDriveMutex() )
     , pWorkerThread( new TestDriveThread() )
+    , initStep( 0 )
     , bFilemapActive( false )
     , bTaskInProgress( false )
     , bIsCurrentContextReady( false )
@@ -91,17 +105,15 @@ GSFile::GSFile()
 {
     gpFile = this;
 
-    memset( SaveFolder, 0, sizeof( wchar_t ) * OTDU_MAX_PATH );
-
     asyncData.resize( 32u );
-
-    filemaps.resize( 8u );
+    filemaps.resize( 127u );
     for ( FileMap& filemap : filemaps ) {
         filemap.initializeCRCLUT();
     }
 
-    workerThreadContext.pEvent = new TestDriveEvent();
+    gpFilemapMutex = pFilemapMutex;
 
+    workerThreadContext.pEvent = new TestDriveEvent();
     pWorkerThread->initialize( (TestDriveThread::StartRoutine_t)ThreadRoutine, &workerThreadContext, 0, 0 );
 }
 
@@ -113,12 +125,41 @@ GSFile::~GSFile()
 bool GSFile::initialize( TestDriveGameInstance* )
 {
     bool bInitialized = retrieveSaveFolder();
+
+    hardDriveVFS.initialize();
+    gVirtualFileSystemRegister.registerVFS(&hardDriveVFS);
+
+    gUserProfileRegister.deserialize();
+    
+    // std::string defaultRootPath = "<pc>";
+    // std::string local_200;
+    // VirtualFileSystem* peVar1 = gVirtualFileSystemRegister.get(defaultRootPath, local_200, true);
+    // if (peVar1 != nullptr) {
+    //     gFilePathRegister.registerPath(local_200);
+    //     gFilePathRegister.setDefaultPath(local_200);
+    //     peVar1->setDefaultPath(local_200.c_str());
+    // }
+
     return bInitialized;
 }
 
-void GSFile::tick()
+void GSFile::tick(float deltaTime)
 {
-
+    if (gpTestDriveInstance == nullptr || !gpTestDriveInstance->hasRequestedExit()) {
+        if (initStep == 1) {
+            //gpFlashMessageBox->display(0x3b863c2, 3.0f, 0, nullptr, nullptr, false);
+            
+            // puVar1 = (undefined4 *)&gGSDatabase.field_0x43fc;
+            // do {
+            //     puVar1[-1] = 0;
+            //     *puVar1 = 0;
+            //     puVar1 = puVar1 + 2;
+            // } while ((int)puVar1 < 0x11f30bc);
+            initStep = 2;
+        } else if (initStep == 2) {
+            initStep = 0;
+        }
+    }
 }
 
 void GSFile::terminate()
@@ -126,95 +167,73 @@ void GSFile::terminate()
     pFilemapMutex->terminate();
 }
 
-bool GSFile::loadFile(char *pFilename, void **pOutContent, uint *pOutContentSize)
+bool GSFile::loadFile(const char *pFilename, void **pOutContent, uint32_t *pOutContentSize)
 {
     *pOutContent = (void *)0x0;
     if (pOutContentSize != nullptr) {
         *pOutContentSize = 0u;
     }
 
-    int32_t fileSize = 0;
-    FileIterator it;
+    FileMapEntry* pEntry = nullptr;
+    FileMap* pFilemap = nullptr;
+    uint32_t fileSize = 0;
     if (!bFilemapActive) {
-        bool bVar2 = it.findFirstMatch(pFilename);
+        bool bVar2 = findFileOutsideFilemap(pFilename, &fileSize);
         if (!bVar2) {
             return false;
         }
+    } else {
+        bool bVar3 = findMapEntriesForFile(pFilename, &pEntry, &pFilemap);
         
-        fileSize = it.getSize();
+        // If not found in the map, check external
+        if (!bVar3) {
+            std::string filename = pFilename;
+            const char* pResRoot = gpConfig->getResRootPath();
+            size_t iVar5 = filename.rfind(pResRoot, 0);
+            if (iVar5 == 0) {
+                return false;
+            }
+            bool bVar2 = findFileOutsideFilemap(pFilename, &fileSize);
+            if (!bVar2) {
+                return false;
+            }
+        }
+
+        fileSize = pEntry->Size;
     }
 
-//   edFileFind::edFileFind(&local_620);
-//   if (inContentSize != (uint *)0x0) {
-//     *inContentSize = 0;
-//   }
-//   local_628 = (undefined1  [4])0x0;
-//   local_624 = (CFileMapSet *)0x0;
-//   if (pGSFile->bFilemapActive == false) {
-// LAB_009a5e0d:
-//     bVar2 = edFileFind::FindFirst(&local_620,pContentName);
-//     if (!bVar2) goto LAB_009a5dee;
-//     peVar6 = (edFileDevice *)edFileFind::GetSize(&local_620);
-//     edFileFind::FindClose(&local_620);
-//     if (peVar6 == (edFileDevice *)0x0) goto LAB_009a5dee;
-//   }
-//   else {
-//     bVar2 = GSFile::FindEntryInSet(pGSFile,pContentName,(t_filemap_entry **)local_628,&local_624);
-//     if (!bVar2) {
-//       pcVar4 = gGSConfig.pDVDPath;
-//       if ((gGSConfig.super.pGameInstance)->bUseDVDVFS == false) {
-//         pcVar4 = gGSConfig.pResPath;
-//       }
-//       pcVar1 = pcVar4 + 1;
-//       do {
-//         cVar3 = *pcVar4;
-//         pcVar4 = pcVar4 + 1;
-//       } while (cVar3 != '\0');
-//       _Str1 = gGSConfig.pDVDPath;
-//       if ((gGSConfig.super.pGameInstance)->bUseDVDVFS == false) {
-//         _Str1 = gGSConfig.pResPath;
-//       }
-//       iVar5 = _strnicmp(_Str1,pContentName,(int)pcVar4 - (int)pcVar1);
-//       if (iVar5 == 0) goto LAB_009a5dee;
-//       goto LAB_009a5e0d;
-//     }
-//     peVar6 = *(edFileDevice **)((int)local_628 + 0xc);
-//     if (peVar6 == (edFileDevice *)0x0) goto LAB_009a5e0d;
-//   }
-//   if (pAllocator == (edMemMaster *)0x0) {
-//     pAllocator = (edMemMaster *)&gEdMemMaster;
-//   }
-//   pvVar7 = (*((edMemMaster_vtable *)(pAllocator->super).lpVtbl)->AlignedMalloc)
-//                      ((int)(peVar6[3].pDefaultUnit + 0x1a1),0x10);
-//   *pOutContent = pvVar7;
-//   if (pvVar7 != (void *)0x0) {
-//     if (pOutContent != (void **)0x0) {
-//       *pOutContent = peVar6;
-//     }
-//     cVar3 = GSFile::LoadFileDirectAccess
-//                       (pGSFile,pGSFile,*pOutContent,(int)peVar6,unaff_EBP,unaff_EBX);
-//     pvVar7 = *pOutContent;
-//     if (cVar3 != '\0') {
-//       *(undefined1 *)((int)pvVar7 + (int)(peVar6->pDefaultUnit + -0x18)) = 0;
-//       edFileFind::~edFileFind((edFileFind *)local_628);
-//       return (bool)cVar3;
-//     }
-//     if (pvVar7 != (void *)0x0) {
-//       _aligned_free(pvVar7);
-//     }
-//     *pOutContent = (void *)0x0;
-//     edFileFind::~edFileFind((edFileFind *)local_628);
-//     return false;
-//   }
-// LAB_009a5dee:
-//   edFileFind::~edFileFind((edFileFind *)local_628);
-  return false;
+    // TODO: What's the 0x801 required for?
+
+    void* pFileAlloc = TestDrive::Alloc(fileSize + 0x801);
+    OTDU_LOG_DEBUG("Allocated %llu for file '%s'\n", fileSize + 0x801, pFilename);
+    *pOutContent = pFileAlloc;
+    if (pFileAlloc != nullptr) {
+        *(uint32_t*)*pOutContent = fileSize;
+
+        bool bLoadedContentFromDisk = loadFileRaw(pFilename, pFilemap, pEntry, fileSize, pOutContent);
+        if (bLoadedContentFromDisk) {
+            uint8_t* pFileContentByte = (uint8_t*)*pOutContent;
+            pFileContentByte[fileSize] = 0;
+            if (pOutContentSize != nullptr) {
+                *pOutContentSize = fileSize;
+            }
+            return true;
+        }
+
+        TestDrive::Free(pFileAlloc);
+        *pOutContent = (void *)0x0;
+        
+        return false;
+    }
+
+    return false;
 }
 
 bool GSFile::retrieveSaveFolder()
 {
     savegameFolder = L"\\";
 
+    // TODO: Move platform specific under system/
 #if defined( OTDU_WIN32 )
     HANDLE tokenHandle = NULL;
     HANDLE ProcessHandle = GetCurrentProcess();
@@ -251,6 +270,201 @@ bool GSFile::retrieveSaveFolder()
     OTDU_LOG_DEBUG("Active savegame folder: '%S'\n", savegameFolder.c_str());
 
     return true;
+}
+
+bool GSFile::findFileOutsideFilemap(const char* pFilename, uint32_t* pOutFilesize)
+{
+    OTDU_ASSERT(pOutFilesize);
+
+    FileIterator it;
+    bool bVar2 = it.findFirstMatch(pFilename);
+    if (!bVar2) {
+        OTDU_LOG_ERROR("Failed to open file '%s': file not found\n", pFilename);
+        return false;
+    }
+
+    uint32_t fileSize = it.getSize();
+    *pOutFilesize = fileSize;
+    it.closeHandle();
+
+    if (fileSize == 0) {
+        OTDU_LOG_ERROR("Failed to open file '%s': file size is 0\n", pFilename);
+        return false;
+    }
+
+    return true;
+}
+
+bool GSFile::findMapEntriesForFile(const char *pEntryName, FileMapEntry** ppOutMapEntry, FileMap **ppOutMap)
+{
+    ScopedMutexLock filemapLock(pFilemapMutex);
+    *ppOutMapEntry = nullptr;
+    *ppOutMap = nullptr;
+
+    FileMap* pBestMap = nullptr;
+    FileMapEntry* pBestEntry = nullptr;
+    int32_t filemapIndex = 0;
+    for (FileMap& filemap : filemaps) {
+        filemapIndex++;
+
+        if (filemap.MapSize == 0) {
+            continue;
+        }
+
+        FileMapEntry* pFoundEntry = nullptr;
+        bool bFoundEntryInMap = filemap.findEntryInSet(pEntryName, &pFoundEntry);
+        if (bFoundEntryInMap) {
+            if (pBestEntry != nullptr) {
+                if (pBestEntry->Version < pFoundEntry->Version) {
+                    OTDU_LOG_DEBUG("(found best revision=>%08X on map %d)", pFoundEntry->Version, filemapIndex);
+                    pBestEntry = pFoundEntry;
+                    pBestMap = &filemap;
+                }
+            } else {
+                pBestEntry = pFoundEntry;
+                pBestMap = &filemap;
+                if (pFoundEntry->Version != 0) {
+                    OTDU_LOG_DEBUG("(found revision=>%08X on map %d)", pFoundEntry->Version, filemapIndex);
+                }
+            }
+        }
+    }
+
+    if (pBestEntry == nullptr) {
+        *ppOutMap = nullptr;
+        *ppOutMapEntry = nullptr;
+        return false;
+    }
+
+    *ppOutMap = pBestMap;
+    *ppOutMapEntry = pBestEntry;
+    return true;
+}
+
+bool GSFile::loadFileRaw(const char *pFilename, FileMap* pFilemap, FileMapEntry* pEntry, const uint32_t size, void** ppOutContent)
+{
+    FileDirectAccess local_c48;
+    bTaskInProgress = true;
+
+    std::string filename = "";
+    uint32_t offset = 0;
+    bool bCompressed = false;
+    if (pFilemap == nullptr || pEntry == nullptr) {
+        FileIterator it;
+        it.findFirstMatch(pFilename);
+
+        filename = it.SearchDirectory;
+        filename += "/";
+        filename += it.SearchPattern;
+            
+        tmpFilename.clear();
+        tmpFilename += pFilename;
+        
+        local_c48.bNeedName = true;
+    } else {
+        local_c48.bNeedName = pFilemap->bNeedName;
+        bCompressed = pEntry->bCompressed;
+
+        if (!pFilemap->bUseBigFile) {
+            filename = pFilemap->resolveName(pFilename, bCompressed);
+        } else {
+            offset = pEntry->Offset;
+            filename = pFilemap->FilenameBigFile;
+        }
+    }
+
+    bool bVar1 = false;
+    if (pFilemap == nullptr || !pFilemap->Context.bIsValid) {
+        bVar1 = true;
+    } else {
+        bVar1 = local_c48.openContext(0, pFilemap->Context.Filename.c_str(), pFilemap->Context.Source);
+    }
+
+    {
+        ScopedMutexLock unknownMutexLock(&gUnknownMutex);
+        if (bVar1) {
+            if (bCompressed) {
+                OTDU_ASSERT(false); // TODO: AFAIK zlib compressed banks are only used on Xbox (we'll keep this assert around just in case)
+            } else {
+                bVar1 = local_c48.loadContentIntoMemory(filename.c_str(), size + 0x7ffU & 0xfffff800, offset, ppOutContent, nullptr);
+            }
+        }
+    }
+    if (!bVar1) {
+        if (pFilemap != nullptr) {
+            gpDirtyDisk->onDataLoadFailure();
+        }
+    }
+
+    if (pFilemap != nullptr && pFilemap->Context.bIsValid) {
+        local_c48.reset();
+    }
+    
+    bTaskInProgress = false;
+    return bVar1;
+}
+
+void GSFile::initCarPacks(bool param_1)
+{
+    // TODO: This could be re-used to support standalone mods (just need to re-implement the missing
+    // XML parsing)
+    ScopedMutexLock filemapLock(pFilemapMutex);
+
+    FileDirectAccess file;
+    file.bNeedName = false;
+
+    uint64_t profileHashcode = gUserProfileRegister.getActiveProfileHashcode();
+
+    uint32_t uStack_aa58 = 0;
+    EnumerateContextItem aeStack_9e00[129];
+    bool bVar1 = file.enumerateContext(
+        profileHashcode,
+        eContextSource::CS_Marketplace,
+        0,
+        nullptr,
+        nullptr,
+        0x80,
+        aeStack_9e00,
+        &uStack_aa58
+    );
+
+    OTDU_LOG_INFO("=>EnumerateContext() => %s, %d items\n", ((bVar1) ? "TRUE" : "FALSE"), uStack_aa58 );
+    if (param_1) {
+        OTDU_UNIMPLEMENTED;
+        //FUN_008a3750(0x147aef0);
+    }
+
+    for (uint32_t i = 0; i < uStack_aa58; i++) {
+        EnumerateContextItem& item = aeStack_9e00[i];
+        if (!item.bIsValid) {
+            continue;
+        }
+
+        OTDU_LOG_INFO("  -Found Pack: Name:%S  Type:%d DeviceID=%d\n", item.DisplayName.c_str(), item.Source, item.StoredOnHDD);
+        
+        OTDU_UNIMPLEMENTED; 
+    }
+}
+
+std::wstring GSFile::getSaveLocation(eContextSource source)
+{
+    std::wstring saveLocation = getSaveFolder();
+
+    switch ( source ) {
+    case eContextSource::CS_Publisher:
+        saveLocation += L"publisher";
+        break;
+    case eContextSource::CS_Marketplace:
+        saveLocation += L"marketplace";
+        break;
+    case eContextSource::CS_Savegame:
+        saveLocation += L"savegame";
+        break;
+    default:
+        break;
+    }
+
+    return saveLocation;
 }
 
 AsyncFileOpen::AsyncFileOpen()
@@ -320,6 +534,136 @@ void FileMap::initializeCRCLUT()
     } while ( uVar2 < 256 );
 }
 
+bool FileMap::findEntryInSet(const char *pFilename, FileMapEntry **ppOutEntry)
+{
+    std::string local_104 = pFilename;
+    local_104 += ".zc";
+    
+    if (MapSize == 0) {
+        *ppOutEntry = nullptr;
+        return false;
+    }
+
+    FileMapEntry* pFoundEntry = findEntry(local_104.c_str());
+    if (pFoundEntry == nullptr) {
+        pFoundEntry = findEntry(pFilename);
+        if (pFoundEntry == nullptr) {
+            *ppOutEntry = nullptr;
+            return false;
+        }
+    }
+    
+    *ppOutEntry = pFoundEntry;
+    return true;
+}
+
+FileMapEntry *FileMap::findEntry(const char *pFilename)
+{
+    if (HeaderToSkip.length() > 0) {
+        std::string filename = pFilename;
+        size_t iVar3 = filename.rfind(HeaderToSkip, 0);
+        if (iVar3 == 0) {
+            std::string filenameWithoutHeader = filename.substr(HeaderToSkip.length());
+            uint32_t hashcode = hashFilename(filenameWithoutHeader.c_str());
+            return findEntry(hashcode);
+        }
+    }
+
+    uint32_t hashcode = hashFilename(pFilename);
+    return findEntry(hashcode);
+}
+
+FileMapEntry *FileMap::findEntry(const uint32_t crc)
+{
+    if (pMapStart == nullptr) {
+        return nullptr;
+    }
+
+    if (bUnknown) {
+        int8_t* pMapIterator = (int8_t*)pMapStart; 
+        for ( uint32_t i = 0; i < MapSize; i += 0x18 /* sizeof(SerializedFilemapEntry)*/ ) {
+            Entry.deserialize(pMapIterator + i);
+            if (Entry.CRC == crc) {
+                return &Entry;
+            }
+        }
+    }
+
+    int32_t iVar6 = 0;
+    int32_t iVar4 = MapSize / 0x18 - 1;
+    if (-1 < iVar4) {
+        int8_t* pMapIt = (int8_t*)pMapStart;
+        do {
+            int32_t iVar5 = (iVar4 - iVar6) / 2 + iVar6;
+            Entry.deserialize(pMapIt + iVar5 * 0x18);
+            
+            if (crc == Entry.CRC) {
+                return &Entry;
+            }
+
+            if (crc < Entry.CRC) {
+                iVar4 = iVar5 + -1;
+            } else {
+                iVar6 = iVar5 + 1;
+            }
+        } while (iVar6 <= iVar4);
+    }
+
+    return nullptr;
+}
+
+void FileMap::normalizeFilename(const char *pFilename)
+{
+    CurrentFile.clear();
+    
+    std::string normalizedName = pFilename;
+    std::replace( normalizedName.begin(), normalizedName.end(), '\\', '/' );
+
+    std::transform( normalizedName.begin(), normalizedName.end(), normalizedName.begin(), tolower );
+
+    CurrentFile = normalizedName;
+}
+
+uint32_t FileMap::hashFilename(const char *pFilename)
+{
+    normalizeFilename(pFilename);
+    return crc32( CurrentFile.c_str(), CurrentFile.length() );
+}
+
+uint32_t FileMap::crc32(const char *param_1, size_t param_2)
+{
+    uint32_t uVar1 = 0xffffffff;
+    if (0 < param_2) {
+        do {
+            uVar1 = uVar1 >> 8 ^ pCRCLUT[(*param_1 ^ uVar1) & 0xff];
+            param_1 = (char *)(param_1 + 1);
+            param_2 = param_2 + -1;
+        } while (param_2 != 0);
+    }
+
+    return ~uVar1;
+}
+
+std::string &FileMap::resolveName(const char *pFilename, const bool bCompressed)
+{
+    TempFilename.clear();
+
+    std::string filename = pFilename;
+    if (HeaderToSkip.length() > 0) {
+        size_t iVar3 = filename.rfind(HeaderToSkip, 0);
+        if (iVar3 == 0) {
+            filename = filename.substr(HeaderToSkip.length());
+        }
+    }
+
+    std::string extension = bCompressed ? ".zc" : "";
+    TempFilename += HeaderToSkip;
+    TempFilename += filename;
+    TempFilename += extension;
+
+    return TempFilename;
+}
+
 SaveQueue::SaveQueue()
     : pMutex( new TestDriveMutex() )
     , bPauseFlush( false )
@@ -333,27 +677,6 @@ SaveQueue::~SaveQueue()
     delete pMutex;
 }
 
-static std::wstring GetSaveLocation( eContextSource type )
-{
-    std::wstring saveLocation = GSFile::SaveFolder;
-
-    switch ( type ) {
-    case eContextSource::CS_Publisher:
-        saveLocation += L"publisher";
-        break;
-    case eContextSource::CS_Marketplace:
-        saveLocation += L"marketplace";
-        break;
-    case eContextSource::CS_Savegame:
-        saveLocation += L"savegame";
-        break;
-    default:
-        break;
-    }
-
-    return saveLocation;
-}
-
 FileDirectAccess::FileDirectAccess()
     : CurrentHashcode( 0 )
     , pContext( nullptr )
@@ -365,115 +688,286 @@ FileDirectAccess::FileDirectAccess()
 
 }
 
-bool FileDirectAccess::openContext( const uint64_t hashcode, const char* pFilename, const eContextSource source )
+void FUN_006078d0(std::string& param_2)
 {
-    OTDU_UNIMPLEMENTED; // TODO:
+    size_t pcVar2 = param_2.find('>');
+    if (pcVar2 == std::string::npos) {
+        return;
+    }
 
-    //char cVar1;
-    //uint64_t uVar3;
-    //bool bVar4;
-    ////TDUProfileList* pTVar5;
-    //char* pProfileName;
-    //int iVar6;
-    //char* pcVar7;
-    //char pSaveLocation[512];
+    size_t iVar3 = param_2.length() - pcVar2;
+    for (size_t i = pcVar2; i < param_2.length(); i++) {
+        param_2[iVar3] = param_2[i];
+    }
+}
 
-    //FolderPath.clear();
-    //ContainerFolderPath.clear();
-    //CurrentHashcode = 0ull;
-    //StoredOnHDD = false;
+bool FileDirectAccess::enumerateContext(
+    const uint64_t hashcode, 
+    const eContextSource source,
+    const uint32_t param_3,
+    char *param_5,
+    char *param_6,
+    uint32_t param_7,
+    EnumerateContextItem *param_8,
+    uint32_t *param_9)
+{  
+    *param_9 = 0;
 
-    //std::wstring saveLocation = GetSaveLocation( source );
-    //if ( !saveLocation.empty() ) {
-    //    bIsOpen = true;
-    //    CurrentHashcode = hashcode;
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    std::wstring saveFolder = gpFile->getSaveLocation( source );
+    if (saveFolder.empty()) {
+        return false;
+    }
 
-    //    OTDU_UNIMPLEMENTED;
+    std::string narrowSaveFolder = converter.to_bytes(saveFolder);
+    if (!bNeedName) {
+        AbsoluteFilename = narrowSaveFolder;
+    } else {
+        VirtualFileSystem* pVFS = gVirtualFileSystemRegister.get(NormalizedFilename, narrowSaveFolder, false);
+        if (pVFS == nullptr) {
+            return false;
+        }
+        FUN_006078d0(NormalizedFilename);
+    }
 
-    // /*   iVar6 = ( int )pcVar7 - ( int )pFilename;
-    //    do {
-    //        cVar1 = *pFilename;
-    //        pFilename[iVar6] = cVar1;
-    //        pFilename = pFilename + 1;
-    //    } while ( cVar1 != '\0' );
-    //    pProfileName = pSaveLocation;
-    //    iVar6 = 0x408 - ( int )pProfileName;
-    //    do {
-    //        cVar1 = *pProfileName;
-    //        pProfileName[( int )this + iVar6] = cVar1;
-    //        pProfileName = pProfileName + 1;
-    //    } while ( cVar1 != '\0' );*/
+    std::string profileName = gUserProfileRegister.getProfileName(hashcode);
+    if (profileName.empty()) {
+        return false;
+    }
 
-    //   /* pTVar5 = TestDrive::GetProfileList();
-    //    pProfileName = ( char* )( *( code* )pTVar5->lpvtbl->GetProfileNameByHash )( CurrentHashcode );
-    //    if ( ( pProfileName != ( char* )0x0 ) && ( *pProfileName != '\0' ) ) {
-    //        FolderName += FolderPath;
-    //        FolderName += "/";
-    //        FolderName += pProfileName;
-    //        FolderName += "/";
-    //        FolderName += ContainerFolderPath;
+    FolderName = converter.from_bytes(AbsoluteFilename);
+    FolderName += L"/";
+    FolderName += converter.from_bytes(profileName);
+    FolderName += L"/";
+#if 0
+    FolderName += L"/*.*/";
+#endif
 
-    //        CreateFolderWin32( FolderName.c_str(), FolderName.length() );
-    //        return true;
-    //    }*/
-    //}
+    char* pcVar5 = param_6;
+    char* pcVar11 = param_5;
+    if (param_5 != (char *)0x0) {
+        do {
+            char* pcVar12 = pcVar5;
+            for (int32_t iVar9 = 0x4f; iVar9 != 0; iVar9 = iVar9 + -1) {
+                pcVar12[0] = '\0';
+                pcVar12[1] = '\0';
+                pcVar12[2] = '\0';
+                pcVar12[3] = '\0';
+                pcVar12 = pcVar12 + 4;
+            }
+            *pcVar5 = '\0';
+            pcVar5[4] = -1;
+            pcVar5[5] = '\0';
+            pcVar5[6] = '\0';
+            pcVar5[7] = '\0';
+            pcVar11 = pcVar11 + -1;
+            pcVar5 = pcVar5 + 0x13c;
+        } while (pcVar11 != (char *)0x0);
+    }
+
+    OTDU_LOG_DEBUG("Enumerating items in folder '%S'...\n", FolderName.c_str());
+    if (!std::filesystem::exists(FolderName.c_str())) {
+        OTDU_LOG_WARN("Directory '%S' does not exist; skipping item enumerate...\n", FolderName.c_str());
+        return true;
+    }
+
+    OTDU_UNIMPLEMENTED; // This is only used on Xbox AFAIK; skip decomp unless it's needed
+    for (const auto& fileEntry : std::filesystem::directory_iterator(FolderName.c_str())) {     
+        char* pcVar10 = param_6 + 8;
+        if (fileEntry.is_directory()) {
+            continue;
+        }
+
+        OTDU_LOG_DEBUG("\t- Found file '%s'...\n", fileEntry.path().c_str());
+    }
+
+//         pcVar10 = param_6 + 8;
+//     do {
+//       if (((byte)_Stack_348.dwFileAttributes & 0x10) != 0) {
+//         iVar9 = 3;
+//         bVar2 = true;
+//         pCVar7 = _Stack_348.cFileName;
+//         pcVar11 = "..";
+//         do {
+//           if (iVar9 == 0) break;
+//           iVar9 = iVar9 + -1;
+//           bVar2 = *pCVar7 == *pcVar11;
+//           pCVar7 = pCVar7 + 1;
+//           pcVar11 = pcVar11 + 1;
+//         } while (bVar2);
+//         hFindFile = pvVar13;
+//         if (!bVar2) {
+//           iVar9 = 2;
+//           bVar2 = true;
+//           pCVar7 = _Stack_348.cFileName;
+//           pcVar11 = ".";
+//           do {
+//             if (iVar9 == 0) break;
+//             iVar9 = iVar9 + -1;
+//             bVar2 = *pCVar7 == *pcVar11;
+//             pCVar7 = pCVar7 + 1;
+//             pcVar11 = pcVar11 + 1;
+//           } while (bVar2);
+//           if (!bVar2) {
+//             if (param_3 != FDAD_All) {
+//               pcVar11 = (char *)param_3;
+//               do {
+//                 cVar1 = *pcVar11;
+//                 pcVar11 = pcVar11 + 1;
+//               } while (cVar1 != '\0');
+//               if (pcVar11 != (char *)(param_3 + FDAD_HDD)) {
+//                 pcVar11 = (char *)param_3;
+//                 do {
+//                   cVar1 = *pcVar11;
+//                   pcVar11 = pcVar11 + 1;
+//                 } while (cVar1 != '\0');
+//                 iVar9 = _strnicmp(_Stack_348.cFileName,(char *)param_3,
+//                                   (int)pcVar11 - (param_3 + FDAD_HDD));
+//                 pvVar13 = hFindFile;
+//                 if (iVar9 != 0) goto LAB_0060827f;
+//               }
+//             }
+//             if (param_4 != FDAC_None) {
+//               pCVar7 = _Stack_348.cFileName;
+//               do {
+//                 cVar1 = *pCVar7;
+//                 pCVar7 = pCVar7 + 1;
+//               } while (cVar1 != '\0');
+//               uVar8 = (int)pCVar7 - (int)(_Stack_348.cFileName + 1);
+//               pcVar11 = (char *)param_4;
+//               do {
+//                 cVar1 = *pcVar11;
+//                 pcVar11 = pcVar11 + 1;
+//               } while (cVar1 != '\0');
+//               _MaxCount = (int)pcVar11 - (param_4 + FDAC_Publisher);
+//               pvVar13 = hFindFile;
+//               if ((uVar8 < _MaxCount) ||
+//                  (iVar9 = _strnicmp((char *)((int)&_Stack_348 + (uVar8 - _MaxCount) + 0x2c),
+//                                     (char *)param_4,_MaxCount), pvVar13 = hFindFile, iVar9 != 0))
+//               goto LAB_0060827f;
+//             }
+//             *(undefined4 *)(pcVar10 + -4) = (undefined4)profileHashcode;
+//             pcVar10[-8] = '\x01';
+//             *(undefined4 *)pcVar10 = profileHashcode._4_4_;
+//             strncpy(pcVar10 + 0x104,_Stack_348.cFileName,0x200);
+//             pcVar5 = pcVar5 + 1;
+//             pcVar10 = pcVar10 + 0x13c;
+//             pvVar13 = hFindFile;
+//             if (param_5 <= pcVar5) break;
+//           }
+//         }
+//       }
+// LAB_0060827f:
+//       BVar6 = FindNextFileA(hFindFile,&_Stack_348);
+//     } while (BVar6 != 0);
+
+    return true;
+}
+
+bool FileDirectAccess::openContext(const uint64_t hashcode, const char *pFilename, const eContextSource source)
+{
+    FolderPath.clear();
+    ContainerFolderPath.clear();
+    CurrentHashcode = 0ull;
+    StoredOnHDD = 0;
+
+    std::wstring saveFolder = gpFile->getSaveLocation( source );
+    if (saveFolder.empty()) {
+        return false;
+    }
+
+    CurrentHashcode = hashcode;
+    bIsOpen = true;
+    std::string narrowFilename(pFilename);
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    std::wstring filename = converter.from_bytes(narrowFilename);
+    filename += saveFolder;
+    const std::string& profileName = gUserProfileRegister.getProfileName(CurrentHashcode);
+    if (profileName.empty()) {
+        return false;
+    }
     
-    return false;
+    FolderName += converter.from_bytes(FolderPath);
+    FolderName += L"/";
+    FolderName += converter.from_bytes(profileName);
+    FolderName += L"/";
+    FolderName += saveFolder;
+
+    CreateFolders( FolderName );
+    return true;
 }
 
-FileIterator::FileIterator()
-    : pVFS( nullptr )
-    , ItHandle( 0 )
-    , ItInfos()
-    , SearchPattern("")
-    , SearchDirectory("")
+bool FileDirectAccess::close()
 {
+    Stream.close();
+    return true;    
 }
 
-bool FileIterator::findFirstMatch(const char *pPattern)
+bool FileDirectAccess::reset()
 {
-    // if (pVFS != nullptr) {
-    //     // (**(code **)(param_1_00->pDevice->lpVtbl + 0x54))(param_1_00,2);
-    // }
-    // pVFS = nullptr;
-    // ItHandle = 0u;
-    
-    // pVFS = gpVirtualFileSystemRegister->find
-    // peVar2 = edFileDeviceManager::GetDevice
-    //                    (&gFileDeviceManager,param_1_00->pSearchPattern,param_2,false);
-    // param_1_00->pDevice = peVar2;
-    // if (peVar2 != (edFileDevice *)0x0) {
-    //   cVar1 = (**(code **)(peVar2->lpVtbl + 0x54))(param_1_00,0);
-    //   if (cVar1 != '\0') {
-    //     return true;
-    //   }
-    //   if (param_1_00->pDevice != (edFileDevice *)0x0) {
-    //     (**(code **)(param_1_00->pDevice->lpVtbl + 0x54))(param_1_00,2);
-    //     param_1_00->pDevice = (edFileDevice *)0x0;
-    //   }
-    // }
-    return false;
+    if (!bIsOpen) {
+        return false;
+    }
+
+    bIsOpen = false;
+    FolderPath.clear();
+    ContainerFolderPath.clear();
+    StoredOnHDD = 0;
+    return true;
 }
 
-bool FileIterator::closeHandle()
+bool FileDirectAccess::loadContentIntoMemory(const char *pFilename, int32_t sizeToRead, int32_t offset, void **ppOutContent, uint32_t *pContentSize)
 {
-    // if (pVFS == nullptr) {
-    //     return false;
-    // }
+    Stream = std::ifstream( pFilename, std::ifstream::in | std::ifstream::binary);
+    if (!Stream.is_open() || !Stream.good()) {
+        return false;
+    }
+    Stream.seekg(0, std::ios::end);
+    size_t fileSize = Stream.tellg();
+    Stream.seekg(0, std::ios::beg);
 
-    // bool 
-    // pDevice = nullptr;
+    if (offset > fileSize) {
+        close();
+        return true;
+    }
 
+    Stream.seekg(offset);
+    char* pOutContent = (char*)*ppOutContent;
+//    pOutContent += 4;
 
-    // if (param_1->pDevice == (edFileDevice *)0x0) {
-    //     return false;
-    //   }
-    //   uVar1 = (**(code **)(param_1->pDevice->lpVtbl + 0x54))(param_1,2);
-    //   param_1->pDevice = (edFileDevice *)0x0;
-    //   return (bool)uVar1;
+    Stream.read((char*)pOutContent, sizeToRead);
+
+    size_t numBytesRead = Stream.gcount();
+
+    if (pContentSize != nullptr) {
+        *pContentSize = static_cast<uint32_t>( numBytesRead );
+    }
+
+    close();
+    return (numBytesRead != 0);
 }
 
-int32_t FileIterator::getSize() const
+int32_t FileMapEntry::deserialize(void *pMemory)
 {
-    return ItInfos.Size;
+    StoredAsUint16 = 0x1020304; // For some reason this is never deserialized?
+
+    uint32_t* pMemoryAsDword = (uint32_t*)pMemory;
+    OTDU_ASSERT(pMemoryAsDword);
+
+    uint32_t crc                = pMemoryAsDword[0];
+    uint32_t size               = pMemoryAsDword[1];
+    uint32_t offset             = pMemoryAsDword[2];
+    uint32_t uncompressedSize   = pMemoryAsDword[3];
+    uint32_t version            = pMemoryAsDword[4];
+
+    uint8_t* pbCompressed = (uint8_t*)(pMemory) + 0x14;
+    bool bCompressed = *(bool*)pbCompressed;
+
+    CRC = crc;
+    SizeWithPadding = size;
+    Offset = offset;
+    Size = uncompressedSize;
+    Version = version;
+
+    return 0x18;
 }
