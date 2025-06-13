@@ -146,7 +146,7 @@ bool GSConfig::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSConfig::tick()
+void GSConfig::tick(float deltaTime)
 {
     // NOP
 }

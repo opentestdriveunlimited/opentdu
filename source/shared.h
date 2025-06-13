@@ -6,6 +6,8 @@
 #include <fstream>
 #include <functional>
 #include <algorithm>
+#include <filesystem>
+#include <stack>
 
 #include <Eigen/Dense>
 
@@ -63,4 +65,4 @@ inline T Clamp( T value, T minValue, T maxValue )
     return Max(Min(value, maxValue), minValue);
 }
 
-static const Eigen::Vector4f kWorldUpVector(0.0f, 1.0f, 0.0f, 0.0f);
+static const Eigen::Vector3f kWorldUpVector(0.0f, 1.0f, 0.0f);

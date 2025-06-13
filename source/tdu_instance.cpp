@@ -15,6 +15,12 @@
 #include "config/gs_config.h"
 #include "render/gs_render.h"
 #include "game/gs_intro_pool.h"
+#include "database/gs_database.h"
+#include "player_data/gs_playerdata.h"
+#include "filesystem/gs_dirty_disk.h"
+#include "flash/gs_flash.h"
+#include "world/weather/gs_weather.h"
+#include "world/gs_world.h"
 #include "gs_timer.h"
 
 const char** gpCmdLineArgs = nullptr;
@@ -185,9 +191,10 @@ void TestDriveGameInstance::mainLoop()
     bool initialized = initialize();
     OTDU_ASSERT( initialized );
 
+    float deltaTime = 0.0f;
     while ( !bRequestedExit ) {
         for ( GameSystem* service : registeredServices ) {
-            service->tick();
+            service->tick( deltaTime );
         }
     }
 
@@ -222,7 +229,11 @@ bool TestDriveGameInstance::initializeBaseServices()
     OTDU_ASSERT( operationResult &= registerService<GSConsole>() );
     OTDU_ASSERT( operationResult &= registerService<GSTimer>() );
     OTDU_ASSERT( operationResult &= registerService<GSConfig>() );
+    OTDU_ASSERT( operationResult &= registerService<GSWorld>() );
+    OTDU_ASSERT( operationResult &= registerService<GSWeather>() );
     OTDU_ASSERT( operationResult &= registerService<GSRender>() );
+    OTDU_ASSERT( operationResult &= registerService<GSFlash>() );
+    OTDU_ASSERT( operationResult &= registerService<GSDirtyDisk>() );
 
     return operationResult;
 }
@@ -232,6 +243,8 @@ bool TestDriveGameInstance::initializeGameServices()
     bool operationResult = true;
     OTDU_ASSERT( operationResult &= registerService<GSIntroPool>() );
     OTDU_ASSERT( operationResult &= registerService<GSBootDatas>() );
+    OTDU_ASSERT( operationResult &= registerService<GSPlayerData>() );
+    OTDU_ASSERT( operationResult &= registerService<GSDatabase>() );
 
     return operationResult;
 }

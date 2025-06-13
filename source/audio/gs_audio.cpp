@@ -21,7 +21,7 @@ bool GSAudio::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSAudio::tick()
+void GSAudio::tick(float deltaTime)
 {
 
 }

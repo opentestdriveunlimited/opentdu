@@ -181,7 +181,7 @@ SystemImpl::SystemImpl()
     gpSystemImpl = this;
 }
 
-void SystemImpl::tick()
+void SystemImpl::tick(float deltaTime)
 {
     Win32PumpSysEvents();
 }

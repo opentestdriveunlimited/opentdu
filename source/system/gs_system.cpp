@@ -52,11 +52,11 @@ bool GSSystem::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSSystem::tick()
+void GSSystem::tick(float deltaTime)
 {
     glfwPollEvents();
     //glfwSwapBuffers( pWindow );
-    //systemImpl.tick();
+    //systemImpl.tick(float deltaTime);
 }
 
 void GSSystem::terminate()

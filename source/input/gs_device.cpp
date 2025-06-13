@@ -16,7 +16,7 @@ bool GSDevice::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSDevice::tick()
+void GSDevice::tick(float deltaTime)
 {
 
 }

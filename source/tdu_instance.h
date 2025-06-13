@@ -82,6 +82,7 @@ public:
 public:
     inline eGameMode getActiveGameMode() const { return activeGameMode; }
     inline void requestExit() { bRequestedExit = true; }
+    inline bool hasRequestedExit() const { return bRequestedExit; }
 
 public:
     TestDriveGameInstance( const char** argv, const int32_t argc );

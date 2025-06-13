@@ -1,17 +1,12 @@
 #pragma once
 
 #include "game/gs_base.h"
+#include "render/gs_render_helper.h"
 
 enum class eFullscreenMode {
     FM_Auto = 0,
     FM_Manual,
     FM_Desktop
-};
-
-enum class eAntiAliasingMethod {
-    AAM_Disabled = 0,
-    AAM_MSAA_X2,
-    AAM_MSAA_X4
 };
 
 enum eTimerPriority : uint8_t {
@@ -77,7 +72,7 @@ public:
     ~GSConfig();
 
     bool initialize( TestDriveGameInstance* ) override;
-    void tick() override;
+    void tick(float deltaTime) override;
     void terminate() override;
 
     void setScreenRatio( const bool bIsUsing169Ratio );

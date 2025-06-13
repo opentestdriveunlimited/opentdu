@@ -10,7 +10,7 @@ using WindowFlagCallback_t = std::function< void( bool ) >;
 struct SystemImpl {
     SystemImpl();
 
-    void tick();
+    void tick(float deltaTime);
     bool initialize();
     void terminate();
 

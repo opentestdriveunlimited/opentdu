@@ -50,6 +50,16 @@ namespace TestDrive
 {
 #if defined( OTDU_WIN32 )
     // TODO: For now we'll stick with what CRT offers (probably good enough)
+    inline void* Alloc( const size_t size )
+    {
+        return malloc( size );
+    }
+
+    inline void Free( void* pMemory )
+    {
+        free( pMemory );
+    }
+
     inline void* AllocAligned( const size_t size, const uint32_t alignment = 0x10 )
     {
         return _aligned_malloc( size, alignment );
@@ -86,6 +96,16 @@ namespace TestDrive
         MessageBoxA( 0, pErrorMessage, pWindowTitle, 0 );
     }
 #elif defined( OTDU_MACOS )
+    inline void* Alloc( const size_t size )
+    {
+        return malloc( size );
+    }
+
+    inline void Free( void* pMemory )
+    {
+        free( pMemory );
+    }
+
     // TODO: For now we'll stick with what CRT offers (probably good enough)
     inline void* AllocAligned( const size_t size, const uint32_t alignment = 0x10 )
     {

@@ -11,7 +11,7 @@ public:
     ~GSConsole();
 
     bool initialize( TestDriveGameInstance* ) override;
-    void tick() override;
+    void tick(float deltaTime) override;
     void terminate() override;
 };
 
