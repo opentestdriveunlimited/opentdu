@@ -1,6 +1,7 @@
 #include "shared.h"
 #include "gs_playerdata.h"
 
+#include "flash/gs_flash.h"
 #include "game/mng_hud.h"
 #include "input/gs_device.h"
 #include "config/gs_config.h"
@@ -16,8 +17,8 @@ GSPlayerData::GSPlayerData()
     : GameSystem()
     , Notifiable()
     , bInitialized( false )
-    , bUnknownBoolLanguage( false )
-    , bUseUSFontPage( true )
+    , bForceUpdate( false )
+    , bUseImperialUnits( true )
     , bTutorialCompleted( false )
     , padSensitivity( -7.0f * 0.06666667f )
     , barSensitivity( 0.5f )
@@ -27,7 +28,7 @@ GSPlayerData::GSPlayerData()
     , resolutionWidth( 1280 )
     , resolutionHeight( 720 )
     , refreshRate( 60 )
-    , language( "us" )
+    , languageStr( "us" )
     , timeout( 0.0f )
     , pMutex( new TestDriveMutex() )
 {
@@ -72,7 +73,7 @@ bool GSPlayerData::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSPlayerData::tick()
+void GSPlayerData::tick(float deltaTime)
 {
 
 }
@@ -82,14 +83,13 @@ void GSPlayerData::terminate()
 
 }
 
-void GSPlayerData::setDefaultLanguage( const char* pDefaultLanguage, bool bUnknownBoolean )
+void GSPlayerData::setDefaultLanguage( const char* pDefaultLanguage, bool bForceInit )
 {
-    language = PlayerDataLanguage( pDefaultLanguage );
-
-    bUnknownBoolLanguage = bUnknownBoolean;
+    languageStr = pDefaultLanguage;
+    bForceUpdate = bForceInit;
 
     if ( gpTestDriveInstance && gpTestDriveInstance->getActiveGameMode() != GM_Login ) {
-        updateFontPage();
+        updateUnitSystem();
     }
 }
 
@@ -98,41 +98,36 @@ void GSPlayerData::setDefaultSeatPosition( const float height, const float depth
 
 }
 
-char *GSPlayerData::getLanguage()
+void GSPlayerData::setLODQuality( const int32_t newValue )
 {
-    return language.Str;
+    OTDU_ASSERT( newValue > 0 && newValue < 2 );
+    lodQuality = newValue;
 }
 
-void GSPlayerData::updateFontPage()
+const char *GSPlayerData::getLanguage()
 {
-    loadPage( language == kLangUS );
+    return languageStr.empty() ? "us" : languageStr.c_str();
 }
 
-void GSPlayerData::loadPage( const bool bLoadDefaultFontPage )
+void GSPlayerData::updateUnitSystem()
 {
-    bUseUSFontPage = bLoadDefaultFontPage;
+    bool bUseImperialUnits = (languageStr == "us");
+    setUnitSystem( bUseImperialUnits );
+}
+
+void GSPlayerData::setUnitSystem( const bool bUseImperial )
+{
+    bUseImperialUnits = bUseImperial;
     if ( gpMngHud != nullptr ) {
-        gpMngHud->updateSettings();
+        gpMngHud->updateUnitSystem();
     }
 
-    // TODO: Requires GSFlash to be implemented
-    OTDU_UNIMPLEMENTED;
-    //iVar1 = FUN_0099a780( &gGSFlash, 1, 0 );
-    //if ( ( ( iVar1 != 0 ) && ( *( int* )( iVar1 + 0x2dc ) == 1 ) ) && ( *( int* )( iVar1 + 0x2a8 ) != 0 ) ) {
-    //    if ( bUseUSFontPage ) {
-    //        iVar1 = FUN_0099a780( &gGSFlash, 1, 0 );
-    //        if ( ( iVar1 != 0 ) && ( *( int* )( iVar1 + 0x2dc ) == 1 ) ) {
-    //            FUN_00440ba0( "/:state_Metric", ( TDUFlashVariable* )0x0, *( int** )( iVar1 + 0x2a8 ) );
-    //            return;
-    //        }
-    //        FUN_00440ba0( "/:state_Metric", ( TDUFlashVariable* )0x0, ( int* )0x0 );
-    //        return;
-    //    }
-    //    iVar1 = FUN_0099a780( &gGSFlash, 1, 0 );
-    //    if ( ( iVar1 != 0 ) && ( *( int* )( iVar1 + 0x2dc ) == 1 ) ) {
-    //        FUN_00440ba0( "/:state_Metric", ( TDUFlashVariable* )&DAT_00000001, *( int** )( iVar1 + 0x2a8 ) );
-    //        return;
-    //    }
-    //    FUN_00440ba0( "/:state_Metric", ( TDUFlashVariable* )&DAT_00000001, ( int* )0x0 );
-    //}
+    MoviePlayer* pMoviePlayer = gpFlash->getMoviePlayer( 0, 1 );
+    if (pMoviePlayer != nullptr && pMoviePlayer->MovieBank.getState() == BankFlash::eBankFlashInit::BFI_Loaded) {
+        FlashPlayer* pFlashPlayer = pMoviePlayer->MovieBank.getFlashPlayer();
+        if (pFlashPlayer != nullptr) {
+            uint32_t flashUnitsFlash = bUseImperialUnits ? 1u : 0u;
+            pFlashPlayer->setVariableValue( "/:state_Metric", flashUnitsFlash );
+        }
+    }
 }

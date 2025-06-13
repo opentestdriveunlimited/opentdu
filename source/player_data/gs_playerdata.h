@@ -14,18 +14,20 @@ public:
     ~GSPlayerData();
 
     bool initialize( TestDriveGameInstance* ) override;
-    void tick() override;
+    void tick(float deltaTime) override;
     void terminate() override;
 
-    void setDefaultLanguage( const char* pDefaultLanguage, bool bUnknownBoolean = false );
+    void setDefaultLanguage( const char* pDefaultLanguage, bool bForceInit = false );
     void setDefaultSeatPosition( const float height, const float depth );
 
-    char* getLanguage();
+    void setLODQuality( const int32_t newValue );
+
+    const char* getLanguage();
 
 private:
     uint8_t bInitialized : 1;
-    uint8_t bUnknownBoolLanguage : 1;
-    uint8_t bUseUSFontPage : 1;
+    uint8_t bForceUpdate : 1;
+    uint8_t bUseImperialUnits : 1;
     uint8_t bTutorialCompleted : 1;
     bool bOnlineOps[9];
     uint8_t bUnusedFlag : 1;
@@ -41,14 +43,15 @@ private:
     uint32_t resolutionWidth;
     uint32_t resolutionHeight;
     uint32_t refreshRate;
+    int32_t lodQuality;
 
-    PlayerDataLanguage language;
+    std::string languageStr;
     
     TestDriveMutex* pMutex;
 
 private:
-    void updateFontPage();
-    void loadPage( const bool bLoadDefaultFontPage );
+    void updateUnitSystem();
+    void setUnitSystem( const bool bUseImperial );
 };
 
 extern GSPlayerData* gpPlayerData;
