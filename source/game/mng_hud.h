@@ -14,7 +14,7 @@ public:
     virtual void tick( float, float )  override;
     virtual void terminate()  override;
 
-    void updateSettings();
+    void updateUnitSystem();
 };
 
 extern MngHud* gpMngHud;

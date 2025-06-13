@@ -18,6 +18,7 @@ GMCarShowcase::GMCarShowcase()
     , doorSpeed( 1.0f )
     , doorMinAngle( 0.3f )
     , numLights( 0 )
+    , pVehicleState( nullptr )
     , flashList( this )
     , mngFlash()
     , mngNumber()
@@ -25,10 +26,10 @@ GMCarShowcase::GMCarShowcase()
     , currentCarColor( 0 )
     , currentCarInterior( 0 )
     , currentCarRims( 0 )
-    , ambient( 0.0f )
-    , diffuse( 0.0f )
-    , specular( 0.0f )
-    , streamOrigin( 0.0f )
+    , ambient( Eigen::Vector4f::Zero() )
+    , diffuse( Eigen::Vector4f::Zero() )
+    , specular( Eigen::Vector4f::Zero() )
+    , streamOrigin( Eigen::Vector4f::Zero() )
     , bUsePhysicsInput( false )
     , bFreezeCarSwitch( false ) 
 {
@@ -42,11 +43,9 @@ GMCarShowcase::~GMCarShowcase()
 
 void GMCarShowcase::initialize()
 {
-    uint32_t numCars = gpDatabase->getNumCars();
-    carHashes.resize(numCars);
-    const auto& carList = gpDatabase->getCarList();
-    for (uint32_t i = 0; i < numCars; i++) {
-        carHashes[i] = carList[i].Hash;
+    carHashes.reserve( gpDatabase->getNumCars() );
+    for ( const CarConfig& car : gpDatabase->getCarList() ) {
+        carHashes.push_back( car.Hash );
     }
     OTDU_LOG_DEBUG("Found %u vehicles in database\n");
 

@@ -14,7 +14,7 @@ GMVideoBumper::~GMVideoBumper()
 
 }
 
-void GMVideoBumper::tick()
+void GMVideoBumper::tick(float deltaTime)
 {
     /*int iVar1;
     undefined4 uVar2;

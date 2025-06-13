@@ -1,29 +1,22 @@
 #include "shared.h"
-#include "mng_bookmark.h"
+#include "vehicle_base.h"
 
-MngBookmark* gpMngBookmark = nullptr;
-
-MngBookmark::MngBookmark()
+VehicleBase::VehicleBase()
+    : pCarState( nullptr )
+    , numHiearchyNodes( 0 )
+    , bValidPosition( false )
+    , bLightsDirty( false )
+    , bInitialized( false )
+    , bShared( false )
+    , bShouldDraw( false )
+    , bVisible( false )
+    , bNeedToUnstream( false )
+    , bUseHQInterior( false )
+    , bUnknownFlag( false )
 {
 
 }
 
-MngBookmark::~MngBookmark()
+VehicleBase::~VehicleBase()
 {
-
-}
-
-bool MngBookmark::initialize( TestDriveGameInstance* )
-{
-    return false;
-}
-
-void MngBookmark::tick( float, float )
-{
-
-}
-
-void MngBookmark::terminate()
-{
-
 }

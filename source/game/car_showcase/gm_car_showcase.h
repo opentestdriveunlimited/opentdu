@@ -9,6 +9,7 @@
 #include "render/mng_number.h"
 
 class FlashPlayer;
+struct CarState;
 
 class GMCarShowcase : public GameMode {
 public:
@@ -19,10 +20,10 @@ public:
     bool onMessage(FlashMessage& pMessage, FlashPlayer* pPlayer);
 
 private:
-    static constexpr const FlashMessage kPreviousCar(0x70726361);
-    static constexpr const FlashMessage kNextCar(0x6e656361);
-    static constexpr const FlashMessage kChooseCar(0x63616368);
-    static constexpr const FlashMessage kExit(0x71756974);
+    static constexpr FlashMessage kPreviousCar = FlashMessage(0x70726361u);
+    static constexpr FlashMessage kNextCar = FlashMessage(0x6e656361u);
+    static constexpr FlashMessage kChooseCar = FlashMessage(0x63616368u);
+    static constexpr FlashMessage kExit = FlashMessage(0x71756974u);
     
 private:
     DrawList*   pDrawList;
@@ -36,6 +37,8 @@ private:
     float       doorSpeed;
     float       doorMinAngle;
     uint32_t    numLights;
+
+    CarState*   pVehicleState;
 
     std::vector<uint32_t> carHashes;
     FlashListCarShowcase flashList;

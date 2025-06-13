@@ -9,7 +9,7 @@ public:
     GMVideoBumper();
     ~GMVideoBumper();
 
-    void tick();
+    void tick(float deltaTime);
 
 private:
     MngMovie* movieManager;

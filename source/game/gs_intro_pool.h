@@ -11,7 +11,7 @@ public:
     ~GSIntroPool();
 
     bool initialize( TestDriveGameInstance* pGameInstance ) override;
-    void tick() override {}
+    void tick(float deltaTime) override {}
     void terminate() override;
 
 private:

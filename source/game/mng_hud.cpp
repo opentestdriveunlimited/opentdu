@@ -29,7 +29,7 @@ void MngHud::terminate()
 
 }
 
-void MngHud::updateSettings()
+void MngHud::updateUnitSystem()
 {
     OTDU_UNIMPLEMENTED;
 

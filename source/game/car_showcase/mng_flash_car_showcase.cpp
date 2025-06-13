@@ -15,7 +15,7 @@ MngFlashCarShowcase::~MngFlashCarShowcase()
 
 }
 
-bool MngFlashCarShowcase::onMessage(char *pMessage, FlashPlayer *pPlayer)
+bool MngFlashCarShowcase::onMessage(FlashMessage& pMessage, FlashPlayer *pPlayer)
 {
     if (pGameModeInstance == nullptr) {
         return false;

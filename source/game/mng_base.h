@@ -8,13 +8,13 @@ public:
     virtual ~Manager() {}
 
     virtual const char* getName() const { return "NoName"; }
-    virtual void tick( float, float ) = 0;
-    virtual bool initialize( TestDriveGameInstance* ) = 0;
+    virtual void tick( float, float ) {}
+    virtual bool initialize( TestDriveGameInstance* ) { return true; }
     bool initializeAsync( TestDriveGameInstance* );
-    virtual void reset() = 0;
-    virtual void draw() = 0;
-    virtual void pause() = 0;
-    virtual void terminate() = 0;
+    virtual void reset() {}
+    virtual void draw() {}
+    virtual void pause() {}
+    virtual void terminate() {}
 
 protected:
     Manager* pPreviousManager;

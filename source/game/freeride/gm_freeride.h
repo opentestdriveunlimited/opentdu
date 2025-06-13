@@ -7,5 +7,5 @@ public:
     GMFreeride();
     ~GMFreeride();
 
-    void tick();
+    void tick(float deltaTime);
 };

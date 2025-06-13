@@ -9,7 +9,7 @@ public:
 
     virtual const char* getName() const { return "NoName"; }
     virtual bool initialize( TestDriveGameInstance* ) = 0;
-    virtual void tick() {};
+    virtual void tick( float deltaTime ) {};
     virtual void draw( float deltaTime ) {};
     virtual void terminate() = 0;
     virtual void pause() {};

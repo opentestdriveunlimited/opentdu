@@ -11,7 +11,7 @@ public:
     MngFlashCarShowcase();
     virtual ~MngFlashCarShowcase();
 
-    virtual bool onMessage(char* pMessage, FlashPlayer* pPlayer) override;
+    virtual bool onMessage(FlashMessage& pMessage, FlashPlayer* pPlayer) override;
 
 private:
     GMCarShowcase* pGameModeInstance;
