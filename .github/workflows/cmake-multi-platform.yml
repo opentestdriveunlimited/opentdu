@@ -2,6 +2,9 @@
 # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
 name: CMake on multiple platforms
 
+permissions:
+  contents: write
+  
 on:
   push:
     tags:
