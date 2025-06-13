@@ -3,8 +3,8 @@
 name: CMake on multiple platforms
 
 permissions:
-  contents: write|read
-  actions: write|read
+  contents: write
+  actions: write
   
 on:
   push:
