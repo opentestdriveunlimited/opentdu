@@ -5,7 +5,7 @@ name: CMake on multiple platforms
 on:
   push:
     tags:
-      - "ci_release"
+      - "ci_release_*"
 
 jobs:
   build:
