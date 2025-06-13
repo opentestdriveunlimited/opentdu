@@ -3,6 +3,9 @@
 
 #include "assert.h"
 
+#include <cstdarg>
+#include <iostream>
+
 #if OTDU_MSVC
 inline void OutputToDebugger( const char* pFormatedString )
 {
