@@ -23,19 +23,19 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os:  windows-latest #[ubuntu-latest, windows-latest, macos-latest]
         build_type: [Release]
-        c_compiler: [clang, cl]
+        c_compiler: cl #[clang, cl]
         include:
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-          - os: macos-latest
-            c_compiler: clang
-            cpp_compiler: clang++
+          # - os: ubuntu-latest
+          #   c_compiler: clang
+          #   cpp_compiler: clang++
+          # - os: macos-latest
+          #   c_compiler: clang
+          #   cpp_compiler: clang++
         exclude:
           - os: windows-latest
             c_compiler: gcc
@@ -126,35 +126,13 @@ jobs:
     - name: Build Save Decryptor
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target opentdu_savedecryptor
 
-    - name: release
-      uses: actions/create-release@v1
-      id: create_release
+    - name: Release (Win32)
+      uses: softprops/action-gh-release@v2
+      if: github.ref_type == 'tag'
       with:
-          draft: false
-          prerelease: false
-          release_name: Release ${{ github.ref }}
-          tag_name: ${{ github.ref }}
-          body_path: README.md
-      env:
-          GITHUB_TOKEN: ${{ github.token }}
-    - name: Upload Asset Extractor (Win32)
-      uses: actions/upload-release-asset@v1
-      env:
-          GITHUB_TOKEN: ${{ github.token }}
-      with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: "${{ github.workspace }}/build/bin/opentdu_savedecryptor.exe"
-          asset_name: opentdu_savedecryptor.exe
-          asset_content_type: application/gzip
-    - name: Upload Asset Extractor (macOS)
-      uses: actions/upload-release-asset@v1
-      env:
-          GITHUB_TOKEN: ${{ github.token }}
-      with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: "${{ github.workspace }}/build/bin/opentdu_savedecryptor"
-          asset_name: opentdu_savedecryptor
-          asset_content_type: application/gzip
+        files: |
+            "${{ github.workspace }}/build/bin/opentdu_savedecryptor.exe"
+            "${{ github.workspace }}/build/bin/opentdu_assetExtractor.exe"
           
     # - name: Deploy Save Decryptor
     #   uses: actions/upload-artifact@v4
