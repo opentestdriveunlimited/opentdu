@@ -72,12 +72,12 @@ void MngFade::tick(float systemDeltaTime, float)
     uint8_t alpha = 0x0;
     float fVar7 = 0.0f;
     if ((flags & 1) != 0) {
-        float fVar6 = (elapsedTime / transitionDuration) * 255.0;
+        float fVar6 = (elapsedTime / transitionDuration) * 255.0f;
         elapsedTime += systemDeltaTime;
         bVar2 = true;
         fVar7 = fVar6;
         if ((flags >> 2 & 1) != 0) {
-            fVar7 = 255.0 - fVar6;
+            fVar7 = 255.0f - fVar6;
         }
         alpha = static_cast<uint8_t>(Clamp(static_cast<int32_t>(fVar7), 0, 255));
         

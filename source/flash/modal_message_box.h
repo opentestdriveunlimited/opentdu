@@ -1,6 +1,6 @@
 #pragma once
 
-struct FlashPlayer;
+class FlashPlayer;
 
 class ModalMessageBox {
 public:
@@ -45,3 +45,5 @@ private:
     const char* getFrameToDisplay(const float param_1) const;
     void updateInputState(const float param_1);
 };
+
+extern ModalMessageBox* gpFlashMessageBox;

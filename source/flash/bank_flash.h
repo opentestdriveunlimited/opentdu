@@ -7,7 +7,7 @@
 
 class DrawList;
 class BankCommonFlash;
-struct FlashPlayer;
+class FlashPlayer;
 struct FlashMaterial;
 struct Flash2DM;
 struct FlashSound;

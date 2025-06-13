@@ -4,6 +4,8 @@
 #include "gs_flash.h"
 #include "database/gs_database.h"
 
+ModalMessageBox* gpFlashMessageBox = nullptr;
+
 ModalMessageBox::ModalMessageBox()
     : pFlashPlayer( nullptr )
     , inputState( eInputState::MMBIS_None )
@@ -13,6 +15,7 @@ ModalMessageBox::ModalMessageBox()
     , bUnknownFlag( false )
     , bGameMessageBox( false )
 {
+    gpFlashMessageBox = this;
 }
 
 ModalMessageBox::~ModalMessageBox()

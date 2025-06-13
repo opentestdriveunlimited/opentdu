@@ -48,7 +48,7 @@ bool GSFlash::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSFlash::tick()
+void GSFlash::tick(float deltaTime)
 {
 
 }

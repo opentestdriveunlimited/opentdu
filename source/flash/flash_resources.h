@@ -4,7 +4,7 @@ struct Material;
 
 class Render2DM;
 class Render2DB;
-class Texture;
+struct Texture;
 
 struct FlashSound {
     int32_t CharID = -1;

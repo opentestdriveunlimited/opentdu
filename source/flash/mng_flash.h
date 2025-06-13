@@ -3,7 +3,7 @@
 #include "game/mng_base.h"
 #include "flash_entity.h"
 
-struct FlashPlayer;
+class FlashPlayer;
 
 struct FlashWidget {
     FlashEntity* pWidgetInstance = nullptr;

@@ -2,7 +2,7 @@
 
 #include "flash_entity.h"
 
-struct FlashPlayer;
+class FlashPlayer;
 
 class FlashList : public FlashEntity
 {

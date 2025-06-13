@@ -26,8 +26,6 @@ FlashList::~FlashList()
 
 void FlashList::setLineState(eLineState state, const int32_t index)
 {
-    int value;
-    
     std::string local_80 = movieName;
     local_80 += "/line";
     local_80 += std::to_string( index + 1 );

@@ -2,6 +2,6 @@
 
 class FlashEntity {
 public:
-    void tick() {}
+    void tick(float deltaTime) {}
     void receiveMessage() {}
 };
