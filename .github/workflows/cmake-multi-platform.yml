@@ -125,18 +125,48 @@ jobs:
       
     - name: Build Save Decryptor
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target opentdu_savedecryptor
-     
-    - name: Deploy Save Decryptor
-      uses: actions/upload-artifact@v4
-      with:
-          name: opentdu_savedecryptor.exe
-          path: "${{ github.workspace }}/build/bin/opentdu_savedecryptor.exe"
 
-    - name: Deploy Asset Extractor
-      uses: actions/upload-artifact@v4
+    - name: release
+      uses: actions/create-release@v1
+      id: create_release
       with:
-          name: opentdu_assetExtractor.exe
-          path: "${{ github.workspace }}/build/bin/opentdu_assetExtractor.exe"
+          draft: false
+          prerelease: false
+          release_name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref }}
+          body_path: CHANGELOG.md
+      env:
+          GITHUB_TOKEN: ${{ github.token }}
+    - name: Upload Asset Extractor (Win32)
+      uses: actions/upload-release-asset@v1
+      env:
+          GITHUB_TOKEN: ${{ github.token }}
+      with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: "${{ github.workspace }}/build/bin/opentdu_savedecryptor.exe"
+          asset_name: opentdu_savedecryptor.exe
+          asset_content_type: application/gzip
+    - name: Upload Asset Extractor (macOS)
+      uses: actions/upload-release-asset@v1
+      env:
+          GITHUB_TOKEN: ${{ github.token }}
+      with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: "${{ github.workspace }}/build/bin/opentdu_savedecryptor"
+          asset_name: opentdu_savedecryptor
+          asset_content_type: application/gzip
+          
+    # - name: Deploy Save Decryptor
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #       name: opentdu_savedecryptor.exe
+    #       path: "${{ github.workspace }}/build/bin/opentdu_savedecryptor.exe"
+
+    # - name: Deploy Asset Extractor
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #       name: opentdu_assetExtractor.exe
+    #       path: "${{ github.workspace }}/build/bin/opentdu_assetExtractor.exe"
        
     # - name: Deploy OpenTDU
     #   uses: actions/upload-artifact@v4
