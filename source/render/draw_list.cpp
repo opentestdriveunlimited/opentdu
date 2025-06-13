@@ -190,7 +190,7 @@ bool DrawList::initialize(
         if (numIndices <= numVertices) {
             maxBreak = 0;
         } else { 
-            numIndices = numIndices - numVertices >> 1;
+            numIndices = (numIndices - numVertices) >> 1;
             maxBreak = numIndices;
         }
     } else {
@@ -284,7 +284,7 @@ void DrawList::reset()
 bool DrawList::beginPrimitive(ePrimitiveType param_2, int32_t numVertex)
 {
     bool bVar1;
-    uint numIndicesToAdd;
+    uint32_t numIndicesToAdd;
     
     numIndicesToAdd = numVertex + maxBreak * 2;
     if (maxIndex < numIndex + numIndicesToAdd) {

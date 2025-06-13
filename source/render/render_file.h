@@ -22,19 +22,11 @@ public:
     inline Header* getHeader() { return pHeader; }
 
 public:
-    RenderFile() 
-        : pHeader( nullptr )
-        , pSections( nullptr )
-    {
-    
-    }
+    RenderFile();
+    ~RenderFile();
 
-    ~RenderFile() 
-    {
-    
-    }
-
-    virtual bool parseSection(RenderFile::Section*) { return true; }
+    virtual bool parseSection( Section* pSection );
+    bool parseFile();
 
 protected:
     Header* pHeader;

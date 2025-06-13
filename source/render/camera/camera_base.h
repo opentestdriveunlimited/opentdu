@@ -1,11 +1,15 @@
 #pragma once
 
-class CameraBase {
+class Camera {
 public:
-    CameraBase();
-    ~CameraBase();
+    inline float getFOV() const { return fov; }
+    inline float getAspectRatio() const { return aspectRatio; }
 
-    void updateMatrix(const Eigen::Vector4f& position, const Eigen::Vector4f& upVector, const Eigen::Vector4f& lookAt);
+public:
+    Camera();
+    ~Camera();
+
+    void updateMatrix(const Eigen::Vector3f& position, const Eigen::Vector3f& upVector, const Eigen::Vector3f& lookAt);
 
 protected:
     float fov;
@@ -20,5 +24,5 @@ protected:
     Eigen::Matrix4f invWorldToCam;
 
 protected:
-    void computeMatrices(const Eigen::Vector4f& position, const Eigen::Vector4f& upVector, const Eigen::Vector4f& viewVector);
+    void computeMatrices(const Eigen::Vector3f& position, const Eigen::Vector3f& upVector, const Eigen::Vector3f& viewVector);
 };

@@ -1,6 +1,20 @@
 #pragma once
 
 // TODO: This header is a mess; do a cleanup
+enum class eAntiAliasingMethod {
+    AAM_Disabled = 0,
+    AAM_MSAA_X2,
+    AAM_MSAA_X4
+};
+
+enum class eShaderStage : uint32_t {
+    SS_Vertex = 0,
+    SS_Pixel = 1,
+
+    SS_Count,
+
+    SS_Invalid = 0xffffffff
+};
 
 enum eViewFormat : uint32_t {
     VF_R8G8B8 = 0,

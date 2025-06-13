@@ -26,7 +26,7 @@ bool GSCamera::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSCamera::tick()
+void GSCamera::tick(float deltaTime)
 {
 
 }

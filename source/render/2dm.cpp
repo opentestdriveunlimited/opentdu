@@ -1,6 +1,7 @@
 #include "shared.h"
 #include "2dm.h"
 
+static constexpr uint32_t k2DMMagic             = 0x4d44322e; // MD2. (.2DM)
 static constexpr uint32_t kMaterialArrayMagic   = 0x4154414d; // MATA (MATerial Array)
 static constexpr uint32_t kMaterialMagic        = 0x2e54414d; // MAT. (MATerial)
 static constexpr uint32_t kParameterMagic       = 0x41524150; // PARA (PARAmeter)
@@ -20,6 +21,24 @@ Render2DM::Render2DM()
 Render2DM::~Render2DM()
 {
 
+}
+
+bool Render2DM::initialize( void* pStream )
+{
+    if ( pStream == nullptr ) {
+        return false;
+    }
+
+    RenderFile::parseSection( pStream );
+    if ( pHeader->Hashcode != k2DMMagic ) {
+        return false;
+    }
+
+    pMatArray = nullptr;
+    pHashcodes = nullptr;
+    pParameters = nullptr;
+    pLayers = nullptr;
+    return parseFile();
 }
 
 bool Render2DM::parseSection(RenderFile::Section *pSection)

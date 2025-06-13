@@ -2,6 +2,9 @@
 #include "mng_number.h"
 
 #include "draw_list.h"
+#include "render_scene.h"
+
+#include "render/gs_render.h"
 
 MngNumber::MngNumber()
     : Manager()
@@ -34,7 +37,7 @@ void MngNumber::draw()
         return;
     }
 
-    OTDU_UNIMPLEMENTED; // TODO:
+    gpRender->getRenderPassByIndex( 0x4a ).pScene->enqueueDynamicDrawList( pDrawList );
 }
 
 void MngNumber::terminate()

@@ -2,13 +2,13 @@
 
 #include "camera_base.h"
 
-class CameraGame : public CameraBase {
+class CameraGame : public Camera {
 public:
     CameraGame();
     ~CameraGame();
 
     void initialize();
-    bool tick();
+    bool tick(float deltaTime);
 
 protected:
     std::string name;
@@ -22,13 +22,13 @@ protected:
     float interiorNearPlane;
     float interiorFarPlane;
 
-    Eigen::Vector4f worldPosition;
-    Eigen::Vector4f upVector;
-    Eigen::Vector4f velocity;
-    Eigen::Vector4f worldTarget;
+    Eigen::Vector3f worldPosition;
+    Eigen::Vector3f upVector;
+    Eigen::Vector3f velocity;
+    Eigen::Vector3f worldTarget;
 
-    Eigen::Vector4f worldPositionWithUnknownOffset;
-    Eigen::Vector4f worldTargetWithUnknownOffset;
+    Eigen::Vector3f worldPositionWithUnknownOffset;
+    Eigen::Vector3f worldTargetWithUnknownOffset;
 
     uint8_t bInitialized : 1;
 };

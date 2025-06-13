@@ -2,7 +2,7 @@
 
 #include "game/gs_base.h"
 
-class CameraBase;
+class Camera;
 
 class GSCamera : public GameSystem {
 public:
@@ -24,7 +24,7 @@ public:
     ~GSCamera();
 
     bool initialize( TestDriveGameInstance* ) override;
-    void tick() override;
+    void tick(float deltaTime) override;
     void terminate() override;
 
 private:
@@ -39,7 +39,7 @@ private:
     uint8_t bDepthAware : 1;
     uint8_t bDepthAwareInterior : 1;
 
-    std::vector<CameraBase*> cameraRegister;
+    std::vector<Camera*> cameraRegister;
 };
 
 extern GSCamera* gpCamera;

@@ -3,7 +3,7 @@
 #include "render_file.h"
 #include "gs_render_helper.h"
 
-class GPUTexture;
+struct GPUTexture;
 
 struct Texture
 {

@@ -7,19 +7,33 @@
 
 #include "config/gs_config.h"
 #include "system/gs_system.h"
+#include "player_data/gs_playerdata.h"
+#include "world/weather/weather_config.h"
+#include "world/weather/gs_weather.h"
 
 #include "Eigen/src/Core/MathFunctions.h"
 
 GSRender* gpRender = nullptr;
 
 GSRender::GSRender()
-    : pRenderDevice( nullptr )
+    : GameSystem()
+    , pRenderDevice( nullptr )
+    , activeAA( eAntiAliasingMethod::AAM_Disabled )
+    , activeLODQuality( 0u )
+    , defaultViewport()
+    , clearColorViewport()
+    , clearViewport()
+    , clearColorDepthViewport()
+    , clearColorStencilViewport()
+    , clearDepthViewport()
     , renderWidth( 0 )
     , renderHeight( 0 )
     , frameIndex( 0 )
     , aspectRatio( 0.0f )
     , invAspectRatio( 0.0f )
+    , time( 0.0f )
     , bHDREnabled( false )
+    , bWasHDREnabled( false )
     , bFrameRecordingInProgress( false )
     , bFovVsLodOn( true )
     , bInitialized( false )
@@ -30,10 +44,8 @@ GSRender::GSRender()
     , noiseAssembleF( nullptr )
     , noiseAssembleS( nullptr )
     , oceanNMap( nullptr )
+    , shaderUniforms{ Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero() }
     , projectionMatrix( Eigen::Matrix4f::Identity() )
-    , glassDirt( 0.0f, 0.0f, 0.0f, 0.0f )
-    , unknownVector1( 0.484375f, 0.4921875f, 0.5195313f, 1.0f )
-    , unknownVector2( 0.5f, 0.5f, 0.5f, 1.0f )
     , globalLODFactor( 1.0f )
     , fovVsLodFactor( 1.0f )
     , fovVsLodFactorStart( 0.4f )
@@ -52,7 +64,7 @@ GSRender::GSRender()
     , interiorNearPlane( 0.1f )
     , interiorFarPlane( 40.0f )
 {
-
+    renderPasses.resize( 75 );
 }
 
 GSRender::~GSRender()
@@ -84,6 +96,10 @@ bool GSRender::initialize( TestDriveGameInstance* )
 
     gpConfig->setScreenRatio( abs( aspectRatio - 1.777778f ) <= abs( aspectRatio - 1.333333f ) );
 
+    activeAA = gpConfig->AntiAliasing;
+    bHDREnabled = gpConfig->bEnableHDRI;
+    bWasHDREnabled = bHDREnabled;
+
     allocateRenderTargets();
 
     //projectionMatrix << xScale, 0, 0, 0,
@@ -106,12 +122,14 @@ bool GSRender::initialize( TestDriveGameInstance* )
     vector2 -= vector1;
     projectionMatrix( 2, 0 ) = projectionMatrix( 1, 3 ) / projectionMatrix( 1, 2 );
 
+    gpWeather->registerListener( this );
+
     bInitialized = true;
 
     return true;
 }
 
-void GSRender::tick()
+void GSRender::tick(float deltaTime)
 {
 
 }
@@ -130,6 +148,62 @@ void GSRender::endFrame()
 {
     bFrameRecordingInProgress = false;
     frameIndex++;
+}
+
+void GSRender::setLODQuality(const int32_t qualityIndex)
+{
+    if (qualityIndex < 0 || 2 < qualityIndex) {
+        return;
+    }
+
+    bool bDirtyLODQuality = activeLODQuality != qualityIndex;
+    activeLODQuality = qualityIndex;
+
+    switch (activeLODQuality) {
+    case 0:
+        globalLODFactor = 0.6f;
+        interiorNearPlane = farPlane * 0.25f;
+        break;
+    case 1:
+        globalLODFactor = 0.8f;
+        interiorNearPlane = farPlane * 0.50f;
+        break;
+    case 2:
+    default:
+        globalLODFactor = 1.0f;
+        interiorNearPlane = farPlane;
+        break;
+    };
+
+    gpPlayerData->setLODQuality( activeLODQuality );
+
+    OTDU_UNIMPLEMENTED;
+    // if (bDirtyLODQuality) {
+    //     FUN_00993b30(&this->field_0xa69c);
+    // }
+}
+
+void GSRender::onWeatherConfigChange(WeatherConfig* param_1)
+{
+    defaultAmbientLight.Color = param_1->getGlobalAmbientColor();
+
+    param_1->fillDirectionalLight(defaultDirectionalLight);
+
+    param_1->fillFogDesc(sceneNear.getFogDescWrite());
+    param_1->fillFogDesc(scenePreNear.getFogDescWrite());
+    param_1->fillFogDesc(sceneNearOpaque.getFogDescWrite());
+    param_1->fillFogDesc(sceneCarPlayerPrepass.getFogDescWrite());
+    param_1->fillFogDesc(sceneNearPrePassVegetation.getFogDescWrite());
+    param_1->fillFogDesc(sceneParticles.getFogDescWrite());
+    param_1->fillFogDesc(sceneCarPlayer.getFogDescWrite());
+    param_1->fillFogDesc(sceneNearOpaqueCarAlpha.getFogDescWrite());
+    param_1->fillFogDesc(sceneCarPlayerCarAlpha.getFogDescWrite());
+    param_1->fillFogDesc(sceneNearAfterCarAlpha.getFogDescWrite());
+    param_1->fillFogDesc(sceneCarPlayerPPCarAlpha.getFogDescWrite());
+
+    updateWeatherParams();
+
+    shaderUniforms[2] = param_1->getTerrainUniformParams();
 }
 
 void GSRender::allocateRenderTargets()
@@ -189,6 +263,13 @@ void GSRender::allocateAtmosphereResources()
     oceanNMap = pRenderDevice->createTexture( &rtDesc );
 }
 
+void GSRender::updateWeatherParams()
+{
+    if (gpWeather->isConfigDirty()) {
+        gpWeather->updateActiveConfig();
+    }
+}
+
 void GPUTextureDesc::Fill( uint32_t width,
                              uint32_t height,
                              uint32_t depth,
@@ -205,4 +286,20 @@ void GPUTextureDesc::Fill( uint32_t width,
     Flags = flags;
     Size = CalculateResourceSize( width, height, depth, numMips, format, flags );
     Hashcode = pResourceName ? GetIdentifier64bit( pResourceName ) : 0ull;
+}
+
+RenderPass::RenderPass()
+    : pScene( nullptr )
+    , pCamera( nullptr )
+    , pViewport( nullptr )
+    , pFramebufferAttachments( nullptr )
+    , pLights( nullptr )
+    , Flags( 0u )
+    , ShaderIndex( 0xffffffff )
+    , Name( "" )
+    , pSceneCopy( nullptr )
+    , bIs3DScene( false )
+    , bEnabled( false )
+{
+
 }
