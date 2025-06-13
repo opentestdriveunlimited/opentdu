@@ -1,6 +1,8 @@
 #include "shared.h"
 #include "gs_world.h"
 
+GSWorld* gpWorld = nullptr;
+
 GSWorld::GSWorld()
     : pStreamingManager( nullptr )
     , bEnabled( true )
@@ -21,10 +23,10 @@ GSWorld::~GSWorld()
 bool GSWorld::initialize( TestDriveGameInstance* pGameInstance )
 {
     bPaused = false;
-
+    return true;
 }
 
-void GSWorld::tick()
+void GSWorld::tick(float deltaTime)
 {
 
 }
