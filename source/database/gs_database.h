@@ -23,7 +23,7 @@
 #include "db_subtitle.h"
 #include "db_tutorial.h"
 
-static constexpr uint32_t kNumDatabases = 18;
+static constexpr int32_t kNumDatabases = 18;
 
 struct DBEntry
 {
@@ -40,24 +40,24 @@ struct DBEntryList
 
 struct GameDatabase
 {
-    std::vector<DBEntryMenu> DBMenu;
-    std::vector<DBEntryCarPhysicsData> DBCarData;
-    std::vector<DBEntryRim> DBRim;
-    std::vector<DBEntryCarRim> DBCarRims;
-    std::vector<DBEntryInterior> DBInterior;
-    std::vector<DBEntryCarColor> DBColors;
-    std::vector<DBEntryBrand> DBBrand;
-    std::vector<DBEntryCarShop> DBCarShop;
-    std::vector<DBEntryHouse> DBHouse;
-    std::vector<DBEntryHair> DBHair;
-    std::vector<DBEntryClothe> DBClothe;
-    std::vector<DBEntryTutorial> DBTutorial;
-    std::vector<DBEntryAftermarketPack> DBPack;
-    std::vector<DBEntryCarPack> DBCarPack;
-    std::vector<DBEntryBot> DBBot;
-    std::vector<DBEntryAchievement> DBAchivement;
-    std::vector<DBEntryPNJ> DBPNJ;
-    std::vector<DBEntrySubtitle> DBSubtitle;
+    DBEntryMenu* DBMenu = nullptr;
+    DBEntryCarPhysicsData* DBCarData = nullptr;
+    DBEntryRim* DBRim = nullptr;
+    DBEntryCarRim* DBCarRims = nullptr;
+    DBEntryInterior* DBInterior = nullptr;
+    DBEntryCarColor* DBColors = nullptr;
+    DBEntryBrand* DBBrand = nullptr;
+    DBEntryCarShop* DBCarShop = nullptr;
+    DBEntryHouse* DBHouse = nullptr;
+    DBEntryHair* DBHair = nullptr;
+    DBEntryClothe* DBClothe = nullptr;
+    DBEntryTutorial* DBTutorial = nullptr;
+    DBEntryAftermarketPack* DBPack = nullptr;
+    DBEntryCarPack* DBCarPack = nullptr;
+    DBEntryBot* DBBot = nullptr;
+    DBEntryAchievement* DBAchivement = nullptr;
+    DBEntryPNJ* DBPNJ = nullptr;
+    DBEntrySubtitle* DBSubtitle = nullptr;
 
     std::array<DBEntryList, kNumDatabases> Databases;
     std::string Filepath = "";
@@ -65,28 +65,28 @@ struct GameDatabase
 
 struct CommonDBContent
 {
-    char * pDB;
-    int32_t NumData;
-    uint32_t NumFields;
-    char* pList;
-    uint32_t NumEntries;
-    uint32_t NumItems;
-    uint32_t DBSize;
-    uint64_t Hashcode;
-    int32_t Version;
-    int32_t Release;
-    char* pDB2;
-    int32_t Stride;
-    uint32_t Attributes;
+    char * pDB = nullptr;
+    int32_t NumData = 0;
+    uint32_t NumFields = 0;
+    char16_t* pList = nullptr;
+    uint32_t NumEntries = 0;
+    uint32_t NumItems = 0;
+    size_t DBSize = 0ull;
+    uint64_t Hashcode = 0ull;
+    int32_t Version = 0;
+    int32_t Release = 0;
+    char* pDB2 = nullptr;
+    int32_t Stride = 0;
+    uint32_t Attributes = 0;
 };
 
 struct CommonDBEntry
 {
     std::vector<uint64_t> References;
-    std::string Name;
-    std::string Filepath;
-    std::string ParsedContent;
-    char Language[4];
+    std::string Name = "";
+    std::string Filepath = "";
+    std::string ParsedContent = "";
+    char Language[4] = { '\0', '\0', '\0', '\0' };
     CommonDBContent Content;
 };
 
@@ -96,10 +96,11 @@ struct CommonDB
     uint8_t bInitialized : 1;
 };
 
+template<typename TCharType>
 struct DBInstallRequest 
 {
-    int8_t* pBuffer = nullptr;
-    size_t  BufferSize = 0ull;
+    TCharType*   pBuffer = nullptr;
+    size_t       BufferSize = 0ull;
 };
 
 class GSDatabase : public GameSystem {
@@ -109,7 +110,7 @@ public:
 
 public:
     const char* getName() const override { return "DataBase"; }
-    inline const uint32_t getNumCars() const { return cars.size(); }
+    inline const size_t getNumCars() const { return cars.size(); }
     inline const std::vector<CarConfig>& getCarList() const { return cars; }
 
 public:
@@ -117,22 +118,32 @@ public:
     ~GSDatabase();
 
     bool initialize( TestDriveGameInstance* ) override;
-    void tick() override;
     void terminate() override;
+    void reset() override;
+    void pause() override;
 
     bool reloadDatabases( const char* pLanguage, const bool bForceReload = false );
     char* getStringByHashcode(const uint32_t dbIndex, const uint64_t hashcode);
+    void releaseDatabases();
 
 private:
     CommonDB engineDatabase;
     GameDatabase gameDatabase;
 
-    std::array<DBInstallRequest, kNumDatabases> dbInstallRequests;
+    std::array<DBInstallRequest<char>, kNumDatabases>     dbInstallRequests;
+    std::array<DBInstallRequest<char16_t>, kNumDatabases> localizedDbInstallRequests;
 
     std::vector<CarConfig> cars;
+    char pActiveLanguage[3];
     eLocale activeLocale;
 
     uint8_t bInitialized : 1;
+
+private:
+    bool loadDatabases( const char* pLanguage );
+    bool initializeDatabase( const char* pName, const uint32_t index, const uint32_t maxNumElements, char** pDatabaseItems);
+    bool openDatabase( const char* pName, const uint32_t index );
+    bool finalizeDatabaseLoad(const int32_t databaseIndex, const uint32_t stride, char** pDatabaseItems);
 };
 
 extern GSDatabase* gpDatabase;
