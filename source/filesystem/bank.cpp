@@ -4,6 +4,8 @@
 #include "core/crypto/tea.h"
 #include "core/hash/crc32.h"
 
+#include "filesystem/gs_file.h"
+
 static constexpr const uint32_t gCRC32BankLUT[256] = {
     0,             0x77073096,    0xEE0E612C,    0x990951BA,
     0x76DC419,     0x706AF48F,    0xE963A535,    0x9E6495A3,
@@ -510,7 +512,7 @@ void Bank::loadContentAsync()
 bool Bank::loadBank( GSFile* pGSFile, const char* pBankPath )
 {
     OTDU_ASSERT( pGSFile );
-    bool bLoadingResult = pGSFile->loadFile( pBankPath, pBankFile, &bankFileSize );
+    bool bLoadingResult = pGSFile->loadFile( pBankPath, &pBankFile, &bankFileSize );
 
     if ( !bLoadingResult ) {
         OTDU_LOG_WARN( "Failed to load bank '%s'\n", pBankPath );
@@ -566,7 +568,7 @@ void Bank::DecryptTEA(void *pBankData, const uint32_t bankSize, uint32_t *pOutDa
     #endif
 }
 
-void* Bank::getFirstEntry( const eBankEntryType type, const eBankEntrySubtype subType, uint32_t* pOutEntrySize )
+void* Bank::getFirstEntry( const int32_t type, const int32_t subType, uint32_t* pOutEntrySize )
 {
     if ( !bLoaded ) {
         return nullptr;

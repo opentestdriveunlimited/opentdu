@@ -29,7 +29,7 @@ bool Render2DM::initialize( void* pStream )
         return false;
     }
 
-    RenderFile::parseSection( pStream );
+    RenderFile::parseSection( ( RenderFile::Section* )pStream );
     if ( pHeader->Hashcode != k2DMMagic ) {
         return false;
     }

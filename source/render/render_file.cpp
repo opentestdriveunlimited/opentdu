@@ -16,7 +16,7 @@ RenderFile::~RenderFile()
 bool RenderFile::parseSection( Section* pSection )
 {
     pHeader = ( Header* )pSection;
-    pSections = ( pSection + 1 )
+    pSections = ( pSection + 1 );
     return true;
 }
 

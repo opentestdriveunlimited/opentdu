@@ -154,11 +154,11 @@ private:
 
 class GSFile;
 
-enum class eBankEntryType {
+enum class eBankEntryType : int32_t {
     BET_COMMON = 0xe,
 };
 
-enum class eBankEntrySubtype {
+enum class eBankEntrySubtype : int32_t {
     BES_2DM = 0x2,
 };
 
@@ -169,16 +169,16 @@ public:
                     ~Bank();
 
     void            loadContentAsync();
-    void            loadBank( 
+    bool            loadBank( 
         GSFile* pGSFile, 
         const char* pBankPath
     );
-    virtual void    loadContent() { OTDU_LOG_WARN( "loadContent() is unimplemented; bank resources won't be loaded!\n" ); OTDU_ASSERT(); }
+    virtual void    loadContent() { OTDU_LOG_WARN( "loadContent() is unimplemented; bank resources won't be loaded!\n" ); OTDU_ASSERT( false ); }
 
     // For TEA encrypted resources (e.g. DBs). Done in place.
     static void     DecryptTEA(void* pBankData, const uint32_t bankSize, uint32_t* pOutDataPointer);
 
-    void* getFirstEntry( const eBankEntryType type, const eBankEntrySubtype subType, uint32_t* pOutEntrySize );
+    void* getFirstEntry( const int32_t type, const int32_t subType, uint32_t* pOutEntrySize );
 
 protected:
     BankInstance    bank;
