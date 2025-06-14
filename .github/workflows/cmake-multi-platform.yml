@@ -129,11 +129,21 @@ jobs:
     - name: Build Save Decryptor
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target opentdu_savedecryptor
 
+    - name: Upload Asset Extractor
+      uses: actions/upload-artifact@v4
+      with:
+          name: opentdu_assetExtractor.exe
+          path: "${{ github.workspace }}/build/bin/opentdu_assetExtractor.exe"
+       
+    - name: Download Asset Extractor
+      uses: actions/download-artifact@v4
+    - name: Log Artifacts
+      run: ls -R
     - name: Release (Win32)
       uses: softprops/action-gh-release@v2
       with:
         files: |
-            "${{ github.workspace }}/build/bin/*
+            "opentdu_assetExtractor.exe*
           
     # - name: Deploy Save Decryptor
     #   uses: actions/upload-artifact@v4
@@ -141,12 +151,6 @@ jobs:
     #       name: opentdu_savedecryptor.exe
     #       path: "${{ github.workspace }}/build/bin/opentdu_savedecryptor.exe"
 
-    # - name: Deploy Asset Extractor
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #       name: opentdu_assetExtractor.exe
-    #       path: "${{ github.workspace }}/build/bin/opentdu_assetExtractor.exe"
-       
     # - name: Deploy OpenTDU
     #   uses: actions/upload-artifact@v4
     #   with:
