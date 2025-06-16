@@ -173,7 +173,7 @@ public:
         GSFile* pGSFile, 
         const char* pBankPath
     );
-    virtual void    loadContent() { OTDU_LOG_WARN( "loadContent() is unimplemented; bank resources won't be loaded!\n" ); OTDU_ASSERT( false ); }
+    virtual void    loadContent() { OTDU_LOG_WARN( "loadContent() is unimplemented\n" ); }
 
     // For TEA encrypted resources (e.g. DBs). Done in place.
     static void     DecryptTEA(void* pBankData, const uint32_t bankSize, uint32_t* pOutDataPointer);
