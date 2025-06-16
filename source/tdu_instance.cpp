@@ -22,6 +22,7 @@
 #include "world/weather/gs_weather.h"
 #include "world/gs_world.h"
 #include "gs_timer.h"
+#include "game/vehicle/gs_car_colors.h"
 
 const char** gpCmdLineArgs = nullptr;
 int32_t gCmdLineArgCount = 0;
@@ -245,7 +246,7 @@ bool TestDriveGameInstance::initializeGameServices()
     OTDU_ASSERT( operationResult &= registerService<GSBootDatas>() );
     OTDU_ASSERT( operationResult &= registerService<GSPlayerData>() );
     OTDU_ASSERT( operationResult &= registerService<GSDatabase>() );
-
+    OTDU_ASSERT( operationResult &= gCarColors.initialize( this ) );
     return operationResult;
 }
 
@@ -253,7 +254,7 @@ template<typename TGS>
 bool TestDriveGameInstance::registerService()
 {
     TGS* pSystem = new TGS();
-    if ( !pSystem->initialize( 0 ) ) {
+    if ( !pSystem->initialize( this ) ) {
         delete pSystem;
         return false;
     }
