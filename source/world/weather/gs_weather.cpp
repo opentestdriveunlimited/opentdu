@@ -23,7 +23,7 @@ GSWeather::~GSWeather()
 
 bool GSWeather::initialize( TestDriveGameInstance* pGameInstance )
 {
-    return false;
+    return true;
 }
 
 void GSWeather::tick(float deltaTime)
