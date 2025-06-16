@@ -25,8 +25,11 @@ public:
     RenderFile();
     ~RenderFile();
 
-    virtual bool parseSection( Section* pSection );
+    virtual bool parseSection( Section* pSection ) { return true; }
+    
+    bool parseHeader( void* pFileStream );
     bool parseFile();
+    bool readSection( Section* pSection );
 
 protected:
     Header* pHeader;
