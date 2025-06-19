@@ -37,7 +37,7 @@ bool GSCarColors::initialize( TestDriveGameInstance* )
 
     loadContentAsync();
 
-    p2DMFileResource = (char*)getFirstEntry( 0xe, 0x2, nullptr );
+    p2DMFileResource = (char*)getFirstEntry( 0x2, 0xe, nullptr );
     render2DM.initialize( p2DMFileResource );
 
     /*collection2D.AddToSet( render2DM );
