@@ -51,7 +51,7 @@ bool Render2DM::parseSection(RenderFile::Section *pSection)
         
     case kMaterialMagic:
         OTDU_UNIMPLEMENTED;
-        // (**(code **)(*(int *)UNK_00fad670._624_4_ + 0x38))(pSection);
+        // gMaterialRegister->registerMaterial( pSection );
         return true;
 
     case kParameterMagic:
