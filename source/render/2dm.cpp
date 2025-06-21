@@ -1,6 +1,8 @@
 #include "shared.h"
 #include "2dm.h"
 
+#include "render/material.h"
+
 static constexpr uint32_t k2DMMagic             = 0x4d44322e; // MD2. (.2DM)
 static constexpr uint32_t kMaterialArrayMagic   = 0x4154414d; // MATA (MATerial Array)
 static constexpr uint32_t kMaterialMagic        = 0x2e54414d; // MAT. (MATerial)
@@ -50,8 +52,7 @@ bool Render2DM::parseSection(RenderFile::Section *pSection)
         return true;
         
     case kMaterialMagic:
-        OTDU_UNIMPLEMENTED;
-        // gMaterialRegister->registerMaterial( pSection );
+        gMaterialRegister.pushMaterial( pSection );
         return true;
 
     case kParameterMagic:

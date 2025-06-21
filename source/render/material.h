@@ -49,6 +49,7 @@ struct MaterialParameterFlags
     uint8_t bUsingOffsetMap;
     uint8_t bUsingTangentSpace;
     uint8_t bUsingReflection;
+    uint8_t bUsingAmbient;
     uint8_t bUsingEmissive;
     uint8_t bUsingSpecular;
     uint8_t bUsingBumpMap;
@@ -66,6 +67,7 @@ struct MaterialParameterFlags
     uint8_t bAffectedByFog;
     uint8_t UnknownBytes2[10];
 };
+static_assert( sizeof( MaterialParameterFlags ) == 0x30, "Size mismatch! Material deserialization will break" );
 
 struct MaterialParameter 
 {
@@ -92,6 +94,8 @@ struct MaterialShaderParameterArray : public MaterialParameter
     uint32_t __PADDING__;
 
     MaterialShaderParameter* getParameter( const uint32_t type, uint32_t* pOutParamIndex = nullptr );
+    void* getParameterData( const uint32_t type );
+    void* getParameterDataByIndex( uint32_t index );
 };
 
 struct MaterialTerrainParameter : public MaterialParameter {
@@ -99,13 +103,13 @@ struct MaterialTerrainParameter : public MaterialParameter {
     RenderFile::Section*    pLayers[8];
 };
 
-struct SerializedMaterial 
+struct Material 
 {
     uint16_t OT;
     uint16_t NumParams;
     uint32_t FXFlags;
     uint32_t FXFlags2;
-    void* pOTNode;
+    uint32_t pOTNodePointer32;
     uint8_t DepthTest;
     uint8_t DepthWrite;
     uint8_t AlphaSource;
@@ -120,7 +124,6 @@ struct SerializedMaterial
     uint8_t ColorDisable;
     uint32_t UsageFlags;
     uint8_t StencilEnable;
-    uint8_t __PADDING__[0xf];
     uint8_t StencilFail;
     uint8_t StencilZFail;
     uint8_t StencilPass;
@@ -135,31 +138,32 @@ struct SerializedMaterial
     uint32_t StencilRefCW;
     uint32_t StencilMaskCW;
     uint32_t StenwilWriteMaskCW;
-    void* pVertexShaders[8];
-    void* pPixelShaders[8];
+    void* pVertexShaders[4];
+    void* pPixelShaders[4];
     Eigen::Vector4f AmbientColor;
     Eigen::Vector4f DiffuseColor;
     Eigen::Vector4f SpecularColor;
     Eigen::Vector4f EmissiveColor;
-};
-static_assert( sizeof( SerializedMaterial ) == 0xd0, "Size mismatch; material deserialization will fail!!" );
 
-class Material
-{
-public:
-    inline SerializedMaterial* getSerializedContent() const { return pContent; }
-
-public:
     Material();
     ~Material();
 
     void setDefaultMaterial();
-    void initializeFromFile( RenderFile::Section* pFile );
-    void unregister();
-
+    uint16_t getOTNumber();
     MaterialParameter* getParameterByIndex( const uint32_t index );
-
-private:
-    SerializedMaterial* pContent;
-    MaterialParameter*  pParameters;
+    uint16_t getOTForParameter( MaterialParameter* param_1 );
 };
+static_assert( sizeof( Material ) == 0xd0, "Size mismatch; material deserialization will fail!!" );
+
+class MaterialRegister {
+public:
+    MaterialRegister();
+
+    void pushMaterial( RenderFile::Section* pFile );
+    void popMaterial();
+    
+private:
+    uint32_t numRegisteredMaterial;
+};
+
+extern MaterialRegister gMaterialRegister;

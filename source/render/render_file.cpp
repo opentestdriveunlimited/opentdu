@@ -27,19 +27,30 @@ bool RenderFile::parseFile()
     uint8_t* pSectionIt = (uint8_t*)pSections;
     uint8_t* pSectionsEnd = (uint8_t*)pHeader + pHeader->Size;   
 
-    // TODO: Is it really needed? I have no idea what's the point of doing that...
-    //   while (pSection != (Section *)0x0) {
-    //     if (pSection->Type == 0x4c414552) {
-    //       pHeader = param_1->pHeader;
-    //       sectionSize = pSection->Size - 0x10 >> 2;
-    //       pNextSection = pSection + 1;
-        
-    //     }
-    //     pSection = (Section *)((int)&pSection->Type + pSection->Size);
-    //     if ((pFileEnd != (Section *)0x0) &&
-    //        ((uVar3 < (uint)((int)pSection >> 0x1f) ||
-    //         ((uVar3 <= (uint)((int)pSection >> 0x1f) && (pFileEnd <= pSection)))))) break;
-    //   }
+    // Resolve offsets (convert bank offsets to actual memory offsets)
+    while ( pSectionIt < pSectionsEnd ) {
+        Section* pSection = ( Section* )pSectionIt;
+        if ( pSection->Type == kRealMagic ) {
+            uint32_t sectionSize = pSection->Size - 0x10;
+            
+            pSectionIt += 0x10;
+            for ( uint32_t i = 0; i < sectionSize; i += sizeof( uint32_t ) ) {
+                uint32_t offsetPosition = *(uint32_t*)pSectionIt;
+
+                int8_t* pRelativeOffset = (int8_t*)pHeader + offsetPosition;
+                uint32_t relativeOffset = *( uint32_t* )pRelativeOffset;
+
+                uint64_t* pRelativeOffsetAsPointer = ( uint64_t* )pRelativeOffset;
+                *pRelativeOffsetAsPointer = (uint64_t)(( int8_t* )pHeader + relativeOffset);
+
+                pSectionIt += sizeof( uint32_t );
+            }
+        } else {
+            pSectionIt += 0x10;
+        }
+    }
+
+    pSectionIt = ( uint8_t* )pSections;
 
     bool cVar3 = true;
     while (pSectionIt != nullptr && pSectionIt < pSectionsEnd && cVar3) {
