@@ -28,7 +28,7 @@ bool GSCarColors::initialize( TestDriveGameInstance* )
     }
 
     std::string colorBankPath = gpConfig->getResRootPath();
-    colorBankPath += "Vehicules\\colors.bnk";
+    colorBankPath += "Vehicules/colors.bnk";
 
     bool bLoadingResult = loadBank( gpFile, colorBankPath.c_str() );
     if ( !bLoadingResult ) {
