@@ -9,6 +9,15 @@ if ( WIN32 )
     target_link_libraries( opentdu_assetExtractor winmm Pathcch Shlwapi )
 endif ( WIN32 )
 
+
+if ( WIN32 )
+    set_target_properties( opentdu_assetExtractor PROPERTIES OUTPUT_NAME "opentdu_assetextractor_win32")
+elseif ( APPLE )
+    set_target_properties( opentdu_assetExtractor PROPERTIES OUTPUT_NAME "opentdu_assetextractor_darwin")
+else()
+    set_target_properties( opentdu_assetExtractor PROPERTIES OUTPUT_NAME "opentdu_assetextractor_unix")
+endif()
+
 #target_link_libraries( opentdu_assetExtractor "${OTDU_THIRDPARTY_FOLDER}/HLSLCrossCompiler/lib64/RelWithDebInfo/libHLSLcc.lib" )
 #include_directories( "${OTDU_THIRDPARTY_FOLDER}/HLSLCrossCompiler/include" )
 

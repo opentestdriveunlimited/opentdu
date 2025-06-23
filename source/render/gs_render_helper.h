@@ -327,6 +327,8 @@ struct GPUBufferDesc {
 
 #ifdef OTDU_VULKAN
 #include "vulkan/render_device.h"
+#elif defined(OTDU_OPENGL)
+#include "opengl/render_device.h"
 #else
 static_assert(false, "Unimplemented API/missing preprocessor!");
 #endif

@@ -8,7 +8,10 @@
 //#include "system_win32.h"
 //#endif
 
+#ifdef OTDU_VULKAN
 #define GLFW_INCLUDE_VULKAN
+#endif
+
 #include "GLFW/glfw3.h"
 
 GSSystem* gpSystem = nullptr;
@@ -33,7 +36,15 @@ bool GSSystem::initialize( TestDriveGameInstance* )
         return false;
     }
 
+#if OTDU_VULKAN
     glfwWindowHint( GLFW_CLIENT_API, GLFW_NO_API );
+#elif OTDU_OPENGL
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
     pWindow = glfwCreateWindow( 1280, 720, "OpenTDU", nullptr, nullptr );
     OTDU_ASSERT( pWindow );
 
@@ -47,6 +58,8 @@ bool GSSystem::initialize( TestDriveGameInstance* )
         OTDU_LOG_ERROR( "Fatal: System does not support Vulkan!\n" );
         return false;
     }
+#elif OTDU_OPENGL
+    glfwMakeContextCurrent( pWindow );
 #endif
 
     return true;

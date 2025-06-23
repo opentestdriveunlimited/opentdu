@@ -19,8 +19,8 @@ set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${OTDU_BIN_FOLDER} )
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${OTDU_BIN_FOLDER} )
 
 set( OTDU_DEVBUILD TRUE CACHE BOOL "Build with developer features (verbose logging, devmenu, etc.)" )
-set( OTDU_GFX_API "OTDU_VULKAN" CACHE STRING "Graphics backend to target" )
-set_property(CACHE OTDU_GFX_API PROPERTY STRINGS OTDU_VULKAN)
+set( OTDU_GFX_API "OTDU_OPENGL" CACHE STRING "Graphics backend to target" )
+set_property(CACHE OTDU_GFX_API PROPERTY STRINGS OTDU_VULKAN OTDU_OPENGL)
 
 add_definitions( -D"${OTDU_GFX_API}" )
 if ( ${OTDU_DEVBUILD} )
@@ -100,8 +100,13 @@ file( GLOB OTDU_SRC "${OTDU_SRC_FOLDER}/tdu_instance.cpp"
                     "${OTDU_SRC_FOLDER}/render/render_scene.cpp"
                     "${OTDU_SRC_FOLDER}/render/render_file.cpp"
                     "${OTDU_SRC_FOLDER}/render/draw_list.cpp"
-                    "${OTDU_SRC_FOLDER}/render/shader_register.cpp"
+                    "${OTDU_SRC_FOLDER}/render/shaders/shader_register.cpp"
+                    "${OTDU_SRC_FOLDER}/render/shaders/shader_table_default.inl"
+                    "${OTDU_SRC_FOLDER}/render/shaders/shader_table_flash.inl"
+                    "${OTDU_SRC_FOLDER}/render/shaders/shader_table_lighting.inl"
+                    "${OTDU_SRC_FOLDER}/render/shaders/shader_table_terrain.inl"
                     "${OTDU_SRC_FOLDER}/render/vulkan/render_device.cpp"
+                    "${OTDU_SRC_FOLDER}/render/opengl/render_device.cpp"
                     "${OTDU_SRC_FOLDER}/win32/entry_point.cpp"
                     "${OTDU_SRC_FOLDER}/unix/entry_point.cpp"
                     "${OTDU_SRC_FOLDER}/filesystem/gs_file.cpp"
@@ -232,7 +237,8 @@ file( GLOB OTDU_INC "${OTDU_SRC_FOLDER}/tdu_instance.h"
                     "${OTDU_SRC_FOLDER}/render/render_file.h"
                     "${OTDU_SRC_FOLDER}/render/material.h"
                     "${OTDU_SRC_FOLDER}/render/draw_list.h"
-                    "${OTDU_SRC_FOLDER}/render/shader_register.h"
+                    "${OTDU_SRC_FOLDER}/render/shaders/shader_register.h"
+                    "${OTDU_SRC_FOLDER}/render/shaders/shader_table_master.h"
                     "${OTDU_SRC_FOLDER}/render/file_collection_2d.h"
                     "${OTDU_SRC_FOLDER}/render/file_collection_3d.h"
                     "${OTDU_SRC_FOLDER}/render/frustum.h"
@@ -244,6 +250,7 @@ file( GLOB OTDU_INC "${OTDU_SRC_FOLDER}/tdu_instance.h"
                     "${OTDU_SRC_FOLDER}/render/render_target.h"
                     "${OTDU_SRC_FOLDER}/render/viewport.h"
                     "${OTDU_SRC_FOLDER}/render/vulkan/render_device.h"
+                    "${OTDU_SRC_FOLDER}/render/opengl/render_device.h"
                     "${OTDU_SRC_FOLDER}/filesystem/gs_file.h"
                     "${OTDU_SRC_FOLDER}/filesystem/bank.h"
                     "${OTDU_SRC_FOLDER}/filesystem/gs_boot_datas.h"
@@ -278,10 +285,32 @@ include_directories( "${OTDU_THIRDPARTY_FOLDER}" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/cityhash/" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/glfw/include/" )
-include_directories( "${OTDU_THIRDPARTY_FOLDER}/Vulkan-Headers/include/" )
-include_directories( "${OTDU_THIRDPARTY_FOLDER}/volk/" )
-include_directories( "${OTDU_THIRDPARTY_FOLDER}/VulkanMemoryAllocator/include" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/eigen" )
+
+if (${OTDU_GFX_API} STREQUAL "OTDU_VULKAN")
+    include_directories( "${OTDU_THIRDPARTY_FOLDER}/Vulkan-Headers/include/" )
+    include_directories( "${OTDU_THIRDPARTY_FOLDER}/volk/" )
+    include_directories( "${OTDU_THIRDPARTY_FOLDER}/VulkanMemoryAllocator/include" )
+
+    if ( WIN32 )
+        set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_win32_vulkan")
+    elseif ( APPLE )
+        set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_darwin_vulkan")
+    else()
+        set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_unix_vulkan")
+    endif()
+
+elseif (${OTDU_GFX_API} STREQUAL "OTDU_OPENGL")
+    include_directories( "${OTDU_THIRDPARTY_FOLDER}/glew/include" )
+    
+    if ( WIN32 )
+        set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_win32_gl")
+    elseif ( APPLE )
+        set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_darwin_gl")
+    else()
+        set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_unix_gl")
+    endif()
+endif()
 
 if ( WIN32 )
     target_link_libraries( opentdu winmm Pathcch Shlwapi )
@@ -311,8 +340,13 @@ target_link_libraries( opentdu optimized "${OTDU_THIRDPARTY_FOLDER}/glfw/src/Min
 elseif( APPLE )
 target_link_libraries( opentdu debug "${OTDU_THIRDPARTY_FOLDER}/glfw/src/libglfw3.a" )
 target_link_libraries( opentdu optimized "${OTDU_THIRDPARTY_FOLDER}/glfw/src/libglfw3.a" )
-#target_link_libraries( opentdu optimized "${OTDU_THIRDPARTY_FOLDER}/MoltenVK/static/MoltenVK.xcframework" )
+
+if (${OTDU_GFX_API} STREQUAL "OTDU_VULKAN")
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/MoltenVK/include" )
+elseif (${OTDU_GFX_API} STREQUAL "OTDU_OPENGL")
+target_link_libraries( opentdu "${OTDU_THIRDPARTY_FOLDER}/glew/lib/libGLEW.a" )
+target_link_libraries( opentdu "-framework OpenGL" )
+endif()
 
 target_link_libraries( opentdu "-framework QuartzCore -framework Metal -framework Cocoa -framework IOKit -framework IOSurface -framework CoreVideo" )
 endif( WIN32 )

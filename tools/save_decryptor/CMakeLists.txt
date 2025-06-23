@@ -9,4 +9,12 @@ if ( WIN32 )
     target_link_libraries( opentdu_savedecryptor winmm Pathcch Shlwapi )
 endif ( WIN32 )
 
+if ( WIN32 )
+    set_target_properties( opentdu_savedecryptor PROPERTIES OUTPUT_NAME "opentdu_savedecryptor_win32")
+elseif ( APPLE )
+    set_target_properties( opentdu_savedecryptor PROPERTIES OUTPUT_NAME "opentdu_savedecryptor_darwin")
+else()
+    set_target_properties( opentdu_savedecryptor PROPERTIES OUTPUT_NAME "opentdu_savedecryptor_unix")
+endif()
+
 add_definitions( -DOTDU_LOG_STDOUT )
