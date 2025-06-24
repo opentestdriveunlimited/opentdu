@@ -2079,3 +2079,8 @@ static uint64_t TestDriveCRC64( const std::string& string )
 {
     return TestDriveCRC64( ( const uint8_t* )string.c_str(), string.length() );
 }
+
+static uint64_t TestDriveCRC64( const void* pContent, size_t contentLength )
+{
+    return TestDriveCRC64( ( const uint8_t* )pContent, contentLength );
+}
