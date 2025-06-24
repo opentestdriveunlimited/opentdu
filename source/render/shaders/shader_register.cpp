@@ -4,12 +4,33 @@
 #include "shader_table_master.h"
 
 #include "render/material.h"
+#include "core/hash/crc64.h"
+#include "filesystem/gs_file.h"
+
+std::string IntegerToHexString( const size_t w, const size_t hex_len )
+{
+    static constexpr const char* kDigits = "0123456789ABCDEF";
+    std::string rc( hex_len, '0' );
+    for ( size_t i = 0, j = ( hex_len - 1 ) * 4; i < hex_len; ++i, j -= 4 )
+        rc[i] = kDigits[( w >> j ) & 0x0f];
+    return rc;
+}
 
 ShaderRegister gShaderRegister = {};
 
 ShaderRegister::ShaderRegister()
+    : latestFoundHashcode( 0 )
+    , pDefaultMaterial( nullptr )
 {
+    
+}
 
+void ShaderRegister::registerMasterTable()
+{
+    constexpr uint32_t kNumShaderEntries = sizeof( kMasterShaderTable ) / sizeof( kMasterShaderTable[0] );
+    for ( uint32_t i = 0; i < kNumShaderEntries; i++ ) {
+        registerShader( &kMasterShaderTable[i] );
+    }
 }
 
 void ShaderRegister::retrieveShadersForMaterial( Material* param_1, const uint32_t index )
@@ -24,28 +45,251 @@ void ShaderRegister::retrieveShadersForMaterial( Material* param_1, const uint32
         param_1->pPixelShaders[index] = nullptr;
     }
 
-    MaterialParameterFlags local_58;
-    uint64_t local_8 = 0x3dafe4f6b9bae7f4;
+    ShaderPermutationFlags local_58;
+    local_58.PermutationHashcode = 0x3dafe4f6b9bae7f4;
     if ( param_1->NumParams != 0 ) {
         fillParameterFlags( param_1, &local_58 );
-        if ( local_8 == 0xcaca336d83078865 ) {
-            local_58.NumPrelight = '\x01';
+        if ( local_58.PermutationHashcode == 0xcaca336d83078865 ) {
+            local_58.PermutationFlags.NumPrelight = '\x01';
         }
     }
 
-    OTDU_UNIMPLEMENTED;
+    // TODO: Not sure why this is cached (they might be caching the whole struct?)
+    latestFoundHashcode = local_58.PermutationHashcode;
+    
+    bool bFoundPermutations = retrieveVSPSForFlags( local_58, param_1->pVertexShaders[index], param_1->pPixelShaders[index] );
+    if ( !bFoundPermutations ) {
+        // TODO: This is redundant; we might want to keep this in devbuild only to avoid unecessary
+        // overhead
+        uint64_t permutationHashcode = TestDriveCRC64( &local_58, sizeof( ShaderPermutationFlags ) );
+        OTDU_LOG_WARN( "Failed to load shader(s) for permutation hashcode 0x%p; default material will be used\n", permutationHashcode );
+
+        // TODO: I am not exactly sure what's PTR_DAT_00f47514 yet (I assume it's some kind of fallback/default
+        // material)
+        local_58.PermutationFlags.pCustomFlags[0] = param_1 == pDefaultMaterial /*PTR_DAT_00f47514*/;
+        local_58.PermutationHashcode = 0x3dafe4f6b9bae7f4;
+
+        bool bFoundPermutations = retrieveVSPSForFlags( local_58, param_1->pVertexShaders[index], param_1->pPixelShaders[index] );
+        OTDU_ASSERT_FATAL( bFoundPermutations );
+    }
+
+    latestFoundHashcode = local_58.PermutationHashcode;
 }
 
-void ShaderRegister::fillParameterFlags( Material* param_1, MaterialParameterFlags* param_2 )
+void ShaderRegister::registerShader( const ShaderTableEntry* pTableEntry )
 {
-    OTDU_UNIMPLEMENTED;
+    std::string resourcePath = kShadersRoot;
+    resourcePath += IntegerToHexString( pTableEntry->OffsetInExecutable );
+#if OTDU_VULKAN
+    resourcePath += ".spirv";
+#elif OTDU_OPENGL
+    resourcePath += ".glsl";
+#endif
 
-    if ( param_1->NumParams != 0 ) {
-        MaterialParameter* pParameters = ( MaterialParameter* )( (int8_t*)param_1 + 0xd0 );
-        if ( pParameters->Type == 1 ) {
+    void* pShaderContent = nullptr;
+    uint32_t contentSize = 0;
+    bool bFoundShader = gpFile->loadFile( resourcePath.c_str(), &pShaderContent, &contentSize );
 
-        } else if ( pParameters->Type == 2 ) {
-
-         }
+    if ( !bFoundShader ) {
+        OTDU_LOG_ERROR( "Failed to register shader '%s' (category '%s' hashcode 0x%p)\n", resourcePath.c_str(), pTableEntry->pShaderCategory, pTableEntry->Hashcode  );
+        return;
     }
+
+    GPUShader* pShader = nullptr;
+
+    CachedShader cachedShader = { pShader, pTableEntry->Flag0, pTableEntry->Flag1, pTableEntry->Flag2, pTableEntry->Flag3 };
+    if ( pTableEntry->ShaderStage == eShaderType::ST_Vertex ) {
+        cachedVertexShaders.insert( std::make_pair( pTableEntry->Hashcode, cachedShader ) );
+    } else if ( pTableEntry->ShaderStage == eShaderType::ST_Pixel ) {
+        cachedPixelShaders.insert( std::make_pair( pTableEntry->Hashcode, cachedShader ) );
+    } else {
+        OTDU_ASSERT( false );
+    }
+}
+
+void ShaderRegister::fillParameterFlags( Material* param_1, ShaderPermutationFlags* param_2 )
+{
+    if ( param_1->NumParams == 0 ) {
+        return;
+    }
+
+    // TODO: Cleanup all those crappy hardcoded offsets
+    MaterialParameter* pParameters = ( MaterialParameter* )( (int8_t*)param_1 + 0xd0 + 0x10 );
+    if ( pParameters->Type == 1 ) {
+        MaterialTerrainParameter* pParameter = ( MaterialTerrainParameter* )pParameters;
+
+        param_2->PermutationHashcode = 0x30c13b48948a3573;
+        param_2->PermutationFlags.NumTextures = pParameter->Flags.NumTextures;
+        param_2->PermutationFlags.pCustomFlags[0] = pParameter->Flags.pCustomFlags[0];
+        param_2->PermutationFlags.pCustomFlags[1] = pParameter->Flags.pCustomFlags[1];
+    } else if ( pParameters->Type == 2 ) {
+        MaterialShaderParameterArray* pParameter = ( MaterialShaderParameterArray* )pParameters;
+
+        param_2->clear();
+        param_2->PermutationHashcode = pParameter->Hashcode;
+        param_2->BindingFlags.bIsVertexShader = true;
+            
+        MaterialLayer* pLayer = pParameter->getLayer( 0 );
+
+        uint8_t numTextures = pLayer->getNumUsedTextureSlots();
+        param_2->initialize( pParameter, numTextures );
+
+        switch ( param_2->PermutationHashcode ) {
+        case 0x1010101010101010:
+        {
+            param_2->PermutationFlags.NumUVMaps = 4;
+            param_2->PermutationFlags.Unknown = 0xf;
+            break;
+        }
+        case 0x1c6c7357183157b8:
+        {
+            uint32_t numUVMaps = param_2->PermutationFlags.pCustomFlags[0]
+                                + param_2->PermutationFlags.pCustomFlags[1];
+            param_2->PermutationFlags.NumUVMaps = numUVMaps;
+
+            if ( param_2->PermutationFlags.NumUVMaps == 0
+                && param_2->PermutationFlags.bUsingGlossMap ) {
+                param_2->PermutationFlags.NumUVMaps = 1;
+            }
+            break;
+        }
+        case 0x5789e65cb39c3501:
+        {
+            param_2->PermutationFlags.NumUVMaps = param_2->PermutationFlags.pCustomFlags[0];
+
+            if ( param_2->PermutationFlags.pCustomFlags[1] != 0
+                    || ( param_2->PermutationFlags.pCustomFlags[3] != 0
+                        || param_2->PermutationFlags.bUsingGlossMap ) ) {
+                param_2->PermutationFlags.NumUVMaps = param_2->PermutationFlags.pCustomFlags[0] + 1;
+            }
+            break;
+        }
+        case 0xa00d5c4ecab12190:
+        {
+            if ( !param_2->PermutationFlags.bUsingReflection ) {
+                param_2->PermutationFlags.pCustomFlags[2] = '\0';
+                param_2->PermutationFlags.pCustomFlags[4] = '\0';
+                param_2->PermutationFlags.bUsingNormals = '\0';
+            }
+            break;
+        }
+        case 0xdb79dacbd5013ed0:
+        {
+            param_2->PermutationFlags.NumUVMaps = 0;
+
+            if ( param_2->PermutationFlags.pCustomFlags[0] != '\0'
+                    || param_2->PermutationFlags.pCustomFlags[1] != 0 ) {
+                param_2->PermutationFlags.NumUVMaps = 1;
+            }
+
+            if ( param_2->PermutationFlags.bUsingGlossMap ) {
+                param_2->PermutationFlags.NumUVMaps++;
+            }
+            break;
+        }
+        case 0xdb79baedd5013ed0:
+        {
+            param_2->PermutationFlags.bUsingSkinning = '\x01';
+            param_2->PermutationFlags.bUsingNormals = '\x01';
+            param_2->PermutationFlags.NumPrelight = '\0';
+            param_2->PermutationFlags.NumUVMaps = '\x01';
+            param_2->PermutationFlags.NumTextures = '\x01';
+            break;
+        }
+        case 0x27c8abacd453201:
+        {
+            pParameter->Flags.pCustomFlags[0] = 1;
+            pParameter->Flags.pCustomFlags[1] = 1;
+            pParameter->Flags.pCustomFlags[2] = 1;
+            pParameter->Hashcode = 0xca37336d73078865;
+
+            param_2->PermutationFlags.pCustomFlags[0] = '\x01';
+            param_2->PermutationFlags.pCustomFlags[1] = '\x01';
+            param_2->PermutationFlags.pCustomFlags[2] = '\x01';
+            param_2->PermutationHashcode = 0xca37336d73078865;
+
+            param_1->FXFlags = param_1->FXFlags & 0xfffffffb;
+            break;
+        }
+        };
+    }
+}
+
+bool ShaderRegister::retrieveVSPSForFlags( ShaderPermutationFlags& param_1, CachedShader* pOutVertexShader, CachedShader* pOutPixelShader )
+{
+    bool bVar2 = true;
+    if ( pOutVertexShader != nullptr ) {
+        param_1.BindingFlags.bIsVertexShader = true;
+        uint64_t permutationHashcode = TestDriveCRC64( &param_1, sizeof( ShaderPermutationFlags ) );
+
+        auto it = cachedVertexShaders.find( permutationHashcode );
+        if ( it != cachedVertexShaders.end() ) {
+            pOutVertexShader = &it->second;
+        } else {
+            bVar2 = false;
+        }
+    }
+
+    if ( pOutPixelShader != nullptr ) {
+        param_1.BindingFlags.bIsVertexShader = false;
+        uint64_t permutationHashcode = TestDriveCRC64( &param_1, sizeof( ShaderPermutationFlags ) );
+
+        auto it = cachedPixelShaders.find( permutationHashcode );
+        if ( it != cachedPixelShaders.end() ) {
+            pOutPixelShader = &it->second;
+        } else {
+            bVar2 = false;
+        }
+    }
+
+    return bVar2;
+}
+
+ShaderPermutationFlags::ShaderPermutationFlags()
+{
+    clear();
+}
+
+void ShaderPermutationFlags::clear()
+{
+    memset( this, 0, 0x58 );
+
+    // TODO: The ctor for this struct (0x00603000) sets the VS flag to true on init. Why??
+    BindingFlags.bIsVertexShader = true;
+}
+
+void ShaderPermutationFlags::initialize( MaterialParameter* param_1, uint8_t param_2 )
+{
+    PermutationFlags.NumTextures = param_2;
+    PermutationFlags.NumUVMaps = param_1->Flags.NumUVMaps;
+    PermutationFlags.bUsingSkinning = param_1->Flags.bUsingSkinning;
+    PermutationFlags.bUseTextureMatrix = param_1->Flags.bUseTextureMatrix;
+    PermutationFlags.NumPrelight = param_1->Flags.NumPrelight;
+    PermutationFlags.bUsingNormals = param_1->Flags.bUsingNormals;
+    PermutationFlags.bAffectedByFog = param_1->Flags.bAffectedByFog;
+    PermutationFlags.bUnknown2 = param_1->Flags.bUnknown2;
+    PermutationFlags.NumLightmaps = param_1->Flags.NumLightmaps;
+    PermutationFlags.NumFXMap = param_1->Flags.NumFXMap;
+    PermutationFlags.bUsingAmbient = param_1->Flags.bUsingAmbient;
+    PermutationFlags.bUsingDiffuse = param_1->Flags.bUsingDiffuse;
+    PermutationFlags.bUsingSpecular = param_1->Flags.bUsingSpecular;
+    PermutationFlags.bUsingGlossMap = param_1->Flags.bUsingGlossMap;
+    PermutationFlags.bUsingOffsetMap = param_1->Flags.bUsingOffsetMap;
+    PermutationFlags.bUsingReflection = param_1->Flags.bUsingReflection;
+    PermutationFlags.bUsingEmissive = param_1->Flags.bUsingEmissive;
+    PermutationFlags.bUsingBinormal = param_1->Flags.bUsingBinormal;
+    PermutationFlags.bUsingSpriteRotation = param_1->Flags.bUsingSpriteRotation;
+    PermutationFlags.bUsingDepthSprite = param_1->Flags.bUsingDepthSprite;
+    PermutationFlags.Unknown = param_1->Flags.Unknown;
+    PermutationFlags.bUsingTangentSpace = param_1->Flags.bUsingTangentSpace;
+    PermutationFlags.bUsingBumpMap = param_1->Flags.bUsingBumpMap;
+    PermutationFlags.bUsingTangent = param_1->Flags.bUsingTangent;
+    PermutationFlags.pCustomFlags[0] = param_1->Flags.pCustomFlags[0];
+    PermutationFlags.pCustomFlags[1] = param_1->Flags.pCustomFlags[1];
+    PermutationFlags.pCustomFlags[2] = param_1->Flags.pCustomFlags[2];
+    PermutationFlags.pCustomFlags[3] = param_1->Flags.pCustomFlags[3];
+    PermutationFlags.pCustomFlags[4] = param_1->Flags.pCustomFlags[4];
+    PermutationFlags.pCustomFlags[5] = param_1->Flags.pCustomFlags[5];
+    PermutationFlags.pCustomFlags[6] = param_1->Flags.pCustomFlags[6];
+    PermutationFlags.pCustomFlags[7] = param_1->Flags.pCustomFlags[7];
 }
