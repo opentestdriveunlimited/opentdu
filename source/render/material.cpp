@@ -1,7 +1,7 @@
 #include "shared.h"
 #include "material.h"
 
-#include "shader_register.h"
+#include "shaders/shader_register.h"
 
 MaterialRegister gMaterialRegister = {};
 
