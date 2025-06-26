@@ -15,6 +15,11 @@ RenderFile::~RenderFile()
 
 }
 
+void RenderFile::destroy()
+{
+    OTDU_UNIMPLEMENTED;
+}
+
 bool RenderFile::parseHeader( void* pFileStream )
 {
     pHeader = (Header*)pFileStream;

@@ -1,14 +1,16 @@
 #include "shared.h"
 #include "2dm.h"
 
+#include "2db.h"
 #include "render/material.h"
 
 static constexpr uint32_t k2DMMagic             = 0x4d44322e; // MD2. (.2DM)
 static constexpr uint32_t kMaterialArrayMagic   = 0x4154414d; // MATA (MATerial Array)
 static constexpr uint32_t kMaterialMagic        = 0x2e54414d; // MAT. (MATerial)
-static constexpr uint32_t kParameterMagic       = 0x41524150; // PARA (PARAmeter)
+static constexpr uint32_t kParameterArrayMagic  = 0x41524150; // PARA (PARameter Array)
 static constexpr uint32_t kLayerArrayMagic      = 0x4159414c; // LAYA (LAYer Array)
 static constexpr uint32_t kHashcodesMagic       = 0x48534148; // HASH (HASHcodes)
+static constexpr uint32_t kLayerMagic           = 0x2e59414c; // LAY. (LAYer)
 
 Render2DM::Render2DM()
     : RenderFile()
@@ -55,7 +57,7 @@ bool Render2DM::parseSection(RenderFile::Section *pSection)
         gMaterialRegister.pushMaterial( pSection );
         return true;
 
-    case kParameterMagic:
+    case kParameterArrayMagic:
         pParameters = pSection;
         return true;
 
@@ -72,7 +74,35 @@ bool Render2DM::parseSection(RenderFile::Section *pSection)
     };
 }
 
+void Render2DM::bindBitmapReference( const Render2DB* param_2 )
+{
+    OTDU_ASSERT( pLayers );
+
+    const uint64_t bitmapHashcode = param_2->getBitmapHashcode();
+
+    uint8_t* piVar1 = ( uint8_t* )pLayers + pLayers->Size;
+    uint8_t* piVar2 = ( uint8_t* )pLayers + pLayers->DataSize;
+
+    RenderFile::Section* pLayerSection = ( RenderFile::Section* )piVar1;
+    while ( pLayerSection->Type == kLayerMagic ) {
+        MaterialLayer* pLayer = ( MaterialLayer* )( pLayerSection + 1 );
+        for ( uint32_t i = 0; i < pLayer->getNumUsedTextureSlots(); i++ ) {
+            if ( pLayer->pLayerTextures[i].Hashcode == bitmapHashcode ) {
+                pLayer->pLayerTextures[i].pTextureSection = param_2->getBitmapSection();
+            }
+        }
+
+        piVar1 += pLayerSection->Size;
+    }
+}
+
+void Render2DM::bindUVAnimationReference( const RenderUVA* param_2 )
+{
+    OTDU_UNIMPLEMENTED;
+}
+
 Material* Render2DM::create( void* param_1, uint64_t param_2, int32_t param_3, uint32_t param_4, uint32_t param_5, uint32_t param_6 )
 {
+    OTDU_UNIMPLEMENTED;
     return nullptr;
 }

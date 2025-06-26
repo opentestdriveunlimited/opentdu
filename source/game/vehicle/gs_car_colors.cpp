@@ -40,16 +40,16 @@ bool GSCarColors::initialize( TestDriveGameInstance* )
     p2DMFileResource = (char*)getFirstEntry( 0x2, 0xe, nullptr );
     render2DM.initialize( p2DMFileResource );
 
-    /*collection2D.AddToSet( render2DM );
-    collection2D.Finalize( render2DM );*/
+    collection2D.register2DM( &render2DM );
 
     return true;
 }
 
 void GSCarColors::terminate()
 {
-    //collection2D.RemoveFromSet( render2DM );
-    //collection2D.Destroy();
+    collection2D.unregister2DM( &render2DM );
+    render2DM.destroy();
+
     TestDrive::Free( pBankFile );
     pBankFile = nullptr;
     bLoaded = false;

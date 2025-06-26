@@ -18,10 +18,10 @@ struct MaterialLayerTextureAttribute
 
 struct MaterialLayerTexture 
 {
-    uint64_t HashcodeUnknown;
-    uint64_t Hashcode;
+    uint64_t TextureTypeHashcode; // NMAP, COLOR, etc.
+    uint64_t Hashcode; // .2DB Hashcode
     RenderFile::Section* pTextureSection;
-    uint8_t UnknownBytes[8];
+    //uint8_t UnknownBytes[4 /*8*/]; // TODO: Check if it doesn't break (32bit used to be 8; need to drop to 4 for x64).
     MaterialLayerTextureAttribute* pAttributes;
 };
 

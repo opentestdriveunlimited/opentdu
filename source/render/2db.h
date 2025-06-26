@@ -25,6 +25,10 @@ static_assert(sizeof(Texture) == 0x30, "Keep this valid (or else streaming will 
 
 class Render2DB : public RenderFile {
 public:
+    inline const uint64_t       getBitmapHashcode() const { OTDU_ASSERT( pBitmap ); return *( uint64_t* )( pBitmap + 1 ); }
+    inline RenderFile::Section* getBitmapSection() const { return pBitmap; }
+
+public:
     Render2DB();
     ~Render2DB();
 

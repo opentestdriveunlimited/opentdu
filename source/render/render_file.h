@@ -19,14 +19,15 @@ public:
     };
 
 public:
-    inline Header* getHeader() { return pHeader; }
+    inline Header* getHeader() const { return pHeader; }
 
 public:
     RenderFile();
     ~RenderFile();
 
-    virtual bool parseSection( Section* pSection ) { return true; }
-    
+    virtual void destroy();
+    virtual bool parseSection( Section* pSection ) { return true; }    
+
     bool parseHeader( void* pFileStream );
     bool parseFile();
     bool readSection( Section* pSection );
