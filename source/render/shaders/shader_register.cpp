@@ -7,15 +7,6 @@
 #include "core/hash/crc64.h"
 #include "filesystem/gs_file.h"
 
-std::string IntegerToHexString( const size_t w, const size_t hex_len )
-{
-    static constexpr const char* kDigits = "0123456789ABCDEF";
-    std::string rc( hex_len, '0' );
-    for ( size_t i = 0, j = ( hex_len - 1 ) * 4; i < hex_len; ++i, j -= 4 )
-        rc[i] = kDigits[( w >> j ) & 0x0f];
-    return rc;
-}
-
 ShaderRegister gShaderRegister = {};
 
 ShaderRegister::ShaderRegister()

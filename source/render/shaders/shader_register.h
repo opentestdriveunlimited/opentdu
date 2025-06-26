@@ -10,8 +10,6 @@ struct ShaderTableEntry;
 
 static constexpr const char* kShadersRoot = "EURO/Shaders/";
 
-std::string IntegerToHexString( const size_t w, const size_t hex_len = sizeof( size_t ) << 1 );
-
 struct ShaderBindingFlags // TODO: Rename me
 {
     uint8_t bIsVertexShader;
