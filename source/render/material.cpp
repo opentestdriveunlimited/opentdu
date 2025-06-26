@@ -1,7 +1,7 @@
 #include "shared.h"
 #include "material.h"
 
-#include "shaders/shader_register.h"
+#include "render/shaders/shader_register.h"
 
 MaterialRegister gMaterialRegister = {};
 
@@ -75,14 +75,14 @@ void Material::setDefaultMaterial()
     StencilWriteMask = 0xffffffff;
     StencilMaskCW = 0xffffffff;
     StenwilWriteMaskCW = 0xffffffff;
-    pVertexShaders[0] = ( void* )0x0;
-    pPixelShaders[0] = ( void* )0x0;
-    pVertexShaders[1] = ( void* )0x0;
-    pPixelShaders[1] = ( void* )0x0;
-    pVertexShaders[2] = ( void* )0x0;
-    pPixelShaders[2] = ( void* )0x0;
-    pVertexShaders[3] = ( void* )0x0;
-    pPixelShaders[3] = ( void* )0x0;
+    pVertexShaders[0] = nullptr;
+    pPixelShaders[0] = nullptr;
+    pVertexShaders[1] = nullptr;
+    pPixelShaders[1] = nullptr;
+    pVertexShaders[2] = nullptr;
+    pPixelShaders[2] = nullptr;
+    pVertexShaders[3] = nullptr;
+    pPixelShaders[3] = nullptr;
     //pVertexShaders[4] = ( void* )0x0;
     //pPixelShaders[4] = ( void* )0x0;
     //pVertexShaders[5] = ( void* )0x0;
@@ -146,7 +146,7 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
         OTDU_UNIMPLEMENTED;
         //*( undefined4* )( iVar4 + 0x58 ) = 1;
         //*( undefined4* )( iVar4 + 0x5c ) = 0;
-        param_2->Flags.UnknownBytes2[4] = '\x01';
+        param_2->Flags.pCustomFlags[2] = '\x01';
         return 0x2d;
     }
 
@@ -226,7 +226,7 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
             iVar6 = 0x1b;
         }
         if ( DepthWrite == '\x02' ) {
-            uint32_t uVar3 = param_2->Flags.UnknownBytes2[3] << 1 | param_2->Flags.UnknownBytes2[2];
+            uint32_t uVar3 = param_2->Flags.pCustomFlags[1] << 1 | param_2->Flags.pCustomFlags[0];
 
             if ( uVar3 == 0 ) {
                 return 0x1e;
@@ -340,7 +340,7 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
                 peVar2->pLayerTextures[3].Hashcode = 0ull;
 
                 param_2->Flags.bUsingReflection = '\0';
-                param_2->Flags.UnknownBytes2[6] = '\0';
+                param_2->Flags.pCustomFlags[4] = '\0';
                 if ( param_2->Flags.bUsingGlossMap ) {
                     MaterialLayer* peVar2 = param_2->getLayer( 0 );
                     peVar2->pLayerTextures[2].Hashcode = 0ull;
@@ -376,7 +376,7 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
         break;
     }
     default:
-        OTDU_UNIMPLEMENTED;
+        OTDU_LOG_WARN( "Unhandled material parameter hashcode 0x%p; default OT will be used\n", param_2->Hashcode );
         return 0x2d;
     };
 
@@ -407,8 +407,7 @@ uint16_t Material::getOTNumber()
         peVar1 = getParameterByIndex( 0 );
         if ( peVar1->Type == 2 ) {
             iVar2 = getOTForParameter( peVar1 );
-        }
-        if ( peVar1->Type == 1 ) {
+        } else if ( peVar1->Type == 1 ) {
             if ( AlphaTest == '\0' ) {
                 iVar2 = 0xc;
             }
@@ -454,8 +453,13 @@ MaterialParameter* Material::getParameterByIndex( const uint32_t index )
         return nullptr;
     }
 
-    MaterialParameter* pParameters = ( MaterialParameter* )( this + 0xd0 );
-    return &pParameters[index];
+    // TODO: Figure out how we're supposed to handle PARA sections...
+    OTDU_ASSERT( index == 0 );
+
+    MaterialParameter* pParameters = *( MaterialParameter** )( ( uint8_t* )this + 0xd0 );
+    pParameters = ( MaterialParameter* )( ( int8_t* )pParameters + 0x10 ); // Skip header
+
+    return pParameters;
 }
 
 MaterialShaderParameter* MaterialShaderParameterArray::getParameter( const uint32_t type, uint32_t* pOutParamIndex /*= nullptr */ )
@@ -559,4 +563,16 @@ void MaterialRegister::pushMaterial( RenderFile::Section* pFile )
 void MaterialRegister::popMaterial()
 {
     numRegisteredMaterial--;
+}
+
+uint8_t MaterialLayer::getNumUsedTextureSlots()
+{
+    uint8_t numBoundTextures = 0;
+    for ( uint32_t i = 0; i < NumTextures; i++ ) {
+        if ( pLayerTextures[i].Hashcode != 0ull ) {
+            numBoundTextures++;
+        }
+    }
+
+    return numBoundTextures;
 }

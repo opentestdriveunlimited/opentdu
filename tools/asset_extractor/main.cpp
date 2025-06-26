@@ -4,6 +4,7 @@
 #include "core/logger.h"
 #include "core/assert.h"
 
+#include "render/shaders/shader_register.h"
 #include "render/shaders/shader_table_master.h"
 
 #include <fstream>
@@ -70,14 +71,6 @@ static int32_t Align( const int32_t value, const int32_t alignment ) {
     return value + ( -value & mask );
 }
 
-static std::string IntegerToHexString( const size_t w, const size_t hex_len = sizeof( size_t ) << 1 ) {
-    static constexpr const char* kDigits = "0123456789ABCDEF";
-    std::string rc( hex_len, '0' );
-    for ( size_t i = 0, j = ( hex_len - 1 ) * 4; i < hex_len; ++i, j -= 4 )
-        rc[i] = kDigits[( w >> j ) & 0x0f];
-    return rc;
-}
-
 static void RealignReadPointer( std::ifstream& fileStream, const int32_t readByteCount ) {
     int32_t alignedReadByteCount = Align( readByteCount, sizeof( uint32_t ) );
     int32_t byteCountToSkip = alignedReadByteCount - readByteCount;
@@ -89,7 +82,7 @@ static std::string GetIniOutputPath() {
 }
 
 static std::string GetShaderOutputPath() {
-    return std::string( gpOutputPath ) + "/shaders/";
+    return std::string( gpOutputPath ) + kShadersRoot;
 }
 
 static void CheckAndCreateOutputFolder( const std::string& folder ) {

@@ -23,6 +23,7 @@
 #include "world/gs_world.h"
 #include "gs_timer.h"
 #include "game/vehicle/gs_car_colors.h"
+#include "render/shaders/shader_register.h"
 
 const char** gpCmdLineArgs = nullptr;
 int32_t gCmdLineArgCount = 0;
@@ -235,6 +236,8 @@ bool TestDriveGameInstance::initializeBaseServices()
     OTDU_ASSERT( operationResult &= registerService<GSRender>() );
     OTDU_ASSERT( operationResult &= registerService<GSFlash>() );
     OTDU_ASSERT( operationResult &= registerService<GSDirtyDisk>() );
+    
+    gShaderRegister.registerMasterTable();
 
     return operationResult;
 }

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Eigen/Dense>
 #include "render/render_file.h"
+
+struct CachedShader;
 
 enum eMaterialParameterType : uint32_t {
     MPT_Unknown = 0,
@@ -33,6 +34,8 @@ struct MaterialLayer
     uint8_t AlphaValue;
     uint16_t __PADDING__;
     MaterialLayerTexture pLayerTextures[8];
+
+    uint8_t getNumUsedTextureSlots();
 };
 
 struct MaterialParameterFlags 
@@ -42,7 +45,7 @@ struct MaterialParameterFlags
     uint8_t __PADDING__[2];
     uint8_t NumTextures;
     uint8_t bUseTextureMatrix;
-    uint8_t bUnknown;
+    uint8_t Unknown;
     uint8_t NumLightmaps;
     uint8_t NumFXMap;
     uint8_t bUsingGlossMap;
@@ -63,9 +66,12 @@ struct MaterialParameterFlags
     uint8_t bUsingTangent;
     uint8_t bUsingBinormal;
     uint8_t bNeedDepthPrepass;
-    uint8_t UnknownBytes[10];
+    uint8_t UnknownBytes[5];
+    uint8_t bUnknown2;
+    uint8_t UnknownBytes2[4];
     uint8_t bAffectedByFog;
-    uint8_t UnknownBytes2[10];
+    uint8_t __PADDING2__[2];
+    uint8_t pCustomFlags[8];
 };
 static_assert( sizeof( MaterialParameterFlags ) == 0x30, "Size mismatch! Material deserialization will break" );
 
@@ -138,8 +144,8 @@ struct Material
     uint32_t StencilRefCW;
     uint32_t StencilMaskCW;
     uint32_t StenwilWriteMaskCW;
-    void* pVertexShaders[4];
-    void* pPixelShaders[4];
+    CachedShader* pVertexShaders[4];
+    CachedShader* pPixelShaders[4];
     Eigen::Vector4f AmbientColor;
     Eigen::Vector4f DiffuseColor;
     Eigen::Vector4f SpecularColor;
