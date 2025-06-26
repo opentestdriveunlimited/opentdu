@@ -14,3 +14,5 @@
 {0x00a0d110,0xc2025cf3023b8581,eShaderType::ST_Pixel,0x80000011,0x88,0,0,"Terrain"},
 {0x00a0ca70,0xd89e4a98a6863255,eShaderType::ST_Vertex,0,0,0x80000000,0,"Terrain"},
 {0x00a0d520,0x58061d6b89abb848,eShaderType::ST_Pixel,0x80000011,0x88,0,0,"Terrain"},
+{0x00d978d0,0xbeb5678a2ff17c5,eShaderType::ST_Vertex,0,0,0,0,"TerrainShadows"},
+{0x00d97a78,0x3e2d307900dcf64c,eShaderType::ST_Pixel,1,0x10,0,0,"TerrainShadows"},
