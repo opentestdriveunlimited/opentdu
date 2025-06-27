@@ -18,7 +18,15 @@ public:
     void bindUVAnimationReference( const RenderUVA* param_2 );
 
     Material* create( void* pContent, uint64_t param_2, int32_t param_3, uint32_t param_4, uint32_t param_5, uint32_t param_6 );
-    
+
+    RenderFile::Section* getMaterial( uint64_t param_2 );
+
+private:
+    struct HashTableEntry {
+        uint64_t                Hashcode;
+        RenderFile::Section*    pMaterial;
+    };
+
 private:
     RenderFile::Section* pMatArray;
     RenderFile::Section* pHashcodes;

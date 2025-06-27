@@ -106,3 +106,23 @@ Material* Render2DM::create( void* param_1, uint64_t param_2, int32_t param_3, u
     OTDU_UNIMPLEMENTED;
     return nullptr;
 }
+
+RenderFile::Section* Render2DM::getMaterial( uint64_t param_2 )
+{
+    uint8_t* piVar1 = ( uint8_t* )pMatArray + pMatArray->DataSize;
+    RenderFile::Section* pHashcodeSection = ( RenderFile::Section* )piVar1;
+    OTDU_ASSERT( pHashcodeSection->Type == kHashcodesMagic );
+
+    uint32_t numHashcodes = ( pHashcodeSection->Size - 0x10 ) / sizeof( HashTableEntry );
+    HashTableEntry* pIterator = ( HashTableEntry* )( pHashcodeSection + 1 );
+
+    for ( uint32_t i = 0; i < numHashcodes; i++ ) {
+        if ( pIterator->Hashcode == param_2 ) {
+            return pIterator->pMaterial;
+        }
+        pIterator++;
+    }
+
+    OTDU_LOG_WARN( "Failed to find material %p in 2DM hashtable (nullptr will be returned)\n", param_2 );
+    return nullptr;
+}
