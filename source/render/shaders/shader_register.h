@@ -8,6 +8,47 @@ struct Material;
 struct GPUShader;
 struct ShaderTableEntry;
 
+using ShaderTableHeaderEntry_t = std::tuple<uint64_t, uint64_t>; // Key: Hashcode Value: Offset in file (absolute)
+struct ShaderTableHeader
+{
+    size_t NumEntries;
+    std::vector<ShaderTableHeaderEntry_t> Entries;
+
+    inline size_t GetHeaderSize() const
+    {
+        return NumEntries * (sizeof(uint64_t) * 2) + sizeof( size_t );
+    }
+    
+    inline void Clear()
+    {
+        NumEntries = 0ull;
+        Entries.clear();
+    }
+
+    inline bool Empty()
+    {
+        return NumEntries == 0ull;
+    }
+
+    inline void Add(ShaderTableHeaderEntry_t entry)
+    {
+        Entries.push_back(entry);
+        NumEntries++;
+    }
+};
+
+struct ShaderTable
+{
+    ShaderTableHeader   Header;
+    std::vector<int8_t> Shaders;
+
+    inline void Clear()
+    {
+        Header.Clear();
+        Shaders.clear();
+    }
+};
+
 static constexpr const char* kShadersRoot = "EURO/Shaders/";
 
 struct ShaderBindingFlags // TODO: Rename me

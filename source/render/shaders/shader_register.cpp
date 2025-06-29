@@ -89,9 +89,9 @@ void ShaderRegister::registerShader( const ShaderTableEntry* pTableEntry )
     GPUShader* pShader = nullptr;
 
     CachedShader cachedShader = { pShader, pTableEntry->Flag0, pTableEntry->Flag1, pTableEntry->Flag2, pTableEntry->Flag3 };
-    if ( pTableEntry->ShaderStage == eShaderType::ST_Vertex ) {
+    if ( pTableEntry->ShaderStage == eShaderType::ST_Pixel ) {
         cachedVertexShaders.insert( std::make_pair( pTableEntry->Hashcode, cachedShader ) );
-    } else if ( pTableEntry->ShaderStage == eShaderType::ST_Pixel ) {
+    } else if ( pTableEntry->ShaderStage == eShaderType::ST_Vertex ) {
         cachedPixelShaders.insert( std::make_pair( pTableEntry->Hashcode, cachedShader ) );
     } else {
         OTDU_ASSERT( false );

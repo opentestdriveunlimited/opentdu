@@ -1,0 +1,55 @@
+/* EyeAdaptation */
+{0x00ee15f8,0x953ac8db5cb8e36a,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee1798,0x15a29f2873956977,eShaderType::ST_Vertex,1,0,0,0,"PostFX"},
+/* PostFX */
+{0x00ee5f70,0x6c6cdc43d02bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+/* Blend */
+{0x00ee6270,0x6c6cdc43d72bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee6898,0x6c6cdc43d42bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee6bd8,0x6c6cdc43d82bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee6e18,0x6c6cdc43d92bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee74d8,0x6c6cdc43de2bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee9680,0x6c6cdc43c02bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+/* Blur */
+{0x00ee75f0,0x6c6cdc43c32bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee77c0,0xecf48bb0ec0643c7,eShaderType::ST_Vertex,0,0,0,0,"PostFX"},
+{0x00ee7988,0x6c6cdc43f32bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee7b08,0xecf48bb0dc0643c7,eShaderType::ST_Vertex,0,0,0,0,"PostFX"}, 
+{0x00ee7988,0x6c6cdc43f32bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee7b08,0xecf48bb0dc0643c7,eShaderType::ST_Vertex,0,0,0,0,"PostFX"},
+{0x00ee9120,0x6c6cdc43c22bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee92e8,0xecf48bb0ed0643c7,eShaderType::ST_Vertex,0,0,0,0,"PostFX"}, 
+{0x00ee8808,0x6c6cdc43832bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee8a60,0xecf48bb0ac0643c7,eShaderType::ST_Vertex,0,0,0,0,"PostFX"}, 
+{0x00ee8808,0x6c6cdc43832bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee8a60,0xecf48bb0ac0643c7,eShaderType::ST_Vertex,0,0,0,0,"PostFX"}, 
+{0x00ee7c90,0x6c6cdc43e32bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee7f50,0xecf48bb0cc0643c7,eShaderType::ST_Vertex,0,0,0,0,"PostFX"},
+/* Down/UpSample */
+{0x00ee99a0,0x6c6cdc43c72bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee97d8,0x6c6cdc43c82bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee9f70,0x6c6cdc43ce2bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee9da8,0x6c6cdc43cf2bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00eea5c8,0x6c6cdc43c52bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+/* Depth Of Field */
+{0x00ee63f0,0x6c6cdc43d62bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee6558,0x6c6cdc43a32bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+/* Fog */
+{0x00ee6728,0x6c6cdc43d52bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+/* Tonemap */
+{0x00eea138,0x6c6cdc43c62bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00eea9d0,0x6c6cdc43c42bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00eeb0f8,0x6c6cdc43ca2bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+/* Lightstreak */
+{0x00ee9120,0x6c6cdc43c22bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee92e8,0xecf48bb0ed0643c7,eShaderType::ST_Vertex,0,0,0,0,"PostFX"}, 
+{0x00ee9478,0x6c6cdc43c12bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+/* HDR */
+{0x00ee6990,0x6c6cdc43db2bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee6a88,0x6c6cdc43da2bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee72c8,0x6c6cdc43532bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00ee6f78,0x6c6cdc43df2bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"}, 
+{0x00ee70f8,0xecf48bb0f00643c7,eShaderType::ST_Vertex,0,0,0,0,"PostFX"},
+{0x00eeae30,0x6c6cdc43cb2bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},
+{0x00eeb2c0,0x6c6cdc43c92bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"}, 
+{0x00ee8150,0x6c6cdc43f22bc9da,eShaderType::ST_Pixel,0,0,0,0,"PostFX"},

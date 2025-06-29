@@ -10,8 +10,7 @@
 #include <fstream>
 #include <filesystem>
 
-//#define EXCLUDE_PSTDINT
-//#include "hlslcc.h"
+#include "hlslcc.h"
 
 static char gpPathToExecutable[OTDU_MAX_PATH]; // Path to TestDriveUnlimited.exe
 static CmdLineArg CmdLineArgsExecutablePath( "executable", []( const char* pArg ) {
@@ -20,6 +19,11 @@ static CmdLineArg CmdLineArgsExecutablePath( "executable", []( const char* pArg 
 
 static char gpOutputPath[OTDU_MAX_PATH]; // (Base) Output path for asset extraction
 static CmdLineArg CmdLineArgsOutputPath( "asset_output_path", []( const char* pArg ) {
+    strcpy( gpOutputPath, pArg );
+} );
+
+static bool gbSkipGLSLTranslation = false; // If true, do not generate shader tables for OpenGL
+static CmdLineArg CmdLineArgsSkipGLSL( "skip_glsl", []( const char* pArg ) {
     strcpy( gpOutputPath, pArg );
 } );
 
@@ -82,7 +86,7 @@ static std::string GetIniOutputPath() {
 }
 
 static std::string GetShaderOutputPath() {
-    return std::string( gpOutputPath ) + kShadersRoot;
+    return std::string( gpOutputPath ) + "/" + kShadersRoot;
 }
 
 static void CheckAndCreateOutputFolder( const std::string& folder ) {
@@ -94,11 +98,45 @@ static void CheckAndCreateOutputFolder( const std::string& folder ) {
 }
 
 [[noreturn]] static void PrintUsage() {
-    OTDU_LOG_ALWAYS( "USAGE: opentdu_assetExtractor -executable <pathToExe> [-asset_output_path <pathToOutput>]\n"
+    OTDU_LOG_ALWAYS( "USAGE: opentdu_assetExtractor [-executable <pathToExe> -asset_output_path <pathToOutput> -skip_glsl]\n"
                      "\n"
-                     "-executable:            Path to your TestDriveUnlimited.exe executable\n"
-                     "-asset_output_path:     Path used to write extracted assets (optional) (default: current working directory)\n" );
+                     "-executable:            Path to your TestDriveUnlimited.exe executable (optional) (default: executable in current working directory)\n"
+                     "-asset_output_path:     Path used to write extracted assets (optional) (default: current working directory)\n"
+                     "-skip_glsl:             Do not generate shader tables for OpenGL3.3 (default: false)\n" );
     exit( 1 );
+}
+
+static void WriteShaderTableHeaderToStream(const ShaderTableHeader& header, std::ofstream& outputFileStream)
+{
+    size_t tableSize = header.GetHeaderSize();
+    outputFileStream.write( ( const char* )&header.NumEntries, sizeof( size_t ) );
+    for (auto& headerEntry : header.Entries) {
+        uint64_t hashcode = std::get<0>(headerEntry);
+        uint64_t offsetInFile = std::get<1>(headerEntry);
+        offsetInFile += tableSize;
+
+        outputFileStream.write( ( const char* )&hashcode, sizeof( uint64_t ) );
+        outputFileStream.write( ( const char* )&offsetInFile, sizeof( uint64_t ) );
+    }
+}
+
+static bool WriteShaderTableToDisk( const ShaderTable& shaderTable, const std::string& fileOutputPath)
+{
+    std::filesystem::path folderFS = std::filesystem::path( fileOutputPath );
+    if ( std::filesystem::exists( folderFS ) ) {
+        OTDU_LOG_INFO( "'%s' already exists; skipping...\n", fileOutputPath.c_str() );
+        return false;
+    }
+
+    std::ofstream outputFileStream;
+    outputFileStream.open( fileOutputPath.c_str(), std::ios_base::out | std::ios_base::binary );
+
+    WriteShaderTableHeaderToStream( shaderTable.Header, outputFileStream );
+    outputFileStream.write( ( const char* )shaderTable.Shaders.data(), sizeof( char ) * shaderTable.Shaders.size() );
+    outputFileStream.close();
+
+    OTDU_LOG_INFO( "Wrote shader table '%s'\n", fileOutputPath.c_str() );
+    return true;
 }
 
 int main( int argc, char* argv[] ) {
@@ -109,8 +147,14 @@ int main( int argc, char* argv[] ) {
     gArgParserRegister.parseCmdLineArgs( (const char**)argv, argc );
 
     if ( *gpPathToExecutable == '\0' ) {
-        OTDU_LOG_ALWAYS( "Missing cmdline arg 'executable'!\n" );
-        PrintUsage();
+        std::filesystem::path folderFS = std::filesystem::path( "TestDriveUnlimited.exe" );
+        if ( std::filesystem::exists( folderFS ) ) {
+            strcpy(gpPathToExecutable, "TestDriveUnlimited.exe");
+            OTDU_LOG_ALWAYS( "No executable path provided; will use executable in the current working directory\n" );
+        } else {
+            OTDU_LOG_ALWAYS( "Missing cmdline arg 'executable'!\n" );
+            PrintUsage();
+        }
     }
 
     if ( *gpOutputPath == '\0' ) {
@@ -124,6 +168,8 @@ int main( int argc, char* argv[] ) {
     // Prepare output
     CheckAndCreateOutputFolder( GetIniOutputPath() );
     CheckAndCreateOutputFolder( GetShaderOutputPath() );
+    CheckAndCreateOutputFolder( GetShaderOutputPath() + "/d3d9/" );
+    CheckAndCreateOutputFolder( GetShaderOutputPath() + "/gl330/" );
 
     uint32_t shaderExtractedCount = 0;
     uint32_t iniExtractedCount = 0;
@@ -136,18 +182,46 @@ int main( int argc, char* argv[] ) {
     }
 
     constexpr uint32_t kNumShaderEntries = sizeof( kMasterShaderTable ) / sizeof( kMasterShaderTable[0] );
-    uint32_t foundShaderEntries = 0u;
+  
+    ShaderTable tableDXSO = {};
+    ShaderTable tableGLSL = {};
 
+    std::string currentTableName = "";
     int32_t dword = 0;
     for ( uint32_t i = 0; i < kNumShaderEntries; i++ ) {
         const ShaderTableEntry& entry = kMasterShaderTable[i];
 
+        if (currentTableName != entry.pShaderCategory) {
+            if (!tableDXSO.Header.Empty()) {
+                std::string filename = currentTableName + ".bin";
+                
+                std::string fileOutputPath = GetShaderOutputPath() + "/d3d9/" +filename;
+                bool bWroteToDisk = WriteShaderTableToDisk( tableDXSO, fileOutputPath );
+                if (bWroteToDisk) {
+                    shaderExtractedCount++;
+                }
+
+                if (!gbSkipGLSLTranslation) {
+                    fileOutputPath = GetShaderOutputPath() + "/gl330/" + filename;
+                    bool bWroteToDisk = WriteShaderTableToDisk( tableGLSL, fileOutputPath );
+                    if (bWroteToDisk) {
+                        shaderExtractedCount++;
+                    }
+                } else {
+                    OTDU_LOG_INFO( "Skipping GLSL translation ('-skip_glsl' found in command line)\n");
+                }
+
+                tableDXSO.Clear();
+                tableGLSL.Clear();
+            }
+            currentTableName = entry.pShaderCategory;
+        }
         size_t offsetToSeek = entry.OffsetInExecutable - 0x400000;
-        fileStream.seekg( offsetToSeek, std::ios::beg);
+        fileStream.seekg( offsetToSeek, std::ios::beg );
 
         std::vector<int8_t> shaderBytecode;
         shaderBytecode.reserve( 2 << 10 ); // Should be large enough (biggest shaders are ~2KiB) 
-        shaderBytecode.resize( 0x18 );
+        shaderBytecode.resize( shaderBytecode.size() + 0x18 );
 
         fileStream.read( reinterpret_cast< char* >( shaderBytecode.data() ), 0x18 * sizeof( int8_t ) );
 
@@ -165,30 +239,36 @@ int main( int argc, char* argv[] ) {
                 shaderBytecode.push_back( word & 0xff );
                 shaderBytecode.push_back( ( word >> 8 ) & 0xff );
             }
+
+            tableDXSO.Header.Add( std::make_tuple( entry.Hashcode, tableDXSO.Shaders.size() ) );
+            tableDXSO.Shaders.insert(tableDXSO.Shaders.end(), shaderBytecode.begin(), shaderBytecode.end());
+            
+            if (!gbSkipGLSLTranslation) {
+                tableGLSL.Header.Add( std::make_tuple( entry.Hashcode, tableGLSL.Shaders.size() ) );
+                
+                GlExtensions extensions = {};
+                GLSLCrossDependencyData dependencies = {};
+
+                GLSLShader output = {};
+                int32_t result = TranslateHLSLFromMem(
+                    (const char*)shaderBytecode.data(), 
+                    HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS | HLSLCC_FLAG_ORIGIN_UPPER_LEFT,
+                    GLLang::LANG_330, 
+                    &extensions, 
+                    &dependencies,
+                    &output
+                );
+                OTDU_ASSERT( result == 1 );
+
+                std::string sourceCode = output.sourceCode;
+                tableGLSL.Shaders.insert(tableGLSL.Shaders.end(), sourceCode.begin(), sourceCode.end());
+
+                sourceCode.clear();
+                FreeGLSLShader( &output );
+            }
         } else {
-            OTDU_LOG_INFO( "INVALID MAGIC FOUND\n");
-        }
-
-        // Write to disk
-        std::string filename = IntegerToHexString( entry.OffsetInExecutable ) + ".dxso";
-        std::string fileOutputPath = GetShaderOutputPath() + filename;
-
-        std::filesystem::path folderFS = std::filesystem::path( fileOutputPath );
-        if ( !std::filesystem::exists( folderFS ) ) {
-            /* GLSLShader shader = { 0 };
-                TranslateHLSLFromMem( ( const char* )shaderBytecode.data(), 0x0, GLLang::LANG_440, nullptr, nullptr, &shader );
-
-                OTDU_ASSERT( shader.sourceCode );*/
-
-            std::ofstream outputFileStream;
-            outputFileStream.open( fileOutputPath.c_str(), std::ios_base::out | std::ios_base::binary );
-            outputFileStream.write( ( char* )shaderBytecode.data(), sizeof( char )* shaderBytecode.size() );
-            outputFileStream.close();
-
-            OTDU_LOG_INFO( "Wrote shader to '%s' (category '%s')\n", fileOutputPath.c_str(), entry.pShaderCategory );
-            shaderExtractedCount++;
-        } else {
-            OTDU_LOG_INFO( "'%s' already exists; skipping...\n", fileOutputPath.c_str() );
+            OTDU_LOG_ERROR( "INVALID MAGIC FOUND\n");
+            OTDU_ASSERT_FATAL( false );
         }
     }
 
@@ -201,94 +281,39 @@ int main( int argc, char* argv[] ) {
             break;
         }
 
-        // if ( dword == kD3D9ShaderMagic3 ) { // kD3D9ShaderMagic || dword == kD3D9ShaderMagic2 ) {
-        //     shaderOffset -= 8;
-        //     fileStream.seekg( shaderOffset, std::ios_base::beg );
+        // .ini files
+        for ( uint32_t i = 0; i < kPackedIniFileCount; i++ ) {
+            const TestDrivePackedIniEntry& packedIni = kPackedIniFiles[i];
+            if ( dword == packedIni.FirstDword ) {
+                OTDU_LOG_INFO( "Reading packed config file '%s'...\n", packedIni.Name );
 
-        //     // Read header and make sure we find the constant table magic (CTAB) before extraction
-        //     std::vector<int8_t> shaderBytecode;
-        //     shaderBytecode.reserve( 2 << 10 ); // Should be large enough (biggest shaders are ~2KiB) 
-        //     shaderBytecode.resize( 0x18 );
+                int8_t* pBuffer = new int8_t[packedIni.LengthInBytes];
+                memset( pBuffer, 0, sizeof( int8_t ) * packedIni.LengthInBytes );
+                *( int32_t* )pBuffer = dword;
 
-        //     fileStream.read( reinterpret_cast< char* >( shaderBytecode.data() ), 0x18 * sizeof( int8_t ) );
+                fileStream.read( ( char* )( pBuffer + sizeof( int32_t ) ), 
+                                    sizeof( int8_t ) * ( packedIni.LengthInBytes - sizeof( int32_t ) ) );
+                UnpackIniFromMemory( pBuffer, packedIni.LengthInBytes );
 
-        //     shaderOffset += 0x400000; // Offset to map executable bytes to .rdata block offset
+                // Write to disk
+                std::string fileOutputPath = GetIniOutputPath() + packedIni.Name;
 
-        //     if (    shaderBytecode[8]  == 'C'
-        //          && shaderBytecode[9]  == 'T'
-        //          && shaderBytecode[10] == 'A'
-        //          && shaderBytecode[11] == 'B' ) {
-        //         OTDU_LOG_INFO( "Reading shader binary at offset %x\n", shaderOffset );
+                std::ofstream outputFileStream;
+                outputFileStream.open( fileOutputPath.c_str(), std::ios_base::out );
+                outputFileStream.write( ( char* )pBuffer, sizeof( char ) * packedIni.LengthInBytes );
+                outputFileStream.close();
 
-        //         int16_t word = 0;
-        //         constexpr int16_t kEndShaderMarker = 0xffff;
-        //         while ( word != kEndShaderMarker ) {
-        //             fileStream.read( reinterpret_cast< char* >( &word ), sizeof( int16_t ) );
+                OTDU_LOG_INFO( "Wrote .ini to '%s'\n", fileOutputPath.c_str() );
 
-        //             shaderBytecode.push_back( word & 0xff );
-        //             shaderBytecode.push_back( ( word >> 8 ) & 0xff );
-        //         }
-        //     }
+                delete[] pBuffer;
 
-        //     // Write to disk
-        //     std::string filename = IntegerToHexString( shaderOffset ) + ".dxso";
-        //     std::string fileOutputPath = GetShaderOutputPath() + filename;
+                iniExtractedCount++;
 
-        //     std::filesystem::path folderFS = std::filesystem::path( fileOutputPath );
-        //     if ( !std::filesystem::exists( folderFS ) ) {
-        //         /* GLSLShader shader = { 0 };
-        //          TranslateHLSLFromMem( ( const char* )shaderBytecode.data(), 0x0, GLLang::LANG_440, nullptr, nullptr, &shader );
-
-        //          OTDU_ASSERT( shader.sourceCode );*/
-
-        //         std::ofstream outputFileStream;
-        //         outputFileStream.open( fileOutputPath.c_str(), std::ios_base::out | std::ios_base::binary );
-        //         outputFileStream.write( ( char* )shaderBytecode.data(), sizeof( char )* shaderBytecode.size() );
-        //         outputFileStream.close();
-
-        //         OTDU_LOG_INFO( "Wrote shader to '%s'\n", fileOutputPath.c_str() );
-        //         shaderExtractedCount++;
-        //     } else {
-        //         OTDU_LOG_INFO( "'%s' already exists; skipping...\n", fileOutputPath.c_str() );
-        //     }
-
-        //     // Realign stream pointer
-        //     RealignReadPointer( fileStream, shaderBytecode.size() );
-        // } else {
-            // .ini files
-            for ( uint32_t i = 0; i < kPackedIniFileCount; i++ ) {
-                const TestDrivePackedIniEntry& packedIni = kPackedIniFiles[i];
-                if ( dword == packedIni.FirstDword ) {
-                    OTDU_LOG_INFO( "Reading packed config file '%s'...\n", packedIni.Name );
-
-                    int8_t* pBuffer = new int8_t[packedIni.LengthInBytes];
-                    memset( pBuffer, 0, sizeof( int8_t ) * packedIni.LengthInBytes );
-                    *( int32_t* )pBuffer = dword;
-
-                    fileStream.read( ( char* )( pBuffer + sizeof( int32_t ) ), 
-                                     sizeof( int8_t ) * ( packedIni.LengthInBytes - sizeof( int32_t ) ) );
-                    UnpackIniFromMemory( pBuffer, packedIni.LengthInBytes );
-
-                    // Write to disk
-                    std::string fileOutputPath = GetIniOutputPath() + packedIni.Name;
-
-                    std::ofstream outputFileStream;
-                    outputFileStream.open( fileOutputPath.c_str(), std::ios_base::out );
-                    outputFileStream.write( ( char* )pBuffer, sizeof( char ) * packedIni.LengthInBytes );
-                    outputFileStream.close();
-
-                    OTDU_LOG_INFO( "Wrote .ini to '%s'\n", fileOutputPath.c_str() );
-
-                    delete[] pBuffer;
-
-                    iniExtractedCount++;
-
-                    // Realign stream pointer
-                    RealignReadPointer( fileStream, packedIni.LengthInBytes );
-                    break;
-                }
+                // Realign stream pointer
+                RealignReadPointer( fileStream, packedIni.LengthInBytes );
+                break;
             }
-        //}
+        }
     }
     fileStream.close();
 
