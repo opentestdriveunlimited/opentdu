@@ -28,6 +28,11 @@ static CmdLineArg CmdLineArgsSkipGLSL( "skip_glsl", []( const char* pArg ) {
     gbSkipGLSLTranslation = true;
 } );
 
+static bool gbForceExtraction = false; // If true, ignore previously extracted assets
+static CmdLineArg CmdLineArgsForce( "force", []( const char* pArg ) {
+    gbForceExtraction = true;
+} );
+
 static constexpr uint32_t kD3D9ShaderMagic  = 0xffff0200; // 0x0002ff;
 static constexpr uint32_t kD3D9ShaderMagic2 = 0xfffe0200; // 0x0002ff;
 
@@ -87,7 +92,7 @@ static std::string GetIniOutputPath() {
 }
 
 static std::string GetShaderOutputPath() {
-    return std::string( gpOutputPath ) + "/" + kShadersRoot;
+    return std::string( gpOutputPath ) + "/" + kShadersRootFolder;
 }
 
 static void CheckAndCreateOutputFolder( const std::string& folder ) {
@@ -99,11 +104,12 @@ static void CheckAndCreateOutputFolder( const std::string& folder ) {
 }
 
 [[noreturn]] static void PrintUsage() {
-    OTDU_LOG_ALWAYS( "USAGE: opentdu_assetExtractor [-executable <pathToExe> -asset_output_path <pathToOutput> -skip_glsl]\n"
+    OTDU_LOG_ALWAYS( "USAGE: opentdu_assetExtractor [-executable <pathToExe> -asset_output_path <pathToOutput> -skip_glsl -force]\n"
                      "\n"
                      "-executable:            Path to your TestDriveUnlimited.exe executable (optional) (default: executable in current working directory)\n"
                      "-asset_output_path:     Path used to write extracted assets (optional) (default: current working directory)\n"
-                     "-skip_glsl:             Do not generate shader tables for OpenGL3.3 (default: false)\n" );
+                     "-skip_glsl:             Do not generate shader tables for OpenGL3.3 (optional) (default: false)\n"
+                     "-force:                 Force asset extraction and ignore previously extracted assets (optional) (default: false)\n" );
     exit( 1 );
 }
 
@@ -124,7 +130,7 @@ static void WriteShaderTableHeaderToStream(const ShaderTableHeader& header, std:
 static bool WriteShaderTableToDisk( const ShaderTable& shaderTable, const std::string& fileOutputPath)
 {
     std::filesystem::path folderFS = std::filesystem::path( fileOutputPath );
-    if ( std::filesystem::exists( folderFS ) ) {
+    if ( !gbForceExtraction && std::filesystem::exists( folderFS ) ) {
         OTDU_LOG_INFO( "'%s' already exists; skipping...\n", fileOutputPath.c_str() );
         return false;
     }
@@ -195,7 +201,7 @@ int main( int argc, char* argv[] ) {
 
         if (currentTableName != entry.pShaderCategory) {
             if (!tableDXSO.Header.Empty()) {
-                std::string filename = currentTableName + ".bin";
+                std::string filename = currentTableName + kShaderTableExtension;
                 
                 std::string fileOutputPath = GetShaderOutputPath() + kShadersD3D9Folder +filename;
                 bool bWroteToDisk = WriteShaderTableToDisk( tableDXSO, fileOutputPath );
@@ -274,7 +280,7 @@ int main( int argc, char* argv[] ) {
         }
     }
     if ( !tableDXSO.Header.Empty() ) {
-        std::string filename = currentTableName + ".bin";
+        std::string filename = currentTableName + kShaderTableExtension;
 
         std::string fileOutputPath = GetShaderOutputPath() + kShadersD3D9Folder + filename;
         bool bWroteToDisk = WriteShaderTableToDisk( tableDXSO, fileOutputPath );
