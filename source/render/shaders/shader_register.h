@@ -49,7 +49,11 @@ struct ShaderTable
     }
 };
 
-static constexpr const char* kShadersRoot = "EURO/Shaders/";
+static constexpr const char* kShadersRootFolder = "EURO/Shaders/";
+static constexpr const char* kShadersD3D9Folder = "/d3d9/";
+static constexpr const char* kShadersOpenGLFolder = "/gl330/";
+static constexpr const char* kShadersVulkanFolder = "/vulkan/";
+static constexpr const char* kShaderTableExtension = ".bin";
 
 struct ShaderBindingFlags // TODO: Rename me
 {
@@ -77,7 +81,8 @@ struct ShaderPermutationFlags
 
 struct CachedShader
 {
-    GPUShader*      pShader = nullptr;
+    GPUShader*      pShader = nullptr; // Shader instance
+    void*           pShaderBin = nullptr; // Shader bytecode (or source for GLSL)
     uint32_t        Flag0 = 0u;
     uint32_t        Flag1 = 0u;
     uint32_t        Flag2 = 0u;
@@ -87,11 +92,12 @@ struct CachedShader
 class ShaderRegister {
 public:
     ShaderRegister();
+    ~ShaderRegister();
 
     void registerMasterTable();
     void retrieveShadersForMaterial( Material* param_1, const uint32_t index );
     void registerShader( const ShaderTableEntry* pTableEntry );
-
+    
 private:
     void fillParameterFlags( Material* param_1, ShaderPermutationFlags* param_2 );
     bool retrieveVSPSForFlags( ShaderPermutationFlags& param_1, CachedShader* pOutVertexShader, CachedShader* pOutPixelShader );
@@ -100,6 +106,9 @@ private:
     uint64_t latestFoundHashcode;
 
     Material* pDefaultMaterial;
+
+    std::unordered_map<std::string, void*> shaderTableBinary;
+    std::unordered_map<uint64_t, void*> shaderBinaries;
 
     std::unordered_map<uint64_t, CachedShader> cachedVertexShaders;
     std::unordered_map<uint64_t, CachedShader> cachedPixelShaders;

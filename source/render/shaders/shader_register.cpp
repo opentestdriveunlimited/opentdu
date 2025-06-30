@@ -16,6 +16,14 @@ ShaderRegister::ShaderRegister()
     
 }
 
+ShaderRegister::~ShaderRegister()
+{
+    for ( auto& table : shaderTableBinary ) {
+        TestDrive::Free( table.second );
+    }
+    shaderTableBinary.clear();
+}
+
 void ShaderRegister::registerMasterTable()
 {
     constexpr uint32_t kNumShaderEntries = sizeof( kMasterShaderTable ) / sizeof( kMasterShaderTable[0] );
@@ -69,31 +77,62 @@ void ShaderRegister::retrieveShadersForMaterial( Material* param_1, const uint32
 
 void ShaderRegister::registerShader( const ShaderTableEntry* pTableEntry )
 {
-    std::string resourcePath = kShadersRoot;
-    resourcePath += IntegerToHexString( pTableEntry->OffsetInExecutable );
-#if OTDU_VULKAN
-    resourcePath += ".spirv";
+    auto it = shaderTableBinary.find( pTableEntry->pShaderCategory );
+    if ( it == shaderTableBinary.end() ) {
+        std::string shaderTablePath = kShadersRootFolder;
+#if OTDU_D3D9
+        shaderTablePath += kShadersD3D9Folder;
+#elif OTDU_VULKAN
+        shaderTablePath += kShadersVulkanFolder;
 #elif OTDU_OPENGL
-    resourcePath += ".glsl";
+        shaderTablePath += kShadersOpenGLFolder;
 #endif
+        shaderTablePath += pTableEntry->pShaderCategory;
+        shaderTablePath += kShaderTableExtension;
+        
+        void* pShaderTable = nullptr;
+        uint32_t contentSize = 0;
+        bool bFoundShaderTable = gpFile->loadFile( shaderTablePath.c_str(), &pShaderTable, &contentSize );
+        if ( !bFoundShaderTable ) {
+            OTDU_LOG_ERROR( "Failed to register shader '%s' (hashcode 0x%p): shader table '%s' does not exist\n", shaderTablePath.c_str(), pTableEntry->Hashcode, pTableEntry->pShaderCategory );
+            return;
+        }
 
-    void* pShaderContent = nullptr;
-    uint32_t contentSize = 0;
-    bool bFoundShader = gpFile->loadFile( resourcePath.c_str(), &pShaderContent, &contentSize );
+        shaderTableBinary.insert( std::make_pair( pTableEntry->pShaderCategory, pShaderTable ) );
 
-    if ( !bFoundShader ) {
-        OTDU_LOG_ERROR( "Failed to register shader '%s' (category '%s' hashcode 0x%p)\n", resourcePath.c_str(), pTableEntry->pShaderCategory, pTableEntry->Hashcode  );
+        ShaderTableHeader header;
+        header.NumEntries = *( size_t* )pShaderTable;
+
+        int8_t* pShaderContent = ( int8_t* )pShaderTable;
+
+        ShaderTableHeaderEntry_t* pHeaderIt = ( ShaderTableHeaderEntry_t* )( ( int8_t* )pShaderTable + sizeof( size_t ) );
+        for ( size_t i = 0; i < header.NumEntries; i++ ) {
+            uint64_t hashcode = std::get<1>( *pHeaderIt );
+            uint64_t offset = std::get<0>( *pHeaderIt );
+            
+            int8_t* pShaderPointer = pShaderContent + offset;
+
+            shaderBinaries.insert( std::make_pair( hashcode, pShaderPointer ) );
+            pHeaderIt++;
+        }
+
+        OTDU_LOG_INFO( "Successfully parsed '%s' (found %ull shaders in table)\n", shaderTablePath.c_str(), header.NumEntries );
+    }
+
+    // Cache shader (note that we do not create the shader yet; this will be done on its first use)
+    auto shaderBinIt = shaderBinaries.find( pTableEntry->Hashcode );
+    if ( shaderBinIt == shaderBinaries.end() ) {
+        OTDU_LOG_ERROR( "Failed to register shader 0x%p from shader table '%s': shader not found in hashtable!\n", pTableEntry->Hashcode, pTableEntry->pShaderCategory );
         return;
     }
 
-    GPUShader* pShader = nullptr;
-
-    CachedShader cachedShader = { pShader, pTableEntry->Flag0, pTableEntry->Flag1, pTableEntry->Flag2, pTableEntry->Flag3 };
-    if ( pTableEntry->ShaderStage == eShaderType::ST_Pixel ) {
+    CachedShader cachedShader = { nullptr, shaderBinIt->second, pTableEntry->Flag0, pTableEntry->Flag1, pTableEntry->Flag2, pTableEntry->Flag3 };
+    if ( pTableEntry->ShaderStage == eShaderType::ST_Vertex ) {
         cachedVertexShaders.insert( std::make_pair( pTableEntry->Hashcode, cachedShader ) );
-    } else if ( pTableEntry->ShaderStage == eShaderType::ST_Vertex ) {
+    } else if ( pTableEntry->ShaderStage == eShaderType::ST_Pixel ) {
         cachedPixelShaders.insert( std::make_pair( pTableEntry->Hashcode, cachedShader ) );
     } else {
+        OTDU_LOG_ERROR( "Unimplemented shader stage!\n" );
         OTDU_ASSERT( false );
     }
 }

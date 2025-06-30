@@ -10,6 +10,7 @@
 #include <fstream>
 #include <filesystem>
 
+#define EXCLUDE_PSTDINT 1
 #include "hlslcc.h"
 
 static char gpPathToExecutable[OTDU_MAX_PATH]; // Path to TestDriveUnlimited.exe
@@ -22,9 +23,9 @@ static CmdLineArg CmdLineArgsOutputPath( "asset_output_path", []( const char* pA
     strcpy( gpOutputPath, pArg );
 } );
 
-static bool gbSkipGLSLTranslation = false; // If true, do not generate shader tables for OpenGL
+static bool gbSkipGLSLTranslation = true; // If true, do not generate shader tables for OpenGL
 static CmdLineArg CmdLineArgsSkipGLSL( "skip_glsl", []( const char* pArg ) {
-    strcpy( gpOutputPath, pArg );
+    gbSkipGLSLTranslation = true;
 } );
 
 static constexpr uint32_t kD3D9ShaderMagic  = 0xffff0200; // 0x0002ff;
@@ -168,8 +169,9 @@ int main( int argc, char* argv[] ) {
     // Prepare output
     CheckAndCreateOutputFolder( GetIniOutputPath() );
     CheckAndCreateOutputFolder( GetShaderOutputPath() );
-    CheckAndCreateOutputFolder( GetShaderOutputPath() + "/d3d9/" );
-    CheckAndCreateOutputFolder( GetShaderOutputPath() + "/gl330/" );
+    CheckAndCreateOutputFolder( GetShaderOutputPath() + kShadersD3D9Folder );
+    CheckAndCreateOutputFolder( GetShaderOutputPath() + kShadersOpenGLFolder );
+    CheckAndCreateOutputFolder( GetShaderOutputPath() + kShadersVulkanFolder );
 
     uint32_t shaderExtractedCount = 0;
     uint32_t iniExtractedCount = 0;
@@ -195,14 +197,14 @@ int main( int argc, char* argv[] ) {
             if (!tableDXSO.Header.Empty()) {
                 std::string filename = currentTableName + ".bin";
                 
-                std::string fileOutputPath = GetShaderOutputPath() + "/d3d9/" +filename;
+                std::string fileOutputPath = GetShaderOutputPath() + kShadersD3D9Folder +filename;
                 bool bWroteToDisk = WriteShaderTableToDisk( tableDXSO, fileOutputPath );
                 if (bWroteToDisk) {
                     shaderExtractedCount++;
                 }
 
                 if (!gbSkipGLSLTranslation) {
-                    fileOutputPath = GetShaderOutputPath() + "/gl330/" + filename;
+                    fileOutputPath = GetShaderOutputPath() + kShadersOpenGLFolder + filename;
                     bool bWroteToDisk = WriteShaderTableToDisk( tableGLSL, fileOutputPath );
                     if (bWroteToDisk) {
                         shaderExtractedCount++;
@@ -271,7 +273,28 @@ int main( int argc, char* argv[] ) {
             OTDU_ASSERT_FATAL( false );
         }
     }
+    if ( !tableDXSO.Header.Empty() ) {
+        std::string filename = currentTableName + ".bin";
 
+        std::string fileOutputPath = GetShaderOutputPath() + kShadersD3D9Folder + filename;
+        bool bWroteToDisk = WriteShaderTableToDisk( tableDXSO, fileOutputPath );
+        if ( bWroteToDisk ) {
+            shaderExtractedCount++;
+        }
+
+        if ( !gbSkipGLSLTranslation ) {
+            fileOutputPath = GetShaderOutputPath() + kShadersOpenGLFolder + filename;
+            bool bWroteToDisk = WriteShaderTableToDisk( tableGLSL, fileOutputPath );
+            if ( bWroteToDisk ) {
+                shaderExtractedCount++;
+            }
+        } else {
+            OTDU_LOG_INFO( "Skipping GLSL translation ('-skip_glsl' found in command line)\n" );
+        }
+
+        tableDXSO.Clear();
+        tableGLSL.Clear();
+    }
     fileStream.seekg(0, std::ios::beg);
     dword = 0;
 
@@ -317,7 +340,7 @@ int main( int argc, char* argv[] ) {
     }
     fileStream.close();
 
-    OTDU_LOG_ALWAYS( "==== Summary ====\nFound and extracted %u shaders and %u .ini files to disk\n",
+    OTDU_LOG_ALWAYS( "==== Summary ====\nFound and extracted %u shader table(s) and %u .ini files to disk\n",
                     shaderExtractedCount, iniExtractedCount );
 
     return 0;
