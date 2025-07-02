@@ -10,6 +10,11 @@
 #include "flash_entity.h"
 #include "flash_player.h"
 
+class FlashStreamListener {
+public:
+    virtual void onResourceStreamed() {}
+};
+
 class GSFlash : public GameSystem {
 public:
     const char* getName() const override { return "Service : Flash"; }
@@ -46,6 +51,7 @@ private:
     
     std::vector<FlashMovie> flashMovies;
     std::vector<MoviePlayer> moviePlayers;
+    std::set<FlashStreamListener*> streamingListeners;
 
     int32_t maxFlashMovies;
     int32_t currentLevel;
@@ -68,6 +74,7 @@ private:
     void initLevel(FlashEntity* param_1);
     void updateUnicodeFontBank();
     void setupLevel(const bool param_1);
+    void initMoviePlayer( bool param_1, MoviePlayer& param_2 );
 };
 
 extern GSFlash* gpFlash;

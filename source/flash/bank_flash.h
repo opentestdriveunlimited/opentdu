@@ -36,6 +36,7 @@ public:
     inline BankFlash::eBankFlashInit getState() const { return state; }
     inline FlashPlayer* getFlashPlayer() const { return pFlashPlayer; }
     inline void setPlayerCallback( UserCallback_t callback ) { playerCallback = callback; }
+    inline bool isLoaded() const { return state == eBankFlashInit::BFI_Loaded; }
 
 public:
     BankFlash();

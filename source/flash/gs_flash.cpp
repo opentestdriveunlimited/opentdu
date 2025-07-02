@@ -45,6 +45,10 @@ GSFlash::~GSFlash()
 
 bool GSFlash::initialize( TestDriveGameInstance* )
 {
+    if ( !bInitialized ) {
+        return true;
+    }
+
     return true;
 }
 
@@ -99,7 +103,7 @@ void GSFlash::initGameMode(const eGameMode gameMode, FlashEntity *pEntity, const
     }
     addMovieForGameMode(gameMode, pEntity);
     
-    
+    OTDU_UNIMPLEMENTED; // TODO:
     // GSFlash::PushInstallLevel(param_1,param_4);
     // uVar1 = 0;
     // if (param_1->NumFlashMovies != 0) {
@@ -287,69 +291,65 @@ void GSFlash::setupLevel(const bool param_1)
     bLevelSetupInProgress = true;
     fontResources.initialize( false );
 
+    bool bHasInitPlayers = false;
+    for ( MoviePlayer& player : moviePlayers ) {
+        if ( player.MovieBank.isInUse() && player.Level == currentLevel && !player.MovieBank.isLoaded() ) {
+            initMoviePlayer( param_1, player );
+            bHasInitPlayers = true;
+        }
+    }
 
-//     bool bVar1;
-//     char *pcVar2;
-//     MoviePlayer *pMVar3;
-//     uint uVar4;
-//     int iVar5;
-//     edCFlashPlayer *peVar6;
-//     uint local_8;
-//     uint local_4;
+    if ( param_1 ) {
+        currentLevel++;
+        return;
+    }
+    bLevelSetupInProgress = param_1;
     
-//     bVar1 = false;
-//     uVar4 = 0;
-//     if (param_1->NumPlayers != 0) {
-//       iVar5 = 0;
-//       bVar1 = false;
-//       do {
-//         pcVar2 = (param_1->pMoviePlayers->edCFlashResource).super.BankEntry.pFilename + iVar5 + -0x75;
-//         if (((*(char *)((int)((param_1->pMoviePlayers->edCFlashResource).RenderList.CurrentState.
-//                               Matrix.Scalars + -5) + 0xcU + iVar5) != '\0') &&
-//             (*(int *)(pcVar2 + 0xad4) == param_1->CurrentLevel)) && (*(int *)(pcVar2 + 0x2dc) != 1)) {
-//           GSFlash::InstallMovie(param_2,(int)pcVar2,param_1);
-//           bVar1 = true;
-//         }
-//         uVar4 = uVar4 + 1;
-//         iVar5 = iVar5 + 0xae0;
-//       } while (uVar4 < param_1->NumPlayers);
-//     }
-//     if (param_2) goto LAB_0099c496;
-//     peVar6 = (edCFlashPlayer *)0x0;
-//     param_1->bInstalling = param_2;
-//     if (param_1->pActiveInstallListener == (IFlashInstallListener *)0x0) {
-//   LAB_0099c414:
-//       iVar5 = param_1->CurrentLevel;
-//     }
-//     else {
-//       iVar5 = param_1->CurrentLevel;
-//       if (0 < iVar5) {
-//         if (bVar1) {
-//           (**(code **)param_1->pActiveInstallListener->lpVtbl)();
-//         }
-//         param_1->pActiveInstallListener = (IFlashInstallListener *)0x0;
-//         goto LAB_0099c414;
-//       }
-//     }
-//     if (iVar5 == 0) {
-//       bVar1 = GSFlash::GetFlashMovieIndex(param_1,&local_8,&local_4,"GENERAL");
-//       if (bVar1) {
-//         pMVar3 = GSFlash::GetMoviePlayer(param_1,local_8,local_4);
-//         if ((pMVar3 == (MoviePlayer *)0x0) || ((pMVar3->edCFlashResource).LoadState != LOADED)) {
-//           peVar6 = (edCFlashPlayer *)0x0;
-//         }
-//         else {
-//           peVar6 = (pMVar3->edCFlashResource).pPlayer;
-//         }
-//       }
-//       GSFlash::GetFlashMovieIndex(param_1,&local_8,&local_4,"CONFIGPC");
-//       if (peVar6 != (edCFlashPlayer *)0x0) {
-//         param_1->pFlashMessageBox->pPlayer = peVar6;
-//         *(edCFlashPlayer **)(*(int *)&param_1->field_0xf8c + 0x18) = peVar6;
-//         edCFlashPlayer::SetVar(peVar6,"/:state_Cheats",0);
-//       }
-//     }
-//   LAB_0099c496:
-//     param_1->CurrentLevel = param_1->CurrentLevel + 1;
-//     return;
+    int32_t iVar5 = 0;
+    if ( streamingListeners.empty() ) {
+        iVar5 = currentLevel;
+    } else {
+        iVar5 = currentLevel;
+        if ( 0 < iVar5 ) {
+            if ( bVar1 ) {
+                for ( FlashStreamListener* pListener : streamingListeners ) {
+                    pListener->onResourceStreamed();
+                }
+            }
+            streamingListeners.clear();
+            iVar5 = currentLevel;
+        }
+    }
+
+    if ( iVar5 == 0 ) {
+        uint32_t local_8 = 0;
+        uint32_t local_4 = 0;
+        FlashPlayer* peVar6 = nullptr;
+        bool bVar1 = getFlashMovieIndex( &local_8, &local_4, "GENERAL" );
+        if ( bVar1 ) {
+            MoviePlayer* pMVar3 = getMoviePlayer( local_8, local_4 );
+            if ( pMVar3 == nullptr || !pMVar3->MovieBank.isLoaded() ) {
+                peVar6 = nullptr;
+            } else {
+                peVar6 = pMVar3->MovieBank.getFlashPlayer();
+            }
+        }
+
+        getFlashMovieIndex( &local_8, &local_4, "CONFIGPC" );
+        if ( peVar6 != nullptr ) {
+            OTDU_UNIMPLEMENTED; // TODO:
+//          param_1->pFlashMessageBox->pPlayer = peVar6;
+//          param_1->field_0xf8c->field_0x18 = peVar6;
+            peVar6->setVariableValue( "/:state_Cheats", 0 );
+        }
+    }
+
+    currentLevel++;
+}
+
+void GSFlash::initMoviePlayer( bool param_1, MoviePlayer& param_2 )
+{
+    if ( param_2.MovieBank.isLoaded() ) {
+        OTDU_UNIMPLEMENTED; // TODO:
+    }
 }
