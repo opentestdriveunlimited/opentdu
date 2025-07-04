@@ -9,6 +9,8 @@
 #include "movie_player.h"
 #include "flash_entity.h"
 #include "flash_player.h"
+#include "render/file_collection_2d.h"
+#include "render/file_collection_3d.h"
 
 class FlashStreamListener {
 public:
@@ -57,10 +59,14 @@ private:
     int32_t currentLevel;
     int32_t unicodeFontID;
 
+    FileCollection2D collection2D;
+    FileCollection3D collection3D;
+    
     Material* pNullMaterial;
     Material* pMaskMaterial;
 
-    Render2DM p2DMs[2];
+    void* p2DMMemory[2];
+    Render2DM render2DM[2];
 
     BankCommonFlash commonResources;
     BankCommonFlash fontResources;

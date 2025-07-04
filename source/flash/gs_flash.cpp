@@ -28,6 +28,7 @@ GSFlash::GSFlash()
     , unicodeFontID( 0 )
     , pNullMaterial( nullptr )
     , pMaskMaterial( nullptr )
+    , p2DMMemory{ nullptr, nullptr }
     , pActiveMoviePlayer( nullptr )
     , bInitialized( false )
     , bLevelSetupInProgress( false )
@@ -35,7 +36,8 @@ GSFlash::GSFlash()
     OTDU_ASSERT( gpFlash == nullptr );
     gpFlash = this;
 
-    flashMovies.resize( maxFlashMovies );
+    flashMovies.reserve( maxFlashMovies );
+    moviePlayers.reserve( 4 );
 }
 
 GSFlash::~GSFlash()
@@ -49,6 +51,11 @@ bool GSFlash::initialize( TestDriveGameInstance* )
         return true;
     }
 
+    uint32_t nullMaterialSize = Render2DM::CalcSize(0, 0);
+    p2DMMemory[0] = TestDrive::Alloc(nullMaterialSize);
+    render2DM[0].create(p2DMMemory[0], 0x230588678a67836d, 0, 0, 0, 0);
+    OTDU_UNIMPLEMENTED;
+    
     return true;
 }
 
@@ -102,25 +109,22 @@ void GSFlash::initGameMode(const eGameMode gameMode, FlashEntity *pEntity, const
         initLevel(nullptr);
     }
     addMovieForGameMode(gameMode, pEntity);
-    
-    OTDU_UNIMPLEMENTED; // TODO:
-    // GSFlash::PushInstallLevel(param_1,param_4);
-    // uVar1 = 0;
-    // if (param_1->NumFlashMovies != 0) {
-    //   iVar3 = 0;
-    //   iVar2 = 0;
-    //   do {
-    //     if (*(int *)(param_1->pFlashMovies->pFilename + iVar2 + 0x20) == -1) {
-    //       *(IListenerFlash **)((int)&param_1->pMoviePlayers->pUnknown + iVar3) = param_3;
-    //     }
-    //     uVar1 = uVar1 + 1;
-    //     iVar2 = iVar2 + 0x30;
-    //     iVar3 = iVar3 + 0xae0;
-    //   } while (uVar1 < param_1->NumFlashMovies);
-    // }
-    // if (param_2 != 0) {
+    setupLevel(param_4);
+
+    // TODO: Flash resources seems to be paired with a single player. Is it always the case/safe to assume?
+    for (uint32_t i = 0; i < flashMovies.size(); i++) {
+        FlashMovie& movie = flashMovies[i];
+        MoviePlayer& player = moviePlayers[i];
+
+        if (movie.GameMode == -1) {
+            player.pEntityInstance = pEntity;
+        }
+    }
+
+    if (gameMode != eGameMode::GM_BootMenu) {
+        OTDU_UNIMPLEMENTED;
     //   FUN_0099e9b0(&param_1->Audio);
-    // }
+    }
 }
 
 FlashPlayer *GSFlash::getFlashPlayer(const char *pName)
@@ -311,7 +315,7 @@ void GSFlash::setupLevel(const bool param_1)
     } else {
         iVar5 = currentLevel;
         if ( 0 < iVar5 ) {
-            if ( bVar1 ) {
+            if ( param_1 ) {
                 for ( FlashStreamListener* pListener : streamingListeners ) {
                     pListener->onResourceStreamed();
                 }
@@ -340,7 +344,7 @@ void GSFlash::setupLevel(const bool param_1)
             OTDU_UNIMPLEMENTED; // TODO:
 //          param_1->pFlashMessageBox->pPlayer = peVar6;
 //          param_1->field_0xf8c->field_0x18 = peVar6;
-            peVar6->setVariableValue( "/:state_Cheats", 0 );
+            peVar6->setVariableValue( "/:state_Cheats", 0u );
         }
     }
 
