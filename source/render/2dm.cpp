@@ -12,6 +12,11 @@ static constexpr uint32_t kLayerArrayMagic      = 0x4159414c; // LAYA (LAYer Arr
 static constexpr uint32_t kHashcodesMagic       = 0x48534148; // HASH (HASHcodes)
 static constexpr uint32_t kLayerMagic           = 0x2e59414c; // LAY. (LAYer)
 
+static constexpr uint32_t k2DMVersionMajor      = 2;
+static constexpr uint32_t k2DMVersionMinor      = 0;
+
+static constexpr uint32_t kMaxNumLayers         = 8;
+
 Render2DM::Render2DM()
     : RenderFile()
     , pMatArray( nullptr )
@@ -103,6 +108,28 @@ void Render2DM::bindUVAnimationReference( const RenderUVA* param_2 )
 
 Material* Render2DM::create( void* param_1, uint64_t param_2, int32_t param_3, uint32_t param_4, uint32_t param_5, uint32_t param_6 )
 {
+    int32_t iVar3 = param_4 * 0x10 + param_5;
+    memset(param_1, 0, iVar3 + 0x2d3U & 0xfffffff0);
+
+    int8_t* pStreamPointer = (int8_t*)param_1;
+    pStreamPointer = (pStreamPointer + 0xfu);
+
+    RenderFile::Header* pHeader = (RenderFile::Header*)pStreamPointer;
+    pHeader->VersionMajor = k2DMVersionMajor;
+    pHeader->VersionMinor = k2DMVersionMinor;
+    pHeader->Size = iVar3;
+    pHeader->Hashcode = k2DMMagic;
+    pHeader->Flags = 0;
+
+    pStreamPointer += sizeof(RenderFile::Header);
+
+    RenderFile::Section* pLayerArraySection = (RenderFile::Section*)pStreamPointer;
+    pLayerArraySection->Type = kLayerArrayMagic;
+    pLayerArraySection->VersionMajor = 0;
+    pLayerArraySection->VersionMinor = 0;
+    pLayerArraySection->Size = 0x10;
+    pLayerArraySection->DataSize = 0x10;
+
     OTDU_UNIMPLEMENTED;
     return nullptr;
 }
