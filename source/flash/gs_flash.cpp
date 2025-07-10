@@ -7,6 +7,8 @@
 #include "player_data/gs_playerdata.h"
 #include "core/locale.h"
 #include "tdu_instance.h"
+#include "render/material.h"
+#include "world/gs_world.h"
 
 static constexpr const char* kCommonFlashBankName = "common.bnk";
 
@@ -52,10 +54,62 @@ bool GSFlash::initialize( TestDriveGameInstance* )
     }
 
     uint32_t nullMaterialSize = Render2DM::CalcSize(0, 0);
+
+    // Null Material Fallback
     p2DMMemory[0] = TestDrive::Alloc(nullMaterialSize);
-    render2DM[0].create(p2DMMemory[0], 0x230588678a67836d, 0, 0, 0, 0);
-    OTDU_UNIMPLEMENTED;
+
+    pNullMaterial = render2DM[0].create(p2DMMemory[0], 0x230588678a67836d, 0, 0, 0, 0);
+    pNullMaterial->DepthTest = '\x01';
+    pNullMaterial->DepthWrite = '\x02';
+    pNullMaterial->AlphaTest = '\0';
+    pNullMaterial->SrcBlend = '\x05';
+    pNullMaterial->DstBlend = '\x06';
+    pNullMaterial->BlendOP = '\x01';
+    pNullMaterial->AlphaSource = '\0';
     
+    MaterialParameter* peVar8 = pNullMaterial->getParameterByIndex(0);
+    (peVar8->Flags).NumPrelight = '\x01';
+    (peVar8->Flags).NumTextures = '\0';
+
+    MaterialLayer* iVar9 = peVar8->getLayer(0);
+    iVar9->pLayerTextures[0].SamplerAddress[0] = 2;
+    iVar9->pLayerTextures[0].SamplerAddress[1] = 2;
+
+    render2DM[0].initialize(p2DMMemory[0]);
+    pNullMaterial->OT = 0x2a; // TODO: I assume 0x2a maps to Flash RenderLayer (or smthing like that)
+
+    gpWorld->pushGlobal2DM(&render2DM[0]);
+
+    // Masked Material Fallback
+    p2DMMemory[1] = TestDrive::Alloc(nullMaterialSize);
+
+    pMaskMaterial = render2DM[1].create(p2DMMemory[0], 0x230588678a67836d, 0, 0, 0, 0);
+    pMaskMaterial->DepthTest = '\x02';
+    pMaskMaterial->DepthWrite = '\x01';
+    pMaskMaterial->AlphaTest = '\x01';
+    pMaskMaterial->SrcBlend = '\x05';
+    pMaskMaterial->DstBlend = '\x06';
+    pMaskMaterial->BlendOP = '\x01';
+    pMaskMaterial->AlphaSource = '\0';
+
+    peVar8 = pMaskMaterial->getParameterByIndex(0);
+    (peVar8->Flags).NumPrelight = '\x01';
+    (peVar8->Flags).NumTextures = '\0';
+
+    iVar9 = peVar8->getLayer(0);
+    iVar9->pLayerTextures[0].SamplerAddress[0] = 2;
+    iVar9->pLayerTextures[0].SamplerAddress[1] = 2;
+
+    render2DM[1].initialize(p2DMMemory[1]);
+    pMaskMaterial->OT = 0x2a;
+
+    gpWorld->pushGlobal2DM(&render2DM[1]);
+
+    mutex.initialize("Flash");
+
+    void* pAudioPool = TestDrive::AllocAligned(0x120002, 0x10);
+    audio.initialize(pAudioPool);
+
     return true;
 }
 

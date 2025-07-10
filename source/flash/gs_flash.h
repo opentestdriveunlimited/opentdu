@@ -9,8 +9,10 @@
 #include "movie_player.h"
 #include "flash_entity.h"
 #include "flash_player.h"
+#include "flash_sounds.h"
 #include "render/file_collection_2d.h"
 #include "render/file_collection_3d.h"
+#include "core/mutex.h"
 
 class FlashStreamListener {
 public:
@@ -67,6 +69,9 @@ private:
 
     void* p2DMMemory[2];
     Render2DM render2DM[2];
+
+    TestDriveMutex mutex;
+    FlashSounds audio;
 
     BankCommonFlash commonResources;
     BankCommonFlash fontResources;
