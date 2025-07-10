@@ -11,6 +11,7 @@ static constexpr uint32_t kParameterArrayMagic  = 0x41524150; // PARA (PARameter
 static constexpr uint32_t kLayerArrayMagic      = 0x4159414c; // LAYA (LAYer Array)
 static constexpr uint32_t kHashcodesMagic       = 0x48534148; // HASH (HASHcodes)
 static constexpr uint32_t kLayerMagic           = 0x2e59414c; // LAY. (LAYer)
+static constexpr uint32_t kParameterMagic       = 0x2e524150; // PAR. (PARameter)
 
 static constexpr uint32_t k2DMVersionMajor      = 2;
 static constexpr uint32_t k2DMVersionMinor      = 0;
@@ -121,17 +122,107 @@ Material* Render2DM::create( void* param_1, uint64_t param_2, int32_t param_3, u
     pHeader->Hashcode = k2DMMagic;
     pHeader->Flags = 0;
 
-    pStreamPointer += sizeof(RenderFile::Header);
-
-    RenderFile::Section* pLayerArraySection = (RenderFile::Section*)pStreamPointer;
+    RenderFile::Section* pLayerArraySection = (RenderFile::Section*)( pStreamPointer + 0x10 );
     pLayerArraySection->Type = kLayerArrayMagic;
     pLayerArraySection->VersionMajor = 0;
     pLayerArraySection->VersionMinor = 0;
-    pLayerArraySection->Size = 0x10;
+    pLayerArraySection->Size = 0x130;
     pLayerArraySection->DataSize = 0x10;
 
-    OTDU_UNIMPLEMENTED;
-    return nullptr;
+    RenderFile::Section* pPrimaryLayer = (RenderFile::Section*)( pStreamPointer + 0x20 );
+    pPrimaryLayer->Type = kLayerMagic;
+    pPrimaryLayer->VersionMajor = 0;
+    pPrimaryLayer->VersionMinor = 0;
+    pPrimaryLayer->Size = 0x120;
+    pPrimaryLayer->DataSize = 0x120;
+
+    pStreamPointer[0x3c] = static_cast<uint8_t>( param_3 );
+
+    int8_t* pLayerParams = (pStreamPointer + 0x40);
+    for ( int32_t iVar7 = 0; iVar7 < 8; iVar7++ ) {
+        // NOTE Original ASM has relative neg offsets
+        pLayerParams[0x16] = 0; // MOV        byte ptr [ECX + -0x1],BL
+        pLayerParams[0x17] = 0; // Original offset is 0x57
+        pLayerParams[0x18] = 0;
+        pLayerParams[0x19] = 0;
+
+        if (iVar7 < param_3) {
+            pLayerParams[0x8] = 1;
+            for ( uint32_t i = 0x9; i < 0x10; i++ ) {
+                pLayerParams[i] = 0;
+            }
+        }
+
+        pLayerParams += 0x20;
+    }
+
+    RenderFile::Section* pParameterArray = (RenderFile::Section*)( pStreamPointer + 0x140 );
+    pPrimaryLayer->Type = kParameterArrayMagic;
+    pPrimaryLayer->VersionMajor = 0;
+    pPrimaryLayer->VersionMinor = 0;
+    pPrimaryLayer->Size = (param_4 + 7) * 0x10 + param_5;
+    pPrimaryLayer->DataSize = 0x10;
+
+    RenderFile::Section* pPrimaryParameter = (RenderFile::Section*)( pStreamPointer + 0x150 );
+    pPrimaryParameter->Type = kParameterMagic;
+    pPrimaryParameter->VersionMajor = 0;
+    pPrimaryParameter->VersionMinor = 0;
+    uint32_t uVar5 = (param_4 + 6) * 0x10 + param_5;
+    pPrimaryParameter->Size = uVar5;
+    pPrimaryParameter->DataSize = uVar5;
+
+    MaterialShaderParameterArray* pPrimaryShaderParam = (MaterialShaderParameterArray*)( pStreamPointer + 0x160 );
+    pPrimaryShaderParam->pParameters = pPrimaryLayer;
+    pPrimaryShaderParam->Flags.NumTextures = param_3;
+    pPrimaryShaderParam->Flags.NumUVMaps = param_3;
+    pPrimaryShaderParam->Flags.NumPrelight = param_6;
+    pPrimaryShaderParam->Hashcode = param_2;
+    pPrimaryShaderParam->Type = eMaterialParameterType::MPT_Generic;
+    pPrimaryShaderParam->NumParameters = param_4;
+    pPrimaryShaderParam->NumLayers = 1;
+    
+    MaterialShaderParameter* pParams = (MaterialShaderParameter*)( pStreamPointer + 0x1b0 );
+    for (uint32_t i = 0; i < param_4; i++ ) {
+        MaterialShaderParameter& param = pParams[i];
+        param.Size = 0x10;
+        param.Format = 2;
+        param.bBindToVS = false;
+        param.Type = 0;
+    }
+
+    RenderFile::Section* pMaterialArray = (RenderFile::Section*)( pStreamPointer + 0x170 + (param_4 * 0x10) + param_5 );
+    pMaterialArray->Type = kMaterialArrayMagic;
+    pMaterialArray->VersionMajor = 0;
+    pMaterialArray->VersionMinor = 0;
+    pMaterialArray->Size = 0x114;
+    pMaterialArray->DataSize = 0x10;
+
+    RenderFile::Section* pHashSection = ( pMaterialArray + 1 );
+    pHashSection->Type = kHashcodesMagic;
+    pHashSection->VersionMajor = 0;
+    pHashSection->VersionMinor = 0;
+    pHashSection->Size = 0x20;
+    pHashSection->DataSize = 0x20;
+
+    HashTableEntry* pMainEntry = (HashTableEntry*)(pHashSection + 1);
+    pMainEntry->Hashcode = 0xdeadbeef;
+    pMainEntry->pMaterial = nullptr;
+
+    RenderFile::Section* pMaterialHeader = (RenderFile::Section*)(pHashSection + 1);
+    pMaterialHeader->Type = kMaterialMagic;
+    pMaterialHeader->VersionMajor = 0;
+    pMaterialHeader->VersionMinor = 0;
+    pMaterialHeader->Size = 0xe4;
+    pMaterialHeader->DataSize = 0xe4;
+
+    Material* pMaterial = (Material*)( pMaterialHeader + 1 );
+    pMaterial->setDefaultMaterial();
+    pMaterial->NumParams = 1;
+
+    RenderFile::Section** pParamSectionPointer = (RenderFile::Section**)((uint8_t*)pMaterial + 0xd0);
+    *pParamSectionPointer = pPrimaryParameter;
+
+    return pMaterial;
 }
 
 RenderFile::Section* Render2DM::getMaterial( uint64_t param_2 )

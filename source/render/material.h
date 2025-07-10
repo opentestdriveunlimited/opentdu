@@ -21,7 +21,9 @@ struct MaterialLayerTexture
     uint64_t TextureTypeHashcode; // NMAP, COLOR, etc.
     uint64_t Hashcode; // .2DB Hashcode
     RenderFile::Section* pTextureSection;
-    //uint8_t UnknownBytes[4 /*8*/]; // TODO: Check if it doesn't break (32bit used to be 8; need to drop to 4 for x64).
+    // uint8_t UnknownFlags[4]; // TODO: This is stomped by the pointer (since we are on x64). Are those bytes in use?
+    uint8_t SamplerAddress[3]; // UVW
+    uint8_t __PADDING__;
     MaterialLayerTextureAttribute* pAttributes;
 };
 
