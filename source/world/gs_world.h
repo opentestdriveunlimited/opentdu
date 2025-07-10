@@ -1,8 +1,10 @@
 #pragma once
 
 #include "game/gs_base.h"
+#include "render/file_collection_2d.h"
 
 class StreamingManager;
+class Render2DM;
 
 class GSWorld : public GameSystem {
 public:
@@ -16,8 +18,12 @@ public:
     void tick(float deltaTime) override;
     void terminate() override;
 
+    void pushGlobal2DM( Render2DM* pRender2DM );
+
 private:
     StreamingManager* pStreamingManager;
+    
+    FileCollection2D collection2D;
 
     Eigen::Vector4f* pStreamPosition;
     Eigen::Vector4f staticStreamPosition;

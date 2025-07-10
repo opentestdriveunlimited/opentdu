@@ -35,3 +35,9 @@ void GSWorld::terminate()
 {
 
 }
+
+void GSWorld::pushGlobal2DM( Render2DM* pRender2DM )
+{
+    OTDU_ASSERT( pRender2DM );
+    collection2D.register2DM( pRender2DM );
+}
