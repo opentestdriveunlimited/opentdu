@@ -24,6 +24,8 @@ public:
 
     const char* getLanguage();
 
+    void setUnitSystem( const bool bUseImperial );
+
 private:
     uint8_t bInitialized : 1;
     uint8_t bForceUpdate : 1;
@@ -51,7 +53,6 @@ private:
 
 private:
     void updateUnitSystem();
-    void setUnitSystem( const bool bUseImperial );
 };
 
 extern GSPlayerData* gpPlayerData;
