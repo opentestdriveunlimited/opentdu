@@ -23,7 +23,7 @@ GPSVoice::~GPSVoice()
 bool GPSVoice::initialize()
 {
     if (audioState != eAudioState::GVAS_Unknown || pMemoryPool == nullptr) {
-        return;
+        return true;
     }
 
     const char* pPathRoot = gpConfig->getResRootPath();
