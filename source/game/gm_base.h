@@ -39,6 +39,39 @@ typedef enum eGameMode : uint32_t {
     GM_Invalid = 0xffffffff
 } eGameMode;
 
+static constexpr const char* kGameModeNames[eGameMode::GM_Count] = {
+    "BOOTMENU",
+    "FREE RIDE",
+    "MAP",
+    "SHOP",
+    "MISSION",
+    "GameModeEdit",
+    "CAR SHOWCASE",
+    "InstantChallenge",
+    "TestCar",
+    "GARAGE",
+    "LIVING",
+    "SandBox",
+    "Goodies",
+    "AVATAR SHOWCASE",
+    "DRIVE IN",
+    "DRESSING",
+    "AFTER MARKET",
+    "VIDEO BUMPER",
+    "AI TRAINER",
+    "CIN VIEWER",
+    "ESTATES",
+    "CLUB",
+    "LOBBY",
+    "LOGIN",
+    "ONLINEREPLAY",
+    "INTRO",
+    "OUTRO DEMO",
+    "BOATTOUR",
+    "JAIL",
+    "INTRO DEMO"
+};
+
 class GameMode {
 public:
     inline eGameMode getCurrentGameMode() const { return currentGameMode; }
@@ -46,6 +79,8 @@ public:
 public:
     GameMode();
     virtual ~GameMode();
+
+    void mainLoop();
 
 protected:
     uint32_t    transitionFlags;

@@ -3,6 +3,7 @@
 
 #include "render/draw_list.h"
 #include "tdu_instance.h"
+#include "gs_timer.h"
 
 GameMode* gpActiveGameMode = nullptr;
 
@@ -43,4 +44,18 @@ GameMode::~GameMode()
     delete pTransitionDrawList;
 
     gpActiveGameMode = nullptr;
+}
+
+void GameMode::mainLoop()
+{
+    gGSTimer.PreviousGameSpeed = 1.0;
+    gGSTimer.GameSpeed = 1.0;
+    gGSTimer.GameDeltaTime = 0.0;
+    gGSTimer.GameTotalTime = 0.0;
+    gGSTimer.PrevGameTime = 0.0;
+
+    bExitRequested = false;
+    bMessageBoxVisible = false;
+
+    OTDU_UNIMPLEMENTED;
 }
