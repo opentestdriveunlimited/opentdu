@@ -5,6 +5,8 @@
 #include "player_data/gs_playerdata.h"
 #include "filesystem/gs_file.h"
 #include "filesystem/bank.h"
+#include "flash/flash_player.h"
+#include "flash/mng_flash_localize.h"
 
 #include <locale>
 #include <codecvt>
@@ -986,4 +988,101 @@ bool GSDatabase::openDatabase(const char *pName, const uint32_t index)
     database.Language[2] = pActiveLanguage[2];
 
     return ParseDatabase(database);
+}
+
+int32_t GSDatabase::setFlashLocalization(int32_t param_2, uint32_t param_3, FlashPlayer* param_4)
+{
+    uint32_t uVar3 = 0;
+    int32_t local_4 = 0;
+    int32_t iVar4 = 0;
+
+    uVar3 = param_3 | 1;
+    local_4 = 0;
+    iVar4 = param_4->getVariableAsInt("db_hud");
+    if (iVar4 == 1) {
+        uVar3 = param_3 | 3;
+    }
+    iVar4 = param_4->getVariableAsInt("db_hud_cha");
+    if (iVar4 == 1) {
+        uVar3 = uVar3 | 4;
+    }
+    iVar4 = param_4->getVariableAsInt("db_map");
+    if (iVar4 == 1) {
+        uVar3 = uVar3 | 8;
+    }
+    iVar4 = param_4->getVariableAsInt("db_home");
+    if (iVar4 == 1) {
+        uVar3 = uVar3 | 0x10;
+    }
+    iVar4 = param_4->getVariableAsInt("db_challenge");
+    if (iVar4 == 1) {
+        uVar3 = uVar3 | 0x20;
+    }
+    iVar4 = param_4->getVariableAsInt("db_gme");
+    if (iVar4 == 1) {
+        uVar3 = uVar3 | 0x40;
+    }
+    iVar4 = param_4->getVariableAsInt("db_shops");
+    if (iVar4 == 1) {
+        uVar3 = uVar3 | 0x80;
+    }
+    iVar4 = param_4->getVariableAsInt("db_drive_in");
+    if (iVar4 == 1) {
+        uVar3 = uVar3 | 0x100;
+    }
+    iVar4 = param_4->getVariableAsInt("db_ice");
+    if (iVar4 == 1) {
+        uVar3 = uVar3 | 0x200;
+    }
+    
+    uint32_t numEntries = engineDatabase.DBList[param_2].Content.NumData;
+    for (uint32_t i = 0; i < numEntries; i++) {
+        const DBEntryMenu& pDVar5 = gameDatabase.DBMenu[i];
+        
+        if ((uVar3 & pDVar5.Flags) != 0) {
+            if (pDVar5.Flags < 0) {
+                if (gpMngFlashLocalize != nullptr) {
+                    iVar4 = gpMngFlashLocalize->FUN_00716f60(pDVar5.Name);
+                    if (iVar4 == 0) {
+                        gpMngFlashLocalize->FUN_00717ff0(param_4, pDVar5.Name, pDVar5.FrontEndResourceName, i);
+                    }
+                }
+            } else if ( pDVar5.Name != 0ull && pDVar5.FrontEndResourceName != 0ull ) {
+                param_4->setVariableValue(pDVar5.FrontEndResourceName, pDVar5.Name);
+            }
+
+            local_4++;
+        }
+    }
+
+    const char* pLanguage = gpPlayerData->getLanguage();
+    const PlayerDataLanguage langID(pLanguage);
+    eLocale locale = langID;
+    if (locale == eLocale::L_Spanish || locale == eLocale::L_Japenese || locale == eLocale::L_Korean || locale != eLocale::L_English) {
+        uVar3 = 0;
+    } else {
+        uVar3 = 1;
+    }
+    gpPlayerData->setUnitSystem(uVar3);
+    setLanguage(param_4);
+    return local_4;
+}
+
+static constexpr const uint64_t kLanguageHashcodes[5] = {
+    0x0000000035FE382,
+    0x0000000036F25C2,
+    0x0000000037E6802,
+    0x0000000038DAA42,
+    0x0000000039CEC82,
+};
+
+bool GSDatabase::setLanguage(FlashPlayer* param_1)
+{
+    PlayerDataLanguage langID(gpPlayerData->getLanguage());
+    uint16_t langIndex = langID;
+    uint64_t hashcode = langIndex <= 4 ? kLanguageHashcodes[langIndex] : kLanguageHashcodes[0];
+    
+    const char* pcVar1 = getStringByHashcode( 0u, hashcode );
+    param_1->setVariableValue("/:WhatLanguage", pcVar1);
+    return true;
 }

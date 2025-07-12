@@ -25,6 +25,8 @@
 
 static constexpr int32_t kNumDatabases = 18;
 
+class FlashPlayer;
+
 struct DBEntry
 {
     uint64_t Hashcode;
@@ -125,6 +127,9 @@ public:
     bool reloadDatabases( const char* pLanguage, const bool bForceReload = false );
     char* getStringByHashcode(const uint32_t dbIndex, const uint64_t hashcode);
     void releaseDatabases();
+
+    int32_t setFlashLocalization(int32_t param_2, uint32_t param_3, FlashPlayer* param_4);
+    bool setLanguage(FlashPlayer* param_1);
 
 private:
     CommonDB engineDatabase;
