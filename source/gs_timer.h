@@ -13,6 +13,7 @@ public:
     , GameSpeed( 1.0f )
     , PreviousGameSpeed( 1.0f )
     , GameTotalTime( 0.0f )
+    , PrevGameTime( 0.0f )
     , GameDeltaTime( 0.0f )
     {
 
@@ -38,6 +39,7 @@ public:
     float GameSpeed;
     float PreviousGameSpeed;
     float GameTotalTime;
+    float PrevGameTime;
     float GameDeltaTime;
 };
 
