@@ -9,19 +9,14 @@
 #include "game/gm_base.h"
 
 class GameSystem;
-
-static uint32_t gDesktopWidth = 0;
-static uint32_t gDesktopHeight = 0;
-static uint32_t gDesktopRefreshRate = 0;
-static bool gbNvidiaGPU = false;
-
-namespace TestDrive {
-    int32_t InitAndRun( const char** pCmdLineArgs, const int32_t argCount );
-}
-
 class TestDriveThread;
 class TestDriveEvent;
 class TestDriveMutex;
+
+namespace TestDrive {
+    int32_t InitAndRun( const char** pCmdLineArgs, const int32_t argCount );
+    const char* GetVersion();
+}
 
 class TestDriveGameInstance {
 public:

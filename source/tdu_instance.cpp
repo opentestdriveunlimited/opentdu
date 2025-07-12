@@ -25,6 +25,8 @@
 #include "game/vehicle/gs_car_colors.h"
 #include "render/shaders/shader_register.h"
 
+#include "game/car_showcase/gm_car_showcase.h"
+
 const char** gpCmdLineArgs = nullptr;
 int32_t gCmdLineArgCount = 0;
 TestDriveGameInstance* gpTestDriveInstance = nullptr;
@@ -149,6 +151,47 @@ int32_t TestDrive::InitAndRun( const char** pCmdLineArgs, const int32_t argCount
     return 1;
 }
 
+const char* TestDrive::GetVersion()
+{
+#ifdef OTDU_DEVBUILD
+    #define OTDU_BUILD_TYPE "D"
+#else
+    #define OTDU_BUILD_TYPE ""
+#endif
+
+#ifdef OTDU_WIN32
+    #define OTDU_BUILD_OS "01"
+#elif defined(OTDU_MACOS)
+    #define OTDU_BUILD_OS "02"
+#elif defined(OTDU_UNIX)
+    #define OTDU_BUILD_OS "03"
+#else
+    #define OTDU_BUILD_OS "00"
+#endif
+
+#ifdef OTDU_OPENGL
+#define OTDU_GFX_API "02"
+#elif defined(OTDU_VULKAN)
+#define OTDU_GFX_API "03"
+#elif defined(OTDU_D3D9)
+#define OTDU_GFX_API "01"
+#else
+#define OTDU_GFX_API "00"
+#endif
+
+#ifdef OTDU_CLANG
+#define OTDU_COMPILER "02"
+#elif defined(OTDU_MSVC)
+#define OTDU_COMPILER "01"
+#elif defined(OTDU_GCC)
+#define OTDU_COMPILER "03"
+#else
+#define OTDU_COMPILER "00"
+#endif
+
+    return "OpenTDU" OTDU_BUILD_OS "" OTDU_COMPILER "" OTDU_GFX_API "" OTDU_COMMIT_HASH "" OTDU_BUILD_TYPE;
+}
+
 TestDriveGameInstance::TestDriveGameInstance( const char** argv, const int32_t argc )
     : numRegisteredServices( 0 )
     , argc( argc )
@@ -171,7 +214,6 @@ TestDriveGameInstance::TestDriveGameInstance( const char** argv, const int32_t a
     , pStackFileMutex( "StackInst" )
 {
     registeredServices.reserve( 64 );
-
     gpTestDriveInstance = this;
 }
 
@@ -190,11 +232,67 @@ static char gActiveVideoName[259];
 
 void TestDriveGameInstance::mainLoop()
 {
-    bool initialized = initialize();
-    OTDU_ASSERT( initialized );
+    bool bInitialized = initialize();
+    if (!bInitialized) {
+        OTDU_LOG_ERROR("Fatal: failed to initialize engine instance\n");
+        return;
+    }
+    
+    // Set localization for common flash
+    uint32_t validGM = 0;
+    uint32_t movieIndex = 0;
+    bool bVar1 = gpFlash->getFlashMovieIndex(&validGM, &movieIndex, "GENERAL");
+    if (bVar1) {
+        MoviePlayer* pMVar2 = gpFlash->getMoviePlayer(validGM, movieIndex);
+        if (pMVar2 != nullptr && pMVar2->MovieBank.isLoaded() && pMVar2->MovieBank.getFlashPlayer() != nullptr) {
+            uint32_t uVar4 = 0;
+            FlashPlayer* peVar3 = gpFlash->getFlashPlayer("GENERAL");
+            gpDatabase->setFlashLocalization(uVar4, 0, peVar3);
+        }
+    }
+    
+    bVar1 = gpFlash->getFlashMovieIndex(&validGM, &movieIndex, "CONFIGPC");
+    if (bVar1) {
+        MoviePlayer* pMVar2 = gpFlash->getMoviePlayer(validGM, movieIndex);
+        if (pMVar2 != nullptr && pMVar2->MovieBank.isLoaded() && pMVar2->MovieBank.getFlashPlayer() != nullptr) {
+            uint32_t uVar4 = 0;
+            FlashPlayer* peVar3 = gpFlash->getFlashPlayer("CONFIGPC");
+            gpDatabase->setFlashLocalization(uVar4, 0, peVar3);
+        }
+    }
+    
+    // gpOnGSFileInit = &LAB_009a3360;
+    if (activeGameMode != eGameMode::GM_Login) {
+        OTDU_UNIMPLEMENTED;
+        // GSCarDisplay::FreeResources((GSCarDisplay *)&gGSCarDisplay);
+        // pSVar4 = &(gGSWorld.pStreamingManager)->SpotStream;
+        // ((gGSWorld.pStreamingManager)->SpotStream).bStream = true;
+        // pSVar4->bDraw = true;
+    }
 
     float deltaTime = 0.0f;
+    
+    GameMode* pGVar6 = nullptr;
+
     while ( !bRequestedExit ) {
+        switch ( activeGameMode ) {
+        case GM_CarShowCase:
+            pGVar6 = new ( TestDrive::Alloc( sizeof( GMCarShowcase ) ) ) GMCarShowcase();
+            break;
+        default:
+            OTDU_LOG_ERROR("GAME MODE '%s' (%u) IS NOT IMPLEMENTED!\n", kGameModeNames[activeGameMode], activeGameMode);
+            OTDU_ASSERT_FATAL(false);
+            break;
+        }
+
+        OTDU_LOG_INFO("Switching to game mode '%s'...\n", kGameModeNames[activeGameMode]);
+        pGVar6->mainLoop();
+
+        // if (pGameMode != (GMAITrainer *)0x0) {
+        //   (*((GMBase_vtable *)(pGameMode->super).super.super.lpVtbl)->~GameMode)(pGameMode,true);
+        // }
+        // goto switchD_0097ce90_caseD_3;
+
         for ( GameSystem* service : registeredServices ) {
             service->tick( deltaTime );
         }
@@ -210,6 +308,8 @@ void TestDriveGameInstance::setGameMode( eGameMode newGameMode )
 
 bool TestDriveGameInstance::initialize()
 {
+    OTDU_LOG_INFO("Initializing OpenTDU version '%s'...\n", TestDrive::GetVersion());
+
     bool baseServicesInit = initializeBaseServices();
     if ( !baseServicesInit ) {
         return false;

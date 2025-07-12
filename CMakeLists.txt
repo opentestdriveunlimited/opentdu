@@ -27,6 +27,17 @@ if ( ${OTDU_DEVBUILD} )
     add_definitions( -DOTDU_DEVBUILD )
 endif()
 
+ find_package(Git)
+if (GIT_FOUND)
+    execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                    OUTPUT_VARIABLE OTDU_COMMIT_HASH)
+    string(STRIP "${OTDU_COMMIT_HASH}" OTDU_COMMIT_HASH) # Remove trailing newline
+    add_definitions( -DOTDU_COMMIT_HASH="${OTDU_COMMIT_HASH}" )
+else()
+    add_definitions( -DOTDU_COMMIT_HASH="???" )
+endif()
+
 include( ${OTDU_BASE_FOLDER}/cmake_modules/ide_filters.cmake )
 
 file( GLOB OTDU_SRC "${OTDU_SRC_FOLDER}/tdu_instance.cpp"
@@ -54,6 +65,7 @@ file( GLOB OTDU_SRC "${OTDU_SRC_FOLDER}/tdu_instance.cpp"
                     "${OTDU_SRC_FOLDER}/flash/flash_list.cpp"
                     "${OTDU_SRC_FOLDER}/flash/flash_sounds.cpp"
                     "${OTDU_SRC_FOLDER}/flash/gps_voice.cpp"
+                    "${OTDU_SRC_FOLDER}/flash/mng_flash_localize.cpp"
                     "${OTDU_SRC_FOLDER}/game/mng_hud.cpp"
                     "${OTDU_SRC_FOLDER}/game/mng_bookmark.cpp"
                     "${OTDU_SRC_FOLDER}/game/mng_base.cpp"
@@ -195,6 +207,7 @@ file( GLOB OTDU_INC "${OTDU_SRC_FOLDER}/tdu_instance.h"
                     "${OTDU_SRC_FOLDER}/flash/bank_common_flash.h"
                     "${OTDU_SRC_FOLDER}/flash/flash_sounds.h"
                     "${OTDU_SRC_FOLDER}/flash/gps_voice.h"
+                    "${OTDU_SRC_FOLDER}/flash/mng_flash_localize.h"
                     "${OTDU_SRC_FOLDER}/game/cinematic_entity.h"
                     "${OTDU_SRC_FOLDER}/game/game_mechanism.h"
                     "${OTDU_SRC_FOLDER}/game/game_object.h"
@@ -334,7 +347,6 @@ if (${OTDU_GFX_API} STREQUAL "OTDU_VULKAN")
     else()
         set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_unix_vulkan")
     endif()
-
 elseif (${OTDU_GFX_API} STREQUAL "OTDU_OPENGL")
     include_directories( "${OTDU_THIRDPARTY_FOLDER}/glew/include" )
     
@@ -354,19 +366,22 @@ if ( WIN32 )
 elseif ( APPLE )
     add_definitions( -DOTDU_MACOS )
     add_definitions( -DOTDU_UNIX )
+    add_definitions( -DOTDU_CLANG )
+
+    target_compile_options( opentdu PRIVATE -Wall -Wextra )
+    target_compile_options( opentdu PUBLIC -Wno-unused-variable -Wno-unused-private-field -Wno-unused-function -Wno-unused-parameter )
 endif ( WIN32 )
 
 if( MSVC )
     set_property( TARGET opentdu PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${OTDU_BIN_FOLDER} )
     target_compile_options( opentdu PRIVATE /W3 /WX )
     add_definitions( -DOTDU_MSVC -D_CRT_SECURE_NO_WARNINGS -D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING )
-elseif( APPLE )
+elseif( CLANG )
     target_compile_options( opentdu PRIVATE -Wall -Wextra )
-    target_compile_options(opentdu PUBLIC -Wno-unused-variable)
-    target_compile_options(opentdu PUBLIC -Wno-unused-private-field)
-    target_compile_options(opentdu PUBLIC -Wno-unused-function)
-    target_compile_options(opentdu PUBLIC -Wno-unused-parameter)
+    target_compile_options( opentdu PUBLIC -Wno-unused-variable -Wno-unused-private-field -Wno-unused-function -Wno-unused-parameter )
     add_definitions( -DOTDU_CLANG )
+elseif ( GCC )
+    add_definitions( -DOTDU_GCC )
 endif()
 
 if ( WIN32 )
