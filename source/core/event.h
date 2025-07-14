@@ -6,7 +6,7 @@ public:
     ~TestDriveEvent();
 
     void destroy();
-    void initialize( const char* pEventName );
+    bool reset();
     bool waitForEvent();
 
 private:
@@ -21,4 +21,7 @@ private:
     std::string     name;
     uint8_t         bInitialized : 1;
     uint8_t         bMarkedForDeletion : 1;
+
+private:
+    void initialize( const char* pEventName );
 };

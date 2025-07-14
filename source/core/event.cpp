@@ -33,6 +33,24 @@ void TestDriveEvent::destroy()
     }
 }
 
+bool TestDriveEvent::reset()
+{
+    if ( semaphore ) {
+#if defined( OTDU_WIN32 )
+        BOOL BVar1 = ReleaseSemaphore(semaphore,1,(LPLONG)0x0);
+        if (BVar1 != 0) {
+            ::Sleep(0);
+            return true;
+        }
+#elif defined( OTDU_MACOS )
+        semaphore = false;
+        return true;
+#endif
+    }
+
+    return false;
+}
+
 void TestDriveEvent::initialize( const char* pEventName )
 {
     if ( bInitialized ) {
