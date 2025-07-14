@@ -75,6 +75,26 @@ bool GSConfig::initialize( TestDriveGameInstance* )
 
     ParseArgValueFromCmdLine( "system", pSystemPCIniPath, OTDU_MAX_PATH );
 
+    return true;
+}
+
+void GSConfig::tick(float deltaTime)
+{
+    // NOP
+}
+
+void GSConfig::terminate()
+{
+
+}
+
+void GSConfig::setScreenRatio( const bool bIsUsing169Ratio )
+{
+    b169Ratio = bIsUsing169Ratio;
+}
+
+void GSConfig::parseIniFiles()
+{
     //// TODO: This is a bit crude; ideally we want to open the stream using the VFS instead of explicit std fstream
     //std::ifstream inputStream( pSystemPCIniPath, std::ios_base::in );
     //OTDU_ASSERT( inputStream.good() );
@@ -142,23 +162,6 @@ bool GSConfig::initialize( TestDriveGameInstance* )
     //    }
     //    };
     //}
-
-    return true;
-}
-
-void GSConfig::tick(float deltaTime)
-{
-    // NOP
-}
-
-void GSConfig::terminate()
-{
-
-}
-
-void GSConfig::setScreenRatio( const bool bIsUsing169Ratio )
-{
-    b169Ratio = bIsUsing169Ratio;
 }
 
 void GSConfig::registerCommands()

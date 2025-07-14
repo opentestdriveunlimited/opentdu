@@ -77,6 +77,8 @@ public:
 
     void setScreenRatio( const bool bIsUsing169Ratio );
 
+    void parseIniFiles();
+
 private:
     using CommandCallback_t = std::function<void( const char* )>;
 
