@@ -35,8 +35,12 @@ if ( !gSkipAssert && !( condition ) ) {\
 
 #define OTDU_ASSERT_FATAL( condition )\
 if ( !( condition ) ) {\
+    OTDU_FATAL_ERROR( "Fatal: Assertion failure file: %s line: %u\n", __FILE__, __LINE__ );\
+}
+
+#define OTDU_FATAL_ERROR( fmt, ... )\
+    OTDU_LOG_ERROR("Fatal: " fmt, ##__VA_ARGS__);\
     if ( gBreakOnAssertFailure ) {\
         OTDU_TRIGGER_BREAKPOINT;\
-        OnFatalError();\
     }\
-}
+    OnFatalError();\
