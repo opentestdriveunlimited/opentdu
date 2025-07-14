@@ -4,19 +4,23 @@
 #include "render/draw_list.h"
 #include "tdu_instance.h"
 #include "gs_timer.h"
+#include "system/gs_system.h"
+#include "render/gs_render.h"
+
+#include "game/mng_base.h"
 
 GameMode* gpActiveGameMode = nullptr;
 
 GameMode::GameMode()
     : transitionFlags( 0x39 )
     , transitionTime( 1000.0f )
-    , ticksPerLoop( 60 )
+    , numTicksPerTransition( 60 )
     , currentGameMode( GM_Invalid )
     , pTransitionDrawList( new DrawList() )
     , bExitRequested( false )
     , bMessageBoxVisible( false )
     , bAsync( false )
-    , bLoadAsync( false )
+    , bLoadedAsync( false )
     , bDraw( true )
 {
     if (gpTestDriveInstance != nullptr) {
@@ -46,7 +50,13 @@ GameMode::~GameMode()
     gpActiveGameMode = nullptr;
 }
 
-void GameMode::mainLoop()
+bool GameMode::initializeAsync()
+{
+    initialize();
+    return false;
+}
+
+void GameMode::mainLoop(TestDriveGameInstance* param_1)
 {
     gGSTimer.PreviousGameSpeed = 1.0;
     gGSTimer.GameSpeed = 1.0;
@@ -57,5 +67,53 @@ void GameMode::mainLoop()
     bExitRequested = false;
     bMessageBoxVisible = false;
 
+    do {
+        gpSystem->tick(gGSTimer.GameDeltaTime);
+        gpRender->flushDrawCommands(false);
+    } while (!gpSystem->isWindowActivated());
+
+    if (!bLoadedAsync) {
+        // TODO: Not sure what's the point
+        // (I suspect it's either platform specific or scrapped late)
+        bool bVar1 = initializeAsync();
+        while (bVar1) {
+            bVar1 = initializeAsync();
+        }
+
+        for (Manager* pManager : registeredManagers) {
+            bool bVar2 = pManager->initializeAsync(param_1);
+            while (bVar2) {
+                bVar2 = pManager->initializeAsync(param_1);
+            }
+        }
+        
+        this->reset();
+
+        for (Manager* pManager : registeredManagers) {
+            pManager->reset();
+        }
+
+        // TestDrive::FlushStackFile(gpTestDriveInstance,false);
+        if ((transitionFlags & 1) != 0) {
+            int32_t iVar6 = numTicksPerTransition;
+            while (iVar6 != 0) {
+                stepLogic(gGSTimer.GameDeltaTime,gGSTimer.GameTotalTime);
+                iVar6--;
+            }
+
+            transitionFlags &= 0xfffffffe;
+        }
+    }
     OTDU_UNIMPLEMENTED;
+}
+
+void GameMode::stepLogic(float deltaTime, float totalTime)
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void GameMode::registerManager(Manager* pManager)
+{
+    registeredManagers.push_back(pManager);
+    OTDU_LOG_DEBUG("Registered manager '%s' (for game mode '%s')\n", pManager->getName(), kGameModeNames[currentGameMode]);
 }

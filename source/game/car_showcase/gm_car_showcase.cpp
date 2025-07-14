@@ -33,7 +33,8 @@ GMCarShowcase::GMCarShowcase()
     , bUsePhysicsInput( false )
     , bFreezeCarSwitch( false ) 
 {
-
+    registerManager(&mngFlash);
+    registerManager(&mngNumber);
 }
 
 GMCarShowcase::~GMCarShowcase()
@@ -50,6 +51,11 @@ void GMCarShowcase::initialize()
     OTDU_LOG_DEBUG("Found %u vehicles in database\n");
 
     pDrawList->initialize(0x20, 0x200, 0, true, nullptr, nullptr, false);
+}
+
+void GMCarShowcase::reset()
+{
+    OTDU_UNIMPLEMENTED;
 }
 
 bool GMCarShowcase::onMessage(FlashMessage &pMessage, FlashPlayer *pPlayer)

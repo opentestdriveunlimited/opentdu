@@ -16,7 +16,9 @@ public:
     GMCarShowcase();
     ~GMCarShowcase();
 
-    void initialize();
+    virtual void initialize() override;
+    virtual void reset() override;
+
     bool onMessage(FlashMessage& pMessage, FlashPlayer* pPlayer);
 
 private:

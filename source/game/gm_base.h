@@ -1,6 +1,8 @@
 #pragma once
 
 class DrawList;
+class Manager;
+class TestDriveGameInstance;
 
 typedef enum eGameMode : uint32_t {
     GM_BootMenu = 0,
@@ -80,20 +82,30 @@ public:
     GameMode();
     virtual ~GameMode();
 
-    void mainLoop();
+    virtual void initialize() {}
+    virtual void reset() {}
+
+    bool initializeAsync();
+    void mainLoop(TestDriveGameInstance* param_1);
+    void stepLogic(float deltaTime, float totalTime);
 
 protected:
     uint32_t    transitionFlags;
     float       transitionTime;
-    uint32_t    ticksPerLoop;
+    uint32_t    numTicksPerTransition;
     eGameMode   currentGameMode;
     DrawList*   pTransitionDrawList;
+
+    std::vector<Manager*> registeredManagers;
 
     uint8_t     bExitRequested : 1;
     uint8_t     bMessageBoxVisible : 1;
     uint8_t     bAsync : 1;
-    uint8_t     bLoadAsync : 1;
+    uint8_t     bLoadedAsync : 1;
     uint8_t     bDraw : 1;
+
+protected:
+    void registerManager(Manager* pManager);
 };
 
 extern GameMode* gpActiveGameMode;
