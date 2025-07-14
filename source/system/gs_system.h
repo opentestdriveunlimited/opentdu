@@ -10,6 +10,7 @@
 class GSSystem : public GameSystem {
 public:
     const char* getName() const override { return "Service : Sys"; }
+    inline const bool isWindowActivated() const { return bWindowActivated; }
 
 public:
     GSSystem();
@@ -25,6 +26,8 @@ public:
 private:
     struct GLFWwindow* pWindow;
     
+    uint8_t bWindowActivated : 1;
+
 private:
     void centerWindow();
 };

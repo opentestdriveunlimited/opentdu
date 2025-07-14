@@ -18,6 +18,7 @@ GSSystem* gpSystem = nullptr;
 
 GSSystem::GSSystem()
     : pWindow( nullptr )
+    , bWindowActivated(true)
 {
     OTDU_ASSERT( gpSystem == nullptr );
     gpSystem = this;
@@ -51,7 +52,8 @@ bool GSSystem::initialize( TestDriveGameInstance* )
     centerWindow();
 
     glfwSetWindowCloseCallback( pWindow, []( GLFWwindow* pWindow ) { gpTestDriveInstance->requestExit(); } );
-    
+    glfwSetWindowFocusCallback( pWindow, []( GLFWwindow* pWindow, int focused ) { gpSystem->bWindowActivated = (focused == GLFW_TRUE) ? true : false; } );
+
 #if OTDU_VULKAN
     if ( !glfwVulkanSupported() )
     {
