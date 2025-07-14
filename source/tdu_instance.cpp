@@ -11,7 +11,9 @@
 #include "system/gs_system.h"
 #include "filesystem/gs_file.h"
 #include "filesystem/gs_boot_datas.h"
-#include "console/gs_console.h"
+#include "debug/gs_console.h"
+#include "debug/gs_debug.h"
+#include "debug/gs_profile.h"
 #include "config/gs_config.h"
 #include "render/gs_render.h"
 #include "game/gs_intro_pool.h"
@@ -23,6 +25,10 @@
 #include "world/gs_world.h"
 #include "gs_timer.h"
 #include "game/vehicle/gs_car_colors.h"
+#include "audio/gs_audio.h"
+#include "input/gs_device.h"
+#include "movie/gs_movie.h"
+
 #include "render/shaders/shader_register.h"
 
 #include "game/car_showcase/gm_car_showcase.h"
@@ -124,6 +130,26 @@ static bool HasEnoughSysMemAvail()
     return true;
 }
 
+static void InstanciationWorker(TestDriveGameInstance::FileInstanciationWorkerInfos *param_1)
+{
+    do {
+        while( true ) {
+            param_1->Event.waitForEvent();
+            param_1->pThread->setPriority(eThreadPriority::TP_Normal);
+            
+            if (param_1->pCurrentFile == nullptr) {
+                break;
+            }
+            param_1->pCurrentFile->instanciate();
+            param_1->bDone = true;
+        }
+        if (param_1->pNextFile != nullptr) {
+            param_1->pNextFile->instanciate(param_1->pThread);
+        }
+        param_1->bDone = true;
+    } while( true );
+}
+
 int32_t TestDrive::InitAndRun( const char** pCmdLineArgs, const int32_t argCount )
 {
     strncpy( gORBAddress, kDefaultORBAddress, sizeof( char ) * 26 );
@@ -134,16 +160,12 @@ int32_t TestDrive::InitAndRun( const char** pCmdLineArgs, const int32_t argCount
     gArgParserRegister.parseCmdLineArgs( gpCmdLineArgs, gCmdLineArgCount );
 
     TestDriveGameInstance gameInstance( pCmdLineArgs, argCount );
-
     if ( !IsAlreadyRunning() ) {
         bool bCheckSuccessful = HasEnoughSysMemAvail();
 
         if ( bCheckSuccessful ) {
             gameInstance.mainLoop();
-
-            /*TestDrive::MainLoop( &testDriveInstance, pCmdLineArgs, &TestDrive_vtable );
-            testDriveInstance.lpVtbl = ( TestDrive_vtable* )&TestDrive_vtable;
-            TestDrive::Term( &testDriveInstance );*/
+            gameInstance.terminate();
             return 0;
         }
     }
@@ -209,11 +231,19 @@ TestDriveGameInstance::TestDriveGameInstance( const char** argv, const int32_t a
     , memCheckSize( 0x2800 )
     , activeGameMode( GM_BootMenu )
     , previousGameMode( GM_Invalid )
-    , pMainLoopThread()
-    , pInstanciationThread()
-    , pStackFileMutex( "StackInst" )
+    , mainLoopThread()
+    , instanciationThread()
+    , stackFileMutex( "StackInst" )
+    , pUnkownResource( nullptr )
 {
     registeredServices.reserve( 64 );
+
+    instanciationThread.initialize((TestDriveThread::StartRoutine_t)InstanciationWorker, &fileInstanciation, 0x10000, 0);
+    instanciationThread.setPriority(eThreadPriority::TP_Normal);
+
+    fileInstanciation.pThread = &instanciationThread;
+
+    mainLoopInfos.CoreIndex = 0;
     gpTestDriveInstance = this;
 }
 
@@ -228,7 +258,12 @@ TestDriveGameInstance::~TestDriveGameInstance()
     registeredServices.clear();
 }
 
-static char gActiveVideoName[259];
+void TestDriveGameInstance::terminate()
+{
+    instanciationThread.terminate();
+    stackFileMutex.terminate();
+    mainLoopThread.terminate();
+}
 
 void TestDriveGameInstance::mainLoop()
 {
@@ -280,13 +315,12 @@ void TestDriveGameInstance::mainLoop()
             pGVar6 = new ( TestDrive::Alloc( sizeof( GMCarShowcase ) ) ) GMCarShowcase();
             break;
         default:
-            OTDU_LOG_ERROR("GAME MODE '%s' (%u) IS NOT IMPLEMENTED!\n", kGameModeNames[activeGameMode], activeGameMode);
-            OTDU_ASSERT_FATAL(false);
+            OTDU_FATAL_ERROR("GAME MODE '%s' (%u) IS NOT IMPLEMENTED!\n", kGameModeNames[activeGameMode], activeGameMode);
             break;
         }
 
         OTDU_LOG_INFO("Switching to game mode '%s'...\n", kGameModeNames[activeGameMode]);
-        pGVar6->mainLoop();
+        pGVar6->mainLoop( this );
 
         // if (pGameMode != (GMAITrainer *)0x0) {
         //   (*((GMBase_vtable *)(pGameMode->super).super.super.lpVtbl)->~GameMode)(pGameMode,true);
@@ -315,9 +349,16 @@ bool TestDriveGameInstance::initialize()
         return false;
     }
 
+    gpBootDatas->loadDataBanks();
+    gpFile->flushPendingAsync();
+
     bool gameServicesInit = initializeGameServices();
     if ( !gameServicesInit ) {
         return false;
+    }
+
+    for (GameSystem* pSystem : registeredServices) {
+        pSystem->reset();
     }
 
     return true;
@@ -326,17 +367,26 @@ bool TestDriveGameInstance::initialize()
 bool TestDriveGameInstance::initializeBaseServices()
 {
     bool operationResult = true;
+
     OTDU_ASSERT( operationResult &= registerService<GSSystem>() );
     OTDU_ASSERT( operationResult &= registerService<GSFile>() );
     OTDU_ASSERT( operationResult &= registerService<GSConsole>() );
     OTDU_ASSERT( operationResult &= registerService<GSTimer>() );
     OTDU_ASSERT( operationResult &= registerService<GSConfig>() );
-    OTDU_ASSERT( operationResult &= registerService<GSWorld>() );
+    // NOTE: Has to be initialized early (to register world listeners)
+    // The original code does this late (as I believe the listeners list is static and/or
+    // GSWeather is statically allocated)
     OTDU_ASSERT( operationResult &= registerService<GSWeather>() );
     OTDU_ASSERT( operationResult &= registerService<GSRender>() );
+    OTDU_ASSERT( operationResult &= registerService<GSProfile>() );
+    OTDU_ASSERT( operationResult &= registerService<GSDevice>() );
+    OTDU_ASSERT( operationResult &= registerService<GSDebug>() );
+    OTDU_ASSERT( operationResult &= registerService<GSAudio>() );
     OTDU_ASSERT( operationResult &= registerService<GSFlash>() );
-    OTDU_ASSERT( operationResult &= registerService<GSDirtyDisk>() );
-    
+    OTDU_ASSERT( operationResult &= registerService<GSMovie>() );
+    gpConfig->parseIniFiles();
+    OTDU_ASSERT( operationResult &= registerService<GSBootDatas>() );
+
     gShaderRegister.registerMasterTable();
 
     return operationResult;
@@ -346,10 +396,12 @@ bool TestDriveGameInstance::initializeGameServices()
 {
     bool operationResult = true;
     OTDU_ASSERT( operationResult &= registerService<GSIntroPool>() );
-    OTDU_ASSERT( operationResult &= registerService<GSBootDatas>() );
-    OTDU_ASSERT( operationResult &= registerService<GSPlayerData>() );
     OTDU_ASSERT( operationResult &= registerService<GSDatabase>() );
-    OTDU_ASSERT( operationResult &= gCarColors.initialize( this ) );
+    OTDU_ASSERT( operationResult &= registerService<GSWorld>() );
+    OTDU_ASSERT( operationResult &= registerService<GSCarColors>() );
+    OTDU_ASSERT( operationResult &= registerService<GSPlayerData>() );
+    OTDU_ASSERT( operationResult &= registerService<GSDirtyDisk>() );
+
     return operationResult;
 }
 
@@ -380,4 +432,55 @@ void TestDriveGameInstance::setNextGameMode( eGameMode nextGameMode )
     }
 
     activeGameMode = nextGameMode;
+}
+
+void TestDriveGameInstance::flushPendingFileInstanciation(bool param_2)
+{
+    ScopedMutexLock mutexLock(&stackFileMutex);
+
+    uint32_t uVar2 = pendingStreamedResources.size();
+    if (0 < pendingStreamedResources.size()) {
+        uint32_t iVar3 = 0;
+        if (param_2) {
+            iVar3 = uVar2 - 1;
+        }
+
+        while (iVar3 < uVar2 && uVar2 != 0) {
+            updateFileInstanciation();
+            uVar2 = pendingStreamedResources.size();
+        }
+         
+        bool bVar1 = fileInstanciation.bDone;
+        while (!bVar1) {
+            ThreadYield();
+            bVar1 = fileInstanciation.bDone;
+        }
+    }
+
+    if (!param_2) {
+        bool bVar2 = fileInstanciation.bDone;
+        while (!bVar2) {
+            ThreadYield();
+            bVar2 = fileInstanciation.bDone;
+        }
+    }
+}
+
+void TestDriveGameInstance::updateFileInstanciation()
+{
+    bool bVar1 = fileInstanciation.bDone;
+    if (pendingStreamedResources.size() < 1) {
+        if (bVar1) {
+            fileInstanciation.pCurrentFile = nullptr;
+            fileInstanciation.bDone = false;
+            fileInstanciation.Event.reset();
+        }
+    } else if (bVar1) {
+        fileInstanciation.pCurrentFile = pendingStreamedResources.front();
+        fileInstanciation.bDone = false;
+        fileInstanciation.Event.reset();
+
+        pendingStreamedResources.pop_front();
+        fileInstanciation.pCurrentFile->markAsInstanciated();
+    }
 }
