@@ -4,7 +4,7 @@
 #include "config/gs_config.h"
 #include "filesystem/gs_file.h"
 
-GSCarColors gCarColors = {};
+GSCarColors* gpCarColors = nullptr;
 
 GSCarColors::GSCarColors()
     : GameSystem()
@@ -13,7 +13,7 @@ GSCarColors::GSCarColors()
     , render2DM()
     , p2DMFileResource( nullptr )
 {
-
+    gpCarColors = this;
 }
 
 GSCarColors::~GSCarColors()

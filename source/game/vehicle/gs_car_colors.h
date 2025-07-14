@@ -22,4 +22,4 @@ private:
     char* p2DMFileResource;
 };
 
-extern GSCarColors gCarColors;
+extern GSCarColors* gpCarColors;
