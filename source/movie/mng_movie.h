@@ -3,7 +3,6 @@
 #include "game/mng_base.h"
 
 class MngMovie : public Manager {
-
 public:
     const char* getName() const override { return "Movie"; }
 
