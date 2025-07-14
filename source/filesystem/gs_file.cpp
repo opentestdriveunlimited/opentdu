@@ -105,7 +105,6 @@ GSFile::GSFile()
 {
     gpFile = this;
 
-    asyncData.resize( 32u );
     filemaps.resize( 127u );
     for ( FileMap& filemap : filemaps ) {
         filemap.initializeCRCLUT();
@@ -465,6 +464,61 @@ std::wstring GSFile::getSaveLocation(eContextSource source)
     }
 
     return saveLocation;
+}
+
+bool GSFile::hasPendingAsyncRequests()
+{
+    OTDU_UNIMPLEMENTED;
+    return true;
+}
+
+void GSFile::flushPendingAsync()
+{
+    bool bVar1 = hasPendingAsyncRequests();
+    if (bVar1) {
+        do {
+            syncAsyncWorkerThread();
+            bVar1 = hasPendingAsyncRequests();
+        } while (bVar1);
+    }
+
+    OTDU_IMPLEMENTATION_SKIPPED( "FUN_00609a20" );
+    gpTestDriveInstance->flushPendingFileInstanciation(false);
+}
+
+void GSFile::syncAsyncWorkerThread()
+{
+    if (!workerThreadContext.bRunning) {
+        auto it = asyncData.find(workerThreadContext.pAsyncData);
+
+        // Find the next async request in the set.
+        // TODO: Use a queue instead of whatever the game used?
+        for ( ; it != asyncData.end(); it++ ) {
+            if ((*it)->bInUse && !(*it)->bCanceled) {
+                break;
+            }
+        }
+
+        if (it == asyncData.end()) {
+            return;
+        }
+        
+        workerThreadContext.bRunning = true;
+        workerThreadContext.bJobDone = false;
+        workerThreadContext.pAsyncData = (*it);
+        workerThreadContext.pEvent->reset();
+    } else if (workerThreadContext.bJobDone) {
+        workerThreadContext.bRunning = false;
+        workerThreadContext.bJobDone = false;
+        bTaskInProgress = false;
+
+        if (!workerThreadContext.pAsyncData->bCanceled) {
+            if (workerThreadContext.pAsyncData->pCompletionCallback != nullptr) {
+                workerThreadContext.pAsyncData->pCompletionCallback(4, 1);
+                return;
+            }
+        }
+    }
 }
 
 AsyncFileOpen::AsyncFileOpen()

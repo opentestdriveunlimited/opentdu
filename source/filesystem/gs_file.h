@@ -1,9 +1,6 @@
 #pragma once
 
 #include "game/gs_base.h"
-#include <stack>
-#include <queue>
-
 #include "file_handle.h"
 #include "virtual_file_system.h"
 
@@ -71,11 +68,12 @@ struct FileMap {
 };
 
 struct AsyncFileOpen {
+    using CompletionCallback_t = std::function<void(int32_t, int32_t)>;
     FileHandle  Handle;
     std::string Filename;
     void*       pUserData;
     void*       pBuffer;
-    void*       pCompletionCallback;
+    CompletionCallback_t pCompletionCallback;
 
     uint32_t    Size;
     uint32_t    Offset;
@@ -187,8 +185,11 @@ public:
     void initCarPacks( bool param_1 );
     std::wstring getSaveLocation( eContextSource source );
 
+    bool hasPendingAsyncRequests();
+    void flushPendingAsync();
+
 private:
-    std::vector<AsyncFileOpen>  asyncData;
+    std::set<AsyncFileOpen*>    asyncData;
     std::vector<FileMap>        filemaps;
     TestDriveMutex*             pFilemapMutex;
     TestDriveThread*            pWorkerThread;
@@ -212,6 +213,7 @@ private:
 private:
     bool retrieveSaveFolder();
     bool findFileOutsideFilemap(const char* pFilename, uint32_t* pOutFilesize);
+    void syncAsyncWorkerThread();
 };
 
 extern GSFile* gpFile;
