@@ -17,6 +17,10 @@ TestDriveThread::TestDriveThread( const char* pThreadName /*= nullptr */ )
 
 TestDriveThread::~TestDriveThread()
 {
+}
+
+void TestDriveThread::terminate()
+{
 #if defined( OTDU_WIN32 )
     if ( hThread != nullptr ) {
         DWORD exitCode = 0;
