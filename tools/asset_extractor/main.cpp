@@ -275,8 +275,7 @@ int main( int argc, char* argv[] ) {
                 FreeGLSLShader( &output );
             }
         } else {
-            OTDU_LOG_ERROR( "INVALID MAGIC FOUND\n");
-            OTDU_ASSERT_FATAL( false );
+            OTDU_FATAL_ERROR("Invalid magic found (shader table entry might be invalid)\n");
         }
     }
     if ( !tableDXSO.Header.Empty() ) {
