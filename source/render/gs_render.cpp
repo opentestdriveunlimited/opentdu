@@ -206,6 +206,12 @@ void GSRender::onWeatherConfigChange(WeatherConfig* param_1)
     shaderUniforms[2] = param_1->getTerrainUniformParams();
 }
 
+void GSRender::flushDrawCommands(bool param_1)
+{
+    // FUN_005066e0
+    OTDU_UNIMPLEMENTED;
+}
+
 void GSRender::allocateRenderTargets()
 {
     eViewFormat viewFormat = ( bHDREnabled ) ? VF_A16B16G16R16 : VF_X8R8G8B8;

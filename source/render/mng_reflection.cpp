@@ -81,6 +81,5 @@ void MngReflection::removeNode(HiearchyNode *pNode)
         }
     }
 
-    OTDU_LOG_ERROR( "Tried to remove unregistered node %p\n", pNode);
-    OTDU_ASSERT_FATAL( false );
+    OTDU_FATAL_ERROR( "Tried to remove unregistered node %p\n", pNode);
 }

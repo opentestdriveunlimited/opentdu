@@ -215,8 +215,7 @@ void RenderDevice::initialize()
     GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{
-        OTDU_LOG_ERROR( "Fatal: Failed to initialize glew '%s'\n", glewGetErrorString(err));
-        OTDU_ASSERT_FATAL(false);
+        OTDU_FATAL_ERROR( "Fatal: Failed to initialize glew '%s'\n", glewGetErrorString(err));
     }
 
     OTDU_LOG_DEBUG("OpenGL Version: '%s'\n", glGetString(GL_VERSION));

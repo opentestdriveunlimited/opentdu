@@ -8,6 +8,10 @@
 #include <algorithm>
 #include <filesystem>
 #include <stack>
+#include <queue>
+#include <list>
+#include <thread>
+#include <set>
 
 #include <Eigen/Dense>
 
@@ -17,9 +21,14 @@ extern int32_t gCmdLineArgCount;
 #include "core/assert.h"
 
 #ifdef OTDU_DEVBUILD
+// Function needs to be implemented
 #define OTDU_UNIMPLEMENTED OTDU_ASSERT(false);
+
+// Function is not implemented (and is probably not required)
+#define OTDU_IMPLEMENTATION_SKIPPED( funAddress ) OTDU_LOG_WARN("'%s' is unimplemented!\n", funAddress);
 #else
 #define OTDU_UNIMPLEMENTED
+#define OTDU_IMPLEMENTATION_SKIPPED( funAddress )
 #endif
 
 static constexpr bool bUseCRC64 = false; // Matches original executable behavior
@@ -74,4 +83,9 @@ static std::string IntegerToHexString( const size_t w, const size_t hex_len = si
     for ( size_t i = 0, j = ( hex_len - 1 ) * 4; i < hex_len; ++i, j -= 4 )
         rc[i] = kDigits[( w >> j ) & 0x0f];
     return rc;
+}
+
+inline void ThreadYield()
+{
+    std::this_thread::yield();
 }

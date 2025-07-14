@@ -19,6 +19,7 @@ public:
     TestDriveThread( const char* pThreadName = nullptr );
     ~TestDriveThread();
 
+    void terminate();
     bool initialize( StartRoutine_t pThreadStartRoutine, void* lpParameter, const size_t threadStackSize, const uint32_t dwCreationFlags );
     void setName( const char* pThreadName );
     bool setPriority( const eThreadPriority threadPriority );

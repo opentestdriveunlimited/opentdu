@@ -55,6 +55,8 @@ public:
 
     virtual void onWeatherConfigChange(WeatherConfig* param_1 ) override;
 
+    void flushDrawCommands(bool param_1);
+
 private:
     static constexpr int32_t kNumSunRT = 8;
 

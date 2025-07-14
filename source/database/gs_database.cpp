@@ -716,7 +716,7 @@ static bool ParseDB(CommonDBEntry* param_1,char *param_2,int stride,DBEntryList 
                 break;
 
             default:
-                OTDU_ASSERT_FATAL(false);
+                OTDU_FATAL_ERROR("Unknown database data type '%c'\n", cVar8);
                 break;
             }
         }
