@@ -4,7 +4,8 @@
 GSWorld* gpWorld = nullptr;
 
 GSWorld::GSWorld()
-    : pStreamingManager( nullptr )
+    : GameSystem()
+    , pStreamingManager( nullptr )
     , bEnabled( true )
     , bForceUpdate( false )
     , bDirtyStreaming( false )
