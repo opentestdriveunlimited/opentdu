@@ -93,7 +93,7 @@ void GameMode::mainLoop(TestDriveGameInstance* param_1)
             pManager->reset();
         }
 
-        // TestDrive::FlushStackFile(gpTestDriveInstance,false);
+        gpTestDriveInstance->flushPendingFileInstanciation(false);
         if ((transitionFlags & 1) != 0) {
             int32_t iVar6 = numTicksPerTransition;
             while (iVar6 != 0) {
