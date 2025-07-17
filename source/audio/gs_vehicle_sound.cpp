@@ -13,3 +13,13 @@ GSVehicleSound::~GSVehicleSound()
 {
 
 }
+
+bool GSVehicleSound::initialize( TestDriveGameInstance* )
+{
+    return true;
+}
+
+void GSVehicleSound::terminate()
+{
+
+}

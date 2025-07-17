@@ -9,6 +9,9 @@ public:
 public:
     GSVehicleSound();
     ~GSVehicleSound();
+    
+    bool initialize( TestDriveGameInstance* ) override;
+    void terminate() override;
 };
 
 extern GSVehicleSound* gpVehicleSound;

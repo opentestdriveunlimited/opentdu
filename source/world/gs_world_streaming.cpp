@@ -14,3 +14,13 @@ GSWorldStreaming::~GSWorldStreaming()
 {
 
 }
+
+bool GSWorldStreaming::initialize( TestDriveGameInstance* )
+{
+    return true;
+}
+
+void GSWorldStreaming::terminate()
+{
+
+}

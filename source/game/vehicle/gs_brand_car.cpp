@@ -13,3 +13,13 @@ GSBrandCar::~GSBrandCar()
 {
 
 }
+
+bool GSBrandCar::initialize( TestDriveGameInstance* )
+{
+    return true;
+}
+
+void GSBrandCar::terminate()
+{
+
+}

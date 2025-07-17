@@ -9,6 +9,9 @@ public:
 public:
     GSCarCommon();
     ~GSCarCommon();
+    
+    bool initialize( TestDriveGameInstance* ) override;
+    void terminate() override;
 };
 
 extern GSCarCommon* gpCarCommon;

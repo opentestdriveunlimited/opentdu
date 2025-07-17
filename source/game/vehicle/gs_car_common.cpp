@@ -13,3 +13,13 @@ GSCarCommon::~GSCarCommon()
 {
 
 }
+
+bool GSCarCommon::initialize( TestDriveGameInstance* )
+{
+    return true;
+}
+
+void GSCarCommon::terminate()
+{
+
+}

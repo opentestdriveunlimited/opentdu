@@ -9,6 +9,9 @@ public:
 public:
     GSWorldStreaming();
     ~GSWorldStreaming();
+    
+    bool initialize( TestDriveGameInstance* ) override;
+    void terminate() override;
 };
 
 extern GSWorldStreaming* gpWorldStreaming;

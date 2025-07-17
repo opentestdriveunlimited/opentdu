@@ -9,6 +9,9 @@ public:
 public:
     GSBrandCar();
     ~GSBrandCar();
+    
+    bool initialize( TestDriveGameInstance* ) override;
+    void terminate() override;
 };
 
 extern GSBrandCar* gpBrandCar;
