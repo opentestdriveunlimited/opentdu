@@ -28,6 +28,36 @@
 #include "audio/gs_audio.h"
 #include "input/gs_device.h"
 #include "movie/gs_movie.h"
+#include "world/gs_world_streaming.h"
+#include "audio/gs_vehicle_sound.h"
+#include "game/vehicle/gs_car_common.h"
+#include "render/postfx/gs_postfx.h"
+#include "audio/gs_ambiance.h"
+#include "game/gs_subtitles.h"
+#include "game/gs_cinematics.h"
+#include "physics/gs_physics.h"
+#include "render/camera/gs_camera.h"
+#include "game/vehicle/gs_car_state.h"
+#include "game/vehicle/gs_car_display.h"
+#include "world/gs_details.h"
+#include "physics/gs_physicsfx.h"
+#include "render/particles/gs_particles.h"
+#include "game/avatar/gs_cloth_system.h"
+#include "game/avatar/gs_avatar.h"
+#include "world/gs_pedestrians.h"
+#include "game/scenaric/gs_scenaric.h"
+#include "gs_pub.h"
+#include "world/gs_aircraft.h"
+#include "world/gs_boat.h"
+#include "ai/gs_ai.h"
+#include "online/gs_online.h"
+#include "game/gs_tutorial.h"
+#include "game/vehicle/gs_brand_car.h"
+#include "world/gs_mng_resources.h"
+#include "system/gs_keyboard_pc.h"
+#include "system/gs_pc_options.h"
+#include "gs_cd_key.h"
+#include "player_data/gs_radio.h"
 
 #include "render/shaders/shader_register.h"
 
@@ -396,11 +426,45 @@ bool TestDriveGameInstance::initializeGameServices()
 {
     bool operationResult = true;
     OTDU_ASSERT( operationResult &= registerService<GSIntroPool>() );
-    OTDU_ASSERT( operationResult &= registerService<GSDatabase>() );
-    OTDU_ASSERT( operationResult &= registerService<GSWorld>() );
+    OTDU_ASSERT( operationResult &= registerService<GSWorldStreaming>() );
+    OTDU_ASSERT( operationResult &= registerService<GSVehicleSound>() );
+    OTDU_ASSERT( operationResult &= registerService<GSCarCommon>() );
     OTDU_ASSERT( operationResult &= registerService<GSCarColors>() );
+    OTDU_ASSERT( operationResult &= registerService<GSPostFX>() );
+    OTDU_ASSERT( operationResult &= registerService<GSAmbiance>() );
+    OTDU_ASSERT( operationResult &= registerService<GSSubtitles>() );
+    OTDU_ASSERT( operationResult &= registerService<GSCinematics>() );
+    OTDU_ASSERT( operationResult &= registerService<GSPhysics>() );
+    OTDU_ASSERT( operationResult &= registerService<GSCamera>() );
+    OTDU_ASSERT( operationResult &= registerService<GSCarState>() );
+    OTDU_ASSERT( operationResult &= registerService<GSCarDisplay>() );
+    OTDU_ASSERT( operationResult &= registerService<GSDatabase>() );
+    OTDU_ASSERT( operationResult &= registerService<GSDetails>() );
+    OTDU_ASSERT( operationResult &= registerService<GSPhysicsFX>() );
+    OTDU_ASSERT( operationResult &= registerService<GSParticles>() );
+    OTDU_ASSERT( operationResult &= registerService<GSWorld>() );
+    OTDU_ASSERT( operationResult &= registerService<GSClothSystem>() );
+    OTDU_ASSERT( operationResult &= registerService<GSAvatar>() );
+    OTDU_ASSERT( operationResult &= registerService<GSPedestrians>() );
+    OTDU_ASSERT( operationResult &= registerService<GSPub>() );
+    OTDU_ASSERT( operationResult &= registerService<GSScenaric>() );
+    OTDU_ASSERT( operationResult &= registerService<GSAircraft>() );
+    OTDU_ASSERT( operationResult &= registerService<GSBoat>() );
+    OTDU_ASSERT( operationResult &= registerService<GSAI>() );
+    OTDU_ASSERT( operationResult &= registerService<GSOnline>() );
+    OTDU_ASSERT( operationResult &= registerService<GSTutorial>() );
     OTDU_ASSERT( operationResult &= registerService<GSPlayerData>() );
+    OTDU_ASSERT( operationResult &= registerService<GSBrandCar>() );
+    OTDU_ASSERT( operationResult &= registerService<GSMngResources>() );
+    OTDU_ASSERT( operationResult &= registerService<GSKeyboardPC>() );
     OTDU_ASSERT( operationResult &= registerService<GSDirtyDisk>() );
+    OTDU_ASSERT( operationResult &= registerService<GSRadio>() );
+
+    // gpConfig->parseRadioIni();
+    // gpConfig->parseLeaderboardIni();
+
+    OTDU_ASSERT( operationResult &= registerService<GSPCOptions>() );
+    OTDU_ASSERT( operationResult &= registerService<GSCDKey>() );
 
     return operationResult;
 }
