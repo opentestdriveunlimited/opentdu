@@ -78,13 +78,15 @@ public:
     void setScreenRatio( const bool bIsUsing169Ratio );
 
     void parseIniFiles();
+    void parseRadioIni();
 
 private:
     using CommandCallback_t = std::function<void( const char* )>;
 
     std::unordered_map<uint32_t, CommandCallback_t> registeredCommands;
 
-    char pSystemPCIniPath[OTDU_MAX_PATH];
+    std::string systemPCIniPath;
+    std::string radioIniPath;
 
 private:
     void registerCommands();
