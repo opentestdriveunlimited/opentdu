@@ -3,10 +3,28 @@
 
 #include "config/gs_config.h"
 
-GMVideoBumper::GMVideoBumper()
-    : movieManager( nullptr )
-{
+std::string GMVideoBumper::ActiveVideoName = "bumper.avi";
+eGameMode GMVideoBumper::NextGameMode = eGameMode::GM_Living;
+bool GMVideoBumper::bCanSkipBumper = true;
 
+bool GMVideoBumper::BOOL_010e7d3d = false;
+bool GMVideoBumper::BOOL_010e7da0 = false;
+std::string GMVideoBumper::FlashMovie = "";
+std::string GMVideoBumper::FlashVariable = "";
+std::string GMVideoBumper::FlashVariableValue = "";
+
+GMVideoBumper::GMVideoBumper()
+    : GameMode()
+    , movieManager()
+    , flashLocalization()
+    , videoBumperManager( this )
+    , drawList()
+{
+    
+
+    registerManager( &movieManager );
+    registerManager( &flashLocalization );
+    registerManager( &videoBumperManager );
 }
 
 GMVideoBumper::~GMVideoBumper()
@@ -40,4 +58,34 @@ void GMVideoBumper::tick(float deltaTime)
             *( uint* )( iVar1 + 0xac4 ) = *( uint* )( iVar1 + 0xac4 ) | 2;
         }
     }*/
+}
+
+void GMVideoBumper::SetNextGameMode( eGameMode mode )
+{
+    NextGameMode = mode;
+    OTDU_LOG_DEBUG("Next game mode set to '%s'\n", kGameModeNames[NextGameMode]);
+}
+
+void GMVideoBumper::SetActiveBumper( const std::string& videoFilename )
+{
+    ActiveVideoName = videoFilename;
+    OTDU_LOG_DEBUG("Next video set to '%s'\n", ActiveVideoName.c_str());
+}
+
+void GMVideoBumper::ClearActiveBumper()
+{
+    ActiveVideoName.clear();
+}
+
+void GMVideoBumper::SetSkippable()
+{
+    bCanSkipBumper = true;
+}
+
+void GMVideoBumper::OnPlaybackComplete(const char* pFlashMovieName, const char* pFlashVariable, const char* pState, const bool param_4)
+{
+    FlashMovie = pFlashMovieName;
+    FlashVariable = pFlashVariable;
+    FlashVariableValue = pState;
+    BOOL_010e7da0 = param_4;
 }
