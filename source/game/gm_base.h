@@ -89,6 +89,8 @@ public:
     void mainLoop(TestDriveGameInstance* param_1);
     void stepLogic(float deltaTime, float totalTime);
 
+    void setTransitionFlags( const uint32_t flags );
+
 protected:
     uint32_t    transitionFlags;
     float       transitionTime;

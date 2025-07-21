@@ -117,3 +117,8 @@ void GameMode::registerManager(Manager* pManager)
     registeredManagers.push_back(pManager);
     OTDU_LOG_DEBUG("Registered manager '%s' (for game mode '%s')\n", pManager->getName(), kGameModeNames[currentGameMode]);
 }
+
+void GameMode::setTransitionFlags( const uint32_t flags )
+{
+    transitionFlags = flags;
+}
