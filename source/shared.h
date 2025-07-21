@@ -12,6 +12,9 @@
 #include <list>
 #include <thread>
 #include <set>
+#include <locale>
+#include <codecvt>
+#include <stdio.h>
 
 #include <Eigen/Dense>
 
@@ -88,4 +91,26 @@ static std::string IntegerToHexString( const size_t w, const size_t hex_len = si
 inline void ThreadYield()
 {
     std::this_thread::yield();
+}
+
+static char* strlwr(char* s)
+{
+    char* tmp = s;
+
+    for (;*tmp;++tmp) {
+        *tmp = tolower((unsigned char) *tmp);
+    }
+
+    return s;
+}
+
+static char* strupr(char* s)
+{
+    char* tmp = s;
+
+    for (;*tmp;++tmp) {
+        *tmp = toupper((unsigned char) *tmp);
+    }
+
+    return s;
 }
