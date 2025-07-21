@@ -874,6 +874,8 @@ bool FileDirectAccess::openContext(const uint64_t hashcode, const char *pFilenam
 bool FileDirectAccess::close()
 {
     Stream.close();
+    StreamWrite.close();
+
     return true;    
 }
 
@@ -919,6 +921,18 @@ bool FileDirectAccess::loadContentIntoMemory(const char *pFilename, int32_t size
 
     close();
     return (numBytesRead != 0);
+}
+
+bool FileDirectAccess::openFile( const char* pFilename, const bool bReadAccess, const bool bWriteAccess )
+{
+    OTDU_ASSERT(!Stream.is_open() && !StreamWrite.is_open());
+
+    StreamWrite = std::ofstream( pFilename, std::ifstream::out | std::ifstream::binary);
+    if (!StreamWrite.is_open() || !StreamWrite.good()) {
+        return false;
+    }
+    
+    return true;
 }
 
 int32_t FileMapEntry::deserialize(void *pMemory)

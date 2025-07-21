@@ -97,6 +97,7 @@ struct FileDirectAccess {
     FileFindInfos FindInfos;
 
     std::ifstream Stream;
+    std::ofstream StreamWrite;
     uint64_t CurrentHashcode;
     void* pContext;
     void* pHandle;
@@ -119,6 +120,8 @@ struct FileDirectAccess {
     );
     bool openContext( const uint64_t hashcode, const char* pFilename, const eContextSource source );
     bool loadContentIntoMemory( const char* pFilename, int32_t sizeToRead, int32_t offset, void** ppOutContent, uint32_t* pContentSize );
+    bool openFile( const char* pFilename, const bool bReadAccess, const bool bWriteAccess );
+
     bool close();
     bool reset();
 };
@@ -168,7 +171,13 @@ struct WorkerThreadContext {
 class GSFile : public GameSystem {
 public:
     const char* getName() const override { return "Service : File"; }
-    const std::wstring& getSaveFolder() const { return savegameFolder; }
+    const std::wstring& getSaveFolder() 
+    {
+        if (savegameFolder.empty()) {
+            retrieveSaveFolder(); 
+        }
+        return savegameFolder; 
+    }
 
 public:
     GSFile();
