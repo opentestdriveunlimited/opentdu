@@ -62,6 +62,7 @@
 #include "render/shaders/shader_register.h"
 
 #include "game/car_showcase/gm_car_showcase.h"
+#include "game/gm_video_bumper.h"
 
 const char** gpCmdLineArgs = nullptr;
 int32_t gCmdLineArgCount = 0;
@@ -76,7 +77,7 @@ static int8_t gVBL = false;
 static char gORBAddress[128];
 static uint64_t gAvailableMemory = 0;
 
-static constexpr char* kDefaultORBAddress = "orb.testdriveunlimited.com";
+static constexpr const char* kDefaultORBAddress = "orb.testdriveunlimited.com";
 
 static CmdLineArg CmdLineArgWindowed( "w", []( const char* pArg ) { gWindowed = true; } );
 static CmdLineArg CmdLineArgVBL( "vbl", []( const char* pArg ) {
@@ -96,6 +97,7 @@ static CmdLineArg CmdLineArgORB( "orb", []( const char* pArg ) {
     OTDU_LOG_INFO( "ORB set to '%s'\n", gORBAddress );
 } );
 
+// TODO: Move to the right header
 typedef enum eErrorMessage {
     EM_DX9NotSupported = 0,
     EM_SoundCardNotDetected = 1,
@@ -148,6 +150,7 @@ static void DisplayErrorMsgLocalized( eErrorMessage errorType )
         TestDrive::DisplayMessageBox( pErrorMessage );
     }
 }
+// TODO: Move to the right header
 
 static bool HasEnoughSysMemAvail()
 {
@@ -180,6 +183,147 @@ static void InstanciationWorker(TestDriveGameInstance::FileInstanciationWorkerIn
     } while( true );
 }
 
+static bool BOOL_010e7364 = false;
+static bool gProfileChange = false;
+static bool BOOL_0143f6b5 = false;
+static bool BOOL_0143f6bc = false;
+static bool BOOL_0143f6bd = false;
+static bool BOOL_0143f6a8 = false;
+static uint32_t UINT_0143f6b8 = 0;
+static uint32_t UINT_0143f6b0 = 0;
+static uint32_t gPendingSavegameCount = 0;
+static TestDriveThread gSaveThread = {};
+static TestDriveEvent TDUEvent_0143f670 = {};
+
+static void* PTR_00fea2a0 = nullptr;
+
+static void SaveWorker(TestDriveEvent* param_1)
+{
+    OTDU_IMPLEMENTATION_SKIPPED( __FUNCTION__ );
+
+    do {
+        do {
+            param_1->waitForEvent();
+        } while (gpTestDriveInstance->hasRequestedExit());
+    } while( true );
+
+//     HANDLE pvVar1;
+//   int iVar2;
+//   undefined4 uVar3;
+//   char cVar4;
+//   TDUProfileList *pTVar5;
+//   int iVar6;
+//   char *pcVar7;
+//   char *pcVar8;
+//   bool bVar9;
+//   _SYSTEMTIME _Stack_120;
+//   _SYSTEMTIME _Stack_110;
+//   wchar_t awStack_100 [128];
+  
+//     do {
+//         do {
+//             param_1->waitForEvent();
+//         } while (gpTestDriveInstance->hasRequestedExit());
+
+//     TestDrive::LockMutex((TDUMutex *)((int)&TDUMutex_0143f6be.lpVtbl.Free + 2));
+//     param_1[1].Name[8] = '\0';
+//     param_1[1].Name[9] = '\0';
+//     param_1[1].Name[10] = '\0';
+//     param_1[1].Name[0xb] = '\0';
+//     pvVar1 = param_1[1].Semaphore;
+//     iVar2 = *(int *)param_1[1].Name;
+//     pTVar5 = TestDrive::GetProfileList();
+//     (*(code *)pTVar5->lpvtbl->field8_0x20)(1);
+//     if (param_1[1].Name[5] == '\0') {
+//       GetLocalTime(&_Stack_120);
+//       swprintf(awStack_100,0xf0b3c8,L"Player Save",(uint)_Stack_120.wMonth,(uint)_Stack_120.wDay,
+//                (uint)_Stack_120.wYear,(uint)_Stack_120.wHour,(uint)_Stack_120.wMinute,
+//                (uint)_Stack_120.wSecond);
+//       cVar4 = FUN_0097c0d0(s_playersave_00f7a038,awStack_100);
+// LAB_0097c689:
+//       if (cVar4 == '\0') goto LAB_0097c696;
+//       param_1[1].Name[8] = '\x01';
+//       param_1[1].Name[9] = '\0';
+//       param_1[1].Name[10] = '\0';
+//       param_1[1].Name[0xb] = '\0';
+//     }
+//     else {
+//       iVar6 = 0xb;
+//       bVar9 = true;
+//       pcVar7 = s_playersave_00f7a038;
+//       pcVar8 = "playersave";
+//       do {
+//         if (iVar6 == 0) break;
+//         iVar6 = iVar6 + -1;
+//         bVar9 = *pcVar7 == *pcVar8;
+//         pcVar7 = pcVar7 + 1;
+//         pcVar8 = pcVar8 + 1;
+//       } while (bVar9);
+//       if (bVar9) {
+//         GetLocalTime(&_Stack_110);
+//         swprintf(awStack_100,0xf0b3c8,L"Player Save",(uint)_Stack_110.wMonth,(uint)_Stack_110.wDay,
+//                  (uint)_Stack_110.wYear,(uint)_Stack_110.wHour,(uint)_Stack_110.wMinute,
+//                  (uint)_Stack_110.wSecond);
+//         cVar4 = FUN_0097c0d0("playersave2",awStack_100);
+//         if (cVar4 != '\0') {
+//           builtin_strncpy(s_playersave_00f7a038,"playersave2",0xc);
+//           goto LAB_0097c689;
+//         }
+//       }
+//       else {
+//         iVar6 = 0xc;
+//         bVar9 = true;
+//         pcVar7 = s_playersave_00f7a038;
+//         pcVar8 = "playersave2";
+//         do {
+//           if (iVar6 == 0) break;
+//           iVar6 = iVar6 + -1;
+//           bVar9 = *pcVar7 == *pcVar8;
+//           pcVar7 = pcVar7 + 1;
+//           pcVar8 = pcVar8 + 1;
+//         } while (bVar9);
+//         if (bVar9) {
+//           FormatStringWithDateAndTime(awStack_100,L"Player Save");
+//           cVar4 = FUN_0097c0d0("playersave",awStack_100);
+//           uVar3 = s_playersave_00f7a038._8_4_;
+//           if (cVar4 != '\0') {
+//             builtin_strncpy(s_playersave_00f7a038,"playersave",0xb);
+//             s_playersave_00f7a038[0xb] = SUB41(uVar3,3);
+//             goto LAB_0097c689;
+//           }
+//         }
+//       }
+// LAB_0097c696:
+//       DAT_010e7530 = gGameCFG.bCDFinal._4_4_;
+//     }
+//     if (param_1[1].Name[4] != '\0') {
+//       param_1[1].Name[4] = '\0';
+//       param_1[1].Semaphore = (HANDLE)((int)param_1[1].Semaphore + 1);
+//       TestDrive::ReleaseEvent(param_1);
+//     }
+//     *(int *)param_1[1].Name = (int)pvVar1 + (*(int *)param_1[1].Name - iVar2);
+//     TestDrive::UnlockMutex((TDUMutex *)((int)&TDUMutex_0143f6be.lpVtbl.Free + 2));
+//   } while( true );
+}
+
+static void CreateSaveThread(void)
+{
+    if (BOOL_010e7364) 
+    {
+        gSaveThread.initialize( (TestDriveThread::StartRoutine_t)SaveWorker, &TDUEvent_0143f670,0x3c00,0);
+        gSaveThread.setPriority(TP_Normal);
+    }
+
+    gPendingSavegameCount = 0;
+    UINT_0143f6b0 = 0;
+    gProfileChange = false;
+    BOOL_0143f6b5 = true;
+    UINT_0143f6b8 = 0;
+    BOOL_0143f6bc = false;
+    BOOL_0143f6bd = false;
+    BOOL_0143f6a8 = false;
+}
+
 int32_t TestDrive::InitAndRun( const char** pCmdLineArgs, const int32_t argCount )
 {
     strncpy( gORBAddress, kDefaultORBAddress, sizeof( char ) * 26 );
@@ -190,6 +334,8 @@ int32_t TestDrive::InitAndRun( const char** pCmdLineArgs, const int32_t argCount
     gArgParserRegister.parseCmdLineArgs( gpCmdLineArgs, gCmdLineArgCount );
 
     TestDriveGameInstance gameInstance( pCmdLineArgs, argCount );
+    CreateSaveThread();
+
     if ( !IsAlreadyRunning() ) {
         bool bCheckSuccessful = HasEnoughSysMemAvail();
 
@@ -379,8 +525,50 @@ bool TestDriveGameInstance::initialize()
         return false;
     }
 
+    if ( gpConfig->bEnableMainMenu && wishedGameMode != GM_AITrainer ) {
+        gameInitStep = 2;
+        setNextGameMode( GM_VideoBumper );
+
+        GMVideoBumper::SetActiveBumper( "Atari.bik" );
+        GMVideoBumper::SetNextGameMode( GM_VideoBumper );
+        GMVideoBumper::SetSkippable();
+        
+        setNextGameMode( GM_VideoBumper ); // NOTE: Done twice in the original game (see 0x0097c91e and 0x0097c96d). Not sure why
+        GMVideoBumper::OnPlaybackComplete( "LOG_IN", "/popup", "on", false );
+
+        GMVideoBumper* pGVar3 = new ( TestDrive::Alloc( sizeof( GMVideoBumper ) ) ) GMVideoBumper();
+        pGVar3->setTransitionFlags( 0x0 );
+        pGVar3->mainLoop( this );
+
+        TestDrive::Free( pGVar3 );
+        GMVideoBumper::ClearActiveBumper();
+
+        GMVideoBumper::SetActiveBumper( "bumper_EDEN_TDU.bik" );
+        GMVideoBumper::SetNextGameMode( GM_Login );
+        GMVideoBumper::SetSkippable();
+
+        GMVideoBumper::OnPlaybackComplete( "LOG_IN", "/popup", "on", false );
+
+        pGVar3 = new ( TestDrive::Alloc( sizeof( GMVideoBumper ) ) ) GMVideoBumper();
+        pGVar3->setTransitionFlags( 0x30 );
+        pGVar3->mainLoop( this );
+
+        TestDrive::Free( pGVar3 );
+
+        setNextGameMode( GM_Login );
+    } else {
+        switchToWishedGameMode();
+        OTDU_UNIMPLEMENTED;
+        // int32_t iVar4 = gpRender->getRenderDevice()->present(true);
+        // if (iVar4 == 4) {
+        //     return false;
+        // }
+    }
+    gameInitStep = 0;
+
     gpBootDatas->loadDataBanks();
     gpFile->flushPendingAsync();
+    //gpConfig->parseWeatherIni();
 
     bool gameServicesInit = initializeGameServices();
     if ( !gameServicesInit ) {
@@ -496,6 +684,20 @@ void TestDriveGameInstance::setNextGameMode( eGameMode nextGameMode )
     }
 
     activeGameMode = nextGameMode;
+}
+
+void TestDriveGameInstance::switchToWishedGameMode()
+{
+    if (bPendingGameModeChange) {
+        OTDU_LOG_WARN( "Failed to submit GM change: GM change already in progress!\n" );
+        return;
+    }
+
+    if (activeGameMode != wishedGameMode) {
+        previousGameMode = activeGameMode;
+    }
+
+    activeGameMode = wishedGameMode;
 }
 
 void TestDriveGameInstance::flushPendingFileInstanciation(bool param_2)

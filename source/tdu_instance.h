@@ -86,6 +86,7 @@ public:
     void mainLoop();
     void setGameMode( eGameMode newGameMode );
     void setNextGameMode( eGameMode nextGameMode );
+    void switchToWishedGameMode();
 
     void flushPendingFileInstanciation(bool param_2);
 
@@ -119,6 +120,8 @@ private:
     TestDriveMutex stackFileMutex;
     std::list<StreamedResource*> pendingStreamedResources;
     StreamedResource* pUnkownResource; // TODO: Why do they keep this pointer aside?
+
+    uint32_t gameInitStep;
 
 private:
     bool initialize();
