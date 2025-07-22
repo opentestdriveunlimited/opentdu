@@ -605,8 +605,6 @@ bool TestDriveGameInstance::initializeBaseServices()
     gpConfig->parseIniFiles();
     OTDU_ASSERT( operationResult &= registerService<GSBootDatas>() );
 
-    gShaderRegister.registerMasterTable();
-
     return operationResult;
 }
 
@@ -704,9 +702,9 @@ void TestDriveGameInstance::flushPendingFileInstanciation(bool param_2)
 {
     ScopedMutexLock mutexLock(&stackFileMutex);
 
-    uint32_t uVar2 = pendingStreamedResources.size();
+    size_t uVar2 = pendingStreamedResources.size();
     if (0 < pendingStreamedResources.size()) {
-        uint32_t iVar3 = 0;
+        size_t iVar3 = 0;
         if (param_2) {
             iVar3 = uVar2 - 1;
         }
