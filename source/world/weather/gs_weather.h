@@ -11,7 +11,7 @@ class WorldListener;
 
 class GSWeather : public GameSystem {
 public:
-    const char* getName() const override { return "Service : World"; }
+    const char* getName() const override { return "GSWeather"; }
     inline bool isConfigDirty() const { return bDirtyConfig; }
 
 public:
