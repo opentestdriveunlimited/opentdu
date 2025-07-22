@@ -11,5 +11,5 @@ struct RenderTarget {
     eAntiAliasingMethod AA = eAntiAliasingMethod::AAM_Disabled;
     GPUTexture* pUnderlyingTexture = nullptr;
     uint32_t Flags = 0u;
-    eShaderStage BoundStage = eShaderStage::SS_Invalid;
+    eShaderType BoundStage = eShaderType::ST_Invalid;
 };

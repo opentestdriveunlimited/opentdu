@@ -78,6 +78,7 @@ private:
     uint32_t renderWidth;
     uint32_t renderHeight;
     uint32_t frameIndex;
+    uint32_t activeRenderLayers;
 
     float aspectRatio;
     float invAspectRatio;

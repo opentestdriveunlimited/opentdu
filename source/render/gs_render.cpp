@@ -19,7 +19,7 @@ GSRender::GSRender()
     : GameSystem()
     , pRenderDevice( nullptr )
     , activeAA( eAntiAliasingMethod::AAM_Disabled )
-    , activeLODQuality( 0u )
+    , activeLODQuality( 2u )
     , defaultViewport()
     , clearColorViewport()
     , clearViewport()
@@ -29,6 +29,7 @@ GSRender::GSRender()
     , renderWidth( 0 )
     , renderHeight( 0 )
     , frameIndex( 0 )
+    , activeRenderLayers( 0 )
     , aspectRatio( 0.0f )
     , invAspectRatio( 0.0f )
     , time( 0.0f )
@@ -65,18 +66,20 @@ GSRender::GSRender()
     , interiorFarPlane( 40.0f )
 {
     renderPasses.resize( 75 );
+
+    shaderUniforms[4] = { 0.1456f, -0.49f, -0.49f, -1.5f };
+    shaderUniforms[5] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+    gpRender = this;
 }
 
 GSRender::~GSRender()
 {
-
+    gpRender = nullptr;
 }
 
 bool GSRender::initialize( TestDriveGameInstance* )
 {
-    pRenderDevice = new RenderDevice();
-    pRenderDevice->initialize();
-
     if ( gpConfig->bWindowed || gpConfig->FullscreenMode == eFullscreenMode::FM_Desktop ) {
         renderWidth = gpConfig->WindowWidth;
         renderHeight = gpConfig->WindowHeight;
@@ -88,6 +91,11 @@ bool GSRender::initialize( TestDriveGameInstance* )
     // Note: The original game didn't work this way (but it's probably more convenient than making
     // fullscreen exclusive only...) 
     gpSystem->resizeGameWindow( renderWidth, renderHeight, gpConfig->FullscreenMode, gpConfig->bWindowed );
+
+    pRenderDevice = new RenderDevice();
+    pRenderDevice->bindWindowHandle( gpSystem->getWindowHandle() );
+    pRenderDevice->resize( renderWidth, renderHeight );
+    pRenderDevice->initialize();
 
     // Update aspect ratio flag based on the actual render resolution (this will effectively
     // override the configuration parsed from disk).
@@ -214,24 +222,24 @@ void GSRender::flushDrawCommands(bool param_1)
 
 void GSRender::allocateRenderTargets()
 {
-    eViewFormat viewFormat = ( bHDREnabled ) ? VF_A16B16G16R16 : VF_X8R8G8B8;
+    //eViewFormat viewFormat = ( bHDREnabled ) ? VF_A16B16G16R16 : VF_X8R8G8B8;
 
-    int32_t width = ( int32_t )( renderWidth + ( ( renderWidth >> 0x1f ) & 3 ) ) >> 2;
-    int32_t height = ( int32_t )( renderHeight + ( ( renderHeight >> 0x1f ) & 3 ) ) >> 2;
+    //int32_t width = ( int32_t )( renderWidth + ( ( renderWidth >> 0x1f ) & 3 ) ) >> 2;
+    //int32_t height = ( int32_t )( renderHeight + ( ( renderHeight >> 0x1f ) & 3 ) ) >> 2;
 
-    // TODO: MSAA support
-    GPUTextureDesc mainRTDesc( renderWidth, renderHeight, 1, 1, viewFormat, RTF_ReadOnly, "MainRT" );
-    mainRT = pRenderDevice->createTexture( &mainRTDesc );
+    //// TODO: MSAA support
+    //GPUTextureDesc mainRTDesc( renderWidth, renderHeight, 1, 1, viewFormat, RTF_ReadOnly, "MainRT" );
+    //mainRT = pRenderDevice->createTexture( &mainRTDesc );
 
-    GPUTextureDesc scnDown4Desc( width, height, 1, 1, viewFormat, RTF_ReadOnly, "ScnDown4" );
-    scnDown4 = pRenderDevice->createTexture( &scnDown4Desc );
+    //GPUTextureDesc scnDown4Desc( width, height, 1, 1, viewFormat, RTF_ReadOnly, "ScnDown4" );
+    //scnDown4 = pRenderDevice->createTexture( &scnDown4Desc );
 
-    allocateAtmosphereResources();
+    //allocateAtmosphereResources();
 }
 
 void GSRender::allocateAtmosphereResources()
 {
-    static constexpr const char* kResourcesName[kNumSunRT] = {
+    /*static constexpr const char* kResourcesName[kNumSunRT] = {
         "SUN_DS_64x64",
         "SUN_DS_16x16",
         "SUN_DS_4x4",
@@ -266,7 +274,7 @@ void GSRender::allocateAtmosphereResources()
     noiseAssembleS = pRenderDevice->createTexture( &rtDesc );
 
     rtDesc.Fill( 128, 128, 1, 1, VF_X8R8G8B8, RTF_ReadOnly, "OceanNMap" );
-    oceanNMap = pRenderDevice->createTexture( &rtDesc );
+    oceanNMap = pRenderDevice->createTexture( &rtDesc );*/
 }
 
 void GSRender::updateWeatherParams()
@@ -274,24 +282,6 @@ void GSRender::updateWeatherParams()
     if (gpWeather->isConfigDirty()) {
         gpWeather->updateActiveConfig();
     }
-}
-
-void GPUTextureDesc::Fill( uint32_t width,
-                             uint32_t height,
-                             uint32_t depth,
-                             uint32_t numMips,
-                             eViewFormat format,
-                             uint32_t flags,
-                             const char* pResourceName )
-{
-    Width = width;
-    Height = height;
-    ArrayLength = depth;
-    MipCount = numMips;
-    Format = format;
-    Flags = flags;
-    Size = CalculateResourceSize( width, height, depth, numMips, format, flags );
-    Hashcode = pResourceName ? GetIdentifier64bit( pResourceName ) : 0ull;
 }
 
 RenderPass::RenderPass()

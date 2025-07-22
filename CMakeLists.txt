@@ -18,16 +18,28 @@ set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OTDU_BIN_FOLDER} )
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${OTDU_BIN_FOLDER} )
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${OTDU_BIN_FOLDER} )
 
-set( OTDU_DEVBUILD TRUE CACHE BOOL "Build with developer features (verbose logging, devmenu, etc.)" )
-set( OTDU_GFX_API "OTDU_OPENGL" CACHE STRING "Graphics backend to target" )
-set_property(CACHE OTDU_GFX_API PROPERTY STRINGS OTDU_VULKAN OTDU_OPENGL)
+set( OTDU_DEVBUILD ON CACHE BOOL "Build with developer features (logging, devmenu, etc.)" )
+set( OTDU_VERBOSE_LOG OFF CACHE BOOL "Enable verbose logging. May slow down the client" )
+
+if ( WIN32 )
+    set( OTDU_GFX_API "OTDU_D3D9" CACHE STRING "Graphics backend to target" )
+    set_property(CACHE OTDU_GFX_API PROPERTY STRINGS OTDU_OPENGL OTDU_D3D9)
+else()
+    set( OTDU_GFX_API "OTDU_OPENGL")
+endif()
 
 add_definitions( -D"${OTDU_GFX_API}" )
+
 if ( ${OTDU_DEVBUILD} )
     add_definitions( -DOTDU_DEVBUILD )
 endif()
+if ( ${OTDU_VERBOSE_LOG} )
+    add_definitions( -DOTDU_VERBOSE_LOG )
+endif()
 
- find_package(Git)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${OTDU_BASE_FOLDER}/cmake_modules)
+
+find_package(Git)
 if (GIT_FOUND)
     execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
                     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -39,6 +51,7 @@ else()
 endif()
 
 include( ${OTDU_BASE_FOLDER}/cmake_modules/ide_filters.cmake )
+include( ${OTDU_BASE_FOLDER}/cmake_modules/FindD3D9.cmake )
 
 file( GLOB OTDU_SRC "${OTDU_SRC_FOLDER}/tdu_instance.cpp"
                     "${OTDU_SRC_FOLDER}/gs_pub.cpp"
@@ -179,11 +192,12 @@ file( GLOB OTDU_SRC "${OTDU_SRC_FOLDER}/tdu_instance.cpp"
                     "${OTDU_SRC_FOLDER}/render/shaders/shader_table_bink.inl"
                     "${OTDU_SRC_FOLDER}/render/shaders/shader_table_vehicle_common.inl"
                     "${OTDU_SRC_FOLDER}/render/shaders/shader_table_noise.inl"
-                    "${OTDU_SRC_FOLDER}/render/vulkan/render_device.cpp"
                     "${OTDU_SRC_FOLDER}/render/opengl/render_device.cpp"
                     "${OTDU_SRC_FOLDER}/render/postfx/gs_postfx.cpp"
                     "${OTDU_SRC_FOLDER}/render/gs_noise.cpp"
                     "${OTDU_SRC_FOLDER}/render/particles/gs_particles.cpp"
+                    "${OTDU_SRC_FOLDER}/render/d3d9/render_device.cpp"
+                    "${OTDU_SRC_FOLDER}/render/postfx/postfx_stack.cpp"
                     "${OTDU_SRC_FOLDER}/win32/entry_point.cpp"
                     "${OTDU_SRC_FOLDER}/unix/entry_point.cpp"
                     "${OTDU_SRC_FOLDER}/filesystem/gs_file.cpp"
@@ -358,10 +372,11 @@ file( GLOB OTDU_INC "${OTDU_SRC_FOLDER}/tdu_instance.h"
                     "${OTDU_SRC_FOLDER}/render/render_scene.h"
                     "${OTDU_SRC_FOLDER}/render/render_target.h"
                     "${OTDU_SRC_FOLDER}/render/viewport.h"
-                    "${OTDU_SRC_FOLDER}/render/vulkan/render_device.h"
                     "${OTDU_SRC_FOLDER}/render/opengl/render_device.h"
                     "${OTDU_SRC_FOLDER}/render/postfx/gs_postfx.h"
                     "${OTDU_SRC_FOLDER}/render/gs_noise.h"
+                    "${OTDU_SRC_FOLDER}/render/d3d9/render_device.h"
+                    "${OTDU_SRC_FOLDER}/render/postfx/postfx_stack.h"
                     "${OTDU_SRC_FOLDER}/filesystem/gs_file.h"
                     "${OTDU_SRC_FOLDER}/filesystem/bank.h"
                     "${OTDU_SRC_FOLDER}/filesystem/gs_boot_datas.h"
@@ -405,18 +420,8 @@ include_directories( "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/glfw/include/" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/eigen" )
 
-if (${OTDU_GFX_API} STREQUAL "OTDU_VULKAN")
-    include_directories( "${OTDU_THIRDPARTY_FOLDER}/Vulkan-Headers/include/" )
-    include_directories( "${OTDU_THIRDPARTY_FOLDER}/volk/" )
-    include_directories( "${OTDU_THIRDPARTY_FOLDER}/VulkanMemoryAllocator/include" )
-
-    if ( WIN32 )
-        set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_win32_vulkan")
-    elseif ( APPLE )
-        set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_darwin_vulkan")
-    else()
-        set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_unix_vulkan")
-    endif()
+if (${OTDU_GFX_API} STREQUAL "OTDU_D3D9")
+    set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_win32_d3d9")
 elseif (${OTDU_GFX_API} STREQUAL "OTDU_OPENGL")
     include_directories( "${OTDU_THIRDPARTY_FOLDER}/glew/include" )
     
@@ -440,6 +445,8 @@ elseif ( APPLE )
 
     target_compile_options( opentdu PRIVATE -Wall -Wextra )
     target_compile_options( opentdu PUBLIC -Wno-unused-variable -Wno-unused-private-field -Wno-unused-function -Wno-unused-parameter )
+else()
+    add_definitions( -DOTDU_UNIX )
 endif ( WIN32 )
 
 if( MSVC )
@@ -455,26 +462,33 @@ elseif ( GCC )
 endif()
 
 if ( WIN32 )
-target_link_libraries( opentdu debug "${OTDU_THIRDPARTY_FOLDER}/glfw/src/Debug/glfw3.lib" )
-target_link_libraries( opentdu optimized "${OTDU_THIRDPARTY_FOLDER}/glfw/src/MinSizeRel/glfw3.lib" )
+    target_link_libraries( opentdu debug "${OTDU_THIRDPARTY_FOLDER}/glfw/src/Debug/glfw3.lib" )
+    target_link_libraries( opentdu optimized "${OTDU_THIRDPARTY_FOLDER}/glfw/src/MinSizeRel/glfw3.lib" )
 
-if (${OTDU_GFX_API} STREQUAL "OTDU_OPENGL")
-    find_package(OpenGL REQUIRED)
-    target_link_libraries( opentdu "${OTDU_THIRDPARTY_FOLDER}/glew/lib/Release/x64/glew32.lib" )
-    target_link_libraries( opentdu ${OPENGL_gl_LIBRARY} )
-endif()
+    if (${OTDU_GFX_API} STREQUAL "OTDU_D3D9")
+        if (DirectX_D3D9_INCLUDE_FOUND)
+            include_directories( ${DirectX_D3D9_INCLUDE_DIR} )
+            target_link_libraries( opentdu D3D9 )
+            #target_link_libraries( opentdu dxgi )
+            #target_link_libraries( opentdu dxguid )
+        endif()
+        find_package(D3D9 REQUIRED)
+    elseif (${OTDU_GFX_API} STREQUAL "OTDU_OPENGL")
+        find_package(OpenGL REQUIRED)
+
+        target_link_libraries( opentdu "${OTDU_THIRDPARTY_FOLDER}/glew/lib/Release/x64/glew32.lib" )
+        target_link_libraries( opentdu ${OPENGL_gl_LIBRARY} )
+    endif()
 elseif( APPLE )
-target_link_libraries( opentdu debug "${OTDU_THIRDPARTY_FOLDER}/glfw/src/libglfw3.a" )
-target_link_libraries( opentdu optimized "${OTDU_THIRDPARTY_FOLDER}/glfw/src/libglfw3.a" )
+    target_link_libraries( opentdu debug "${OTDU_THIRDPARTY_FOLDER}/glfw/src/libglfw3.a" )
+    target_link_libraries( opentdu optimized "${OTDU_THIRDPARTY_FOLDER}/glfw/src/libglfw3.a" )
 
-if (${OTDU_GFX_API} STREQUAL "OTDU_VULKAN")
-include_directories( "${OTDU_THIRDPARTY_FOLDER}/MoltenVK/include" )
-elseif (${OTDU_GFX_API} STREQUAL "OTDU_OPENGL")
-target_link_libraries( opentdu "${OTDU_THIRDPARTY_FOLDER}/glew/lib/libGLEW.a" )
-target_link_libraries( opentdu "-framework OpenGL" )
-endif()
+    if (${OTDU_GFX_API} STREQUAL "OTDU_OPENGL")
+        target_link_libraries( opentdu "${OTDU_THIRDPARTY_FOLDER}/glew/lib/libGLEW.a" )
+        target_link_libraries( opentdu "-framework OpenGL" )
+    endif()
 
-target_link_libraries( opentdu "-framework QuartzCore -framework Metal -framework Cocoa -framework IOKit -framework IOSurface -framework CoreVideo" )
+    target_link_libraries( opentdu "-framework QuartzCore -framework Metal -framework Cocoa -framework IOKit -framework IOSurface -framework CoreVideo" )
 endif( WIN32 )
 
 add_subdirectory( tools/asset_extractor )

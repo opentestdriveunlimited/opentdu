@@ -86,6 +86,7 @@ struct MaterialParameter
 
     MaterialLayer* getLayer( const uint32_t index );
 };
+static_assert( sizeof( MaterialParameter ) == 0x40, "Size mismatch! Material deserialization will break" );
 
 struct MaterialShaderParameter
 {
