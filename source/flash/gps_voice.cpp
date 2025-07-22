@@ -40,4 +40,6 @@ bool GPSVoice::initialize()
             audioState = eAudioState::GVAS_WaitingForParsing;
         }
     }
+
+    return true;
 }
