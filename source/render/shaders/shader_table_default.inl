@@ -35,3 +35,6 @@
 /* Fullscreen Quad */
 {0x00ee5d78,0x6c6cdc43d32bc9da,eShaderType::ST_Pixel,0,0,0,0,"Common"},
 {0x00ee5e48,0xecf48bb0fc0643c7,eShaderType::ST_Vertex,0,0,0,0,"Common"},
+/* Debug Text (note: hashcodes are not valid; make sure it doesn't collide with valid ones!) */
+{ 0x00eed8f8,0xfffffffffffff000,eShaderType::ST_Vertex,0,0,0,0,"Common" },
+{ 0x00eed808,0x0ffffffffffff000,eShaderType::ST_Pixel,0,0,0,0,"Common" },

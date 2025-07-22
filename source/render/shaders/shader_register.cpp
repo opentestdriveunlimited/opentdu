@@ -3,6 +3,7 @@
 
 #include "shader_table_master.h"
 
+#include "render/gs_render.h"
 #include "render/material.h"
 #include "core/hash/crc64.h"
 #include "filesystem/gs_file.h"
@@ -12,6 +13,8 @@ ShaderRegister gShaderRegister = {};
 ShaderRegister::ShaderRegister()
     : latestFoundHashcode( 0 )
     , pDefaultMaterial( nullptr )
+    , vertexShaderInstanceCount( 0 )
+    , pixelShaderInstanceCount( 0 )
 {
     
 }
@@ -132,9 +135,70 @@ void ShaderRegister::registerShader( const ShaderTableEntry* pTableEntry )
     } else if ( pTableEntry->ShaderStage == eShaderType::ST_Pixel ) {
         cachedPixelShaders.insert( std::make_pair( pTableEntry->Hashcode, cachedShader ) );
     } else {
-        OTDU_LOG_ERROR( "Unimplemented shader stage!\n" );
-        OTDU_ASSERT( false );
+        OTDU_FATAL_ERROR( "Unimplemented shader stage %u!\n", pTableEntry->ShaderStage );
     }
+}
+
+void ShaderRegister::releaseCachedShaderInstances()
+{
+    RenderDevice* pDevice = gpRender->getRenderDevice();
+    for ( auto& entry : cachedVertexShaders ) {
+        CachedShader& shader = entry.second;
+        if ( shader.pShader != nullptr ) {
+            pDevice->destroyShader( shader.pShader );
+            shader.pShader = nullptr;
+        }
+    }
+    
+    for ( auto& entry : cachedPixelShaders ) {
+        CachedShader& shader = entry.second;
+        if ( shader.pShader != nullptr ) {
+            pDevice->destroyShader( shader.pShader );
+            shader.pShader = nullptr;
+        }
+    }
+
+    vertexShaderInstanceCount = 0u;
+    pixelShaderInstanceCount = 0u;
+}
+
+GPUShader* ShaderRegister::getShader( RenderDevice* pDevice, eShaderType type, uint64_t hashcode )
+{
+    CachedShader* pCacheEntry = nullptr;
+    switch ( type ) {
+    case eShaderType::ST_Pixel:
+    {
+        auto it = cachedPixelShaders.find( hashcode );
+        pCacheEntry = ( it != cachedPixelShaders.end() ) ? &it->second : nullptr;
+        break;
+    }
+    case eShaderType::ST_Vertex:
+    {
+        auto it = cachedVertexShaders.find( hashcode );
+        pCacheEntry = ( it != cachedVertexShaders.end() ) ? &it->second : nullptr;
+        break;
+    }
+    default:
+        OTDU_FATAL_ERROR( "Invalid shader type %u!\n", type );
+        break;
+    }
+
+    if ( pCacheEntry == nullptr ) {
+        OTDU_LOG_ERROR( "Failed to find shader with hashcode %p (type: %u)\n", hashcode, type );
+        return nullptr;
+    }
+
+    if ( pCacheEntry->pShader == nullptr ) {
+        OTDU_LOG_INFO("Creating shader %p (type: %u)\n", hashcode, type );
+        pCacheEntry->pShader = pDevice->createShader( type, pCacheEntry->pShaderBin );
+
+        if ( pCacheEntry->pShader == nullptr ) {
+            OTDU_LOG_ERROR( "Failed to find shader with hashcode %p (type: %u)\n", hashcode, type );
+            return nullptr;
+        }
+    }
+
+    return pCacheEntry->pShader;
 }
 
 void ShaderRegister::fillParameterFlags( Material* param_1, ShaderPermutationFlags* param_2 )

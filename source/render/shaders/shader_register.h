@@ -3,10 +3,12 @@
 #include <unordered_map>
 
 #include "render/material.h"
+#include "render/gs_render_helper.h"
 
 struct Material;
 struct GPUShader;
 struct ShaderTableEntry;
+class RenderDevice;
 
 using ShaderTableHeaderEntry_t = std::tuple<uint64_t, uint64_t>; // Key: Hashcode Value: Offset in file (absolute)
 struct ShaderTableHeader
@@ -98,6 +100,10 @@ public:
     void retrieveShadersForMaterial( Material* param_1, const uint32_t index );
     void registerShader( const ShaderTableEntry* pTableEntry );
     
+    void releaseCachedShaderInstances();
+
+    GPUShader* getShader( RenderDevice* pDevice, eShaderType type, uint64_t hashcode );
+
 private:
     void fillParameterFlags( Material* param_1, ShaderPermutationFlags* param_2 );
     bool retrieveVSPSForFlags( ShaderPermutationFlags& param_1, CachedShader* pOutVertexShader, CachedShader* pOutPixelShader );
@@ -112,6 +118,9 @@ private:
 
     std::unordered_map<uint64_t, CachedShader> cachedVertexShaders;
     std::unordered_map<uint64_t, CachedShader> cachedPixelShaders;
+
+    uint32_t vertexShaderInstanceCount;
+    uint32_t pixelShaderInstanceCount;
 };
 
 extern ShaderRegister gShaderRegister;

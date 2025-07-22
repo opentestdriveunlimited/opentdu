@@ -1,13 +1,6 @@
 #pragma once
 
-enum class eShaderType {
-    ST_Pixel = 0,
-    ST_Vertex,
-
-    ST_Count,
-
-    ST_Invalid = -1
-};
+#include "render/gs_render_helper.h"
 
 struct ShaderTableEntry
 {
