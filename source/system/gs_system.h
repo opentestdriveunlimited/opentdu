@@ -3,14 +3,21 @@
 #include "game/gs_base.h"
 #include "config/gs_config.h"
 
-//#if OTDU_WIN32
-//#include "system_win32.h"
-//#endif
+#if OTDU_WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WGL
+#include "GLFW/glfw3.h"
+#include "GLFW/glfw3native.h"
+#endif
 
 class GSSystem : public GameSystem {
 public:
     const char* getName() const override { return "Service : Sys"; }
     inline const bool isWindowActivated() const { return bWindowActivated; }
+
+#if OTDU_WIN32
+    inline HWND getWindowHandle() const { return glfwGetWin32Window( pWindow ); }
+#endif
 
 public:
     GSSystem();
