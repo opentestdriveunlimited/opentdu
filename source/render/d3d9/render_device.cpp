@@ -1147,23 +1147,21 @@ bool RenderDevice::resetCachedStates()
 
 void RenderDevice::unbindVertexBuffers()
 {
-    uint32_t uVar2;
     UINT StreamNumber;
 
     StreamNumber = 0;
-    uVar2 = 0;
     do {
-        boundVertexStreams[uVar2].pBuffer = nullptr;
-        boundVertexStreams[uVar2].Offset = 0;
-        boundVertexStreams[uVar2].Stride = 0;
+        boundVertexStreams[StreamNumber].pBuffer = nullptr;
+        boundVertexStreams[StreamNumber].Offset = 0;
+        boundVertexStreams[StreamNumber].Stride = 0;
 
-        boundVertexStreamFrequency[uVar2] = 1;
+        boundVertexStreamFrequency[StreamNumber] = 1;
 
         pDevice->SetStreamSource( StreamNumber, nullptr, 0, 0 );
         pDevice->SetStreamSourceFreq( StreamNumber, 1 );
 
         StreamNumber++;
-    } while ( uVar2 < 0xc0 );
+    } while ( StreamNumber < 0x10 );
 
     pBoundVertexLayout = nullptr;
 }
