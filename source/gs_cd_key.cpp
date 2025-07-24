@@ -113,7 +113,11 @@ void GSCDKey::updateGameKey(const char* param_1)
 {
     strncpy(pGameCDKey,param_1,0x13);
     pGameCDKey[0x13] = '\0';
+#ifdef OTDU_MSVC
+    _strupr( pGameCDKey );
+#else
     strupr(pGameCDKey);
+#endif
 
     writeKeyToCache();
 

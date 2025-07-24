@@ -93,6 +93,7 @@ inline void ThreadYield()
     std::this_thread::yield();
 }
 
+#ifndef OTDU_MSVC
 static char* strlwr(char* s)
 {
     char* tmp = s;
@@ -114,3 +115,4 @@ static char* strupr(char* s)
 
     return s;
 }
+#endif
