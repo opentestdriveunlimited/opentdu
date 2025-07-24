@@ -1,6 +1,18 @@
 #include "shared.h"
 #include "gs_config.h"
 
+#include "core/hash/crc32.h"
+
+#include "flash/gs_flash.h"
+#include "database/gs_database.h"
+#include "game/scenaric/gs_scenaric.h"
+
+#include "online/gs_online.h"
+#include "tdu_instance.h"
+#include "player_data/gs_playerdata.h"
+
+#include "game/game_cheats.h"
+
 // GamePC.ini
 void GSConfig::registerGameCommands()
 {

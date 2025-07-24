@@ -1,6 +1,9 @@
 #include "shared.h"
 #include "gs_config.h"
 
+#include "input/gs_device.h"
+#include "render/camera/gs_camera.h"
+
 void GSConfig::registerDeviceCommands()
 {
     registerCommand( "ADDACTION", [&]( const char* pArg ) {

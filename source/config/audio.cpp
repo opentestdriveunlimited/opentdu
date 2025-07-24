@@ -1,6 +1,8 @@
 #include "shared.h"
 #include "gs_config.h"
 
+#include "audio/gs_audio.h"
+
 void GSConfig::registerAudioCommands()
 {
     registerCommandInt( "SETOUTPUTNBSPEAKERS", &gpAudio->NbSpeakers );

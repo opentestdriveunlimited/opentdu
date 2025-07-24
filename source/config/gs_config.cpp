@@ -261,6 +261,6 @@ void GSConfig::parseRadioIni()
     char* pIniContent = nullptr;
     uint32_t iniContentSize = 0;
     if (!bSearchInBootFirst) {
-        bool bFoundInVFS = gpFile->loadFile(radioIniPath.c_str(), &pIniContent, &iniContentSize);
+        bool bFoundInVFS = gpFile->loadFile(radioIniPath.c_str(), (void**)&pIniContent, &iniContentSize);
     }
 }

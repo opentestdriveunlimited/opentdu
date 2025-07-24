@@ -1,6 +1,8 @@
 #include "shared.h"
 #include "gs_config.h"
 
+#include "input/gs_device.h"
+
 // SystemPC.ini
 void GSConfig::registerSystemCommands()
 {
