@@ -10,8 +10,13 @@
 #include <fstream>
 #include <filesystem>
 
-#define EXCLUDE_PSTDINT 1
-#include "hlslcc.h"
+#include "dxvk/src/dxso/dxso_module.h"
+#include "dxvk/src/dxso/dxso_compiler.h"
+#include "dxvk/src/dxso/dxso_reader.h"
+#include "dxvk/src/dxso/dxso_analysis.h"
+#include "dxvk/src/d3d9/d3d9_constant_layout.h"
+
+#include "spirv_cross/spirv_glsl.hpp"
 
 static char gpPathToExecutable[OTDU_MAX_PATH]; // Path to TestDriveUnlimited.exe
 static CmdLineArg CmdLineArgsExecutablePath( "executable", []( const char* pArg ) {
@@ -23,7 +28,7 @@ static CmdLineArg CmdLineArgsOutputPath( "asset_output_path", []( const char* pA
     strcpy( gpOutputPath, pArg );
 } );
 
-static bool gbSkipGLSLTranslation = true; // If true, do not generate shader tables for OpenGL
+static bool gbSkipGLSLTranslation = false; // If true, do not generate shader tables for OpenGL
 static CmdLineArg CmdLineArgsSkipGLSL( "skip_glsl", []( const char* pArg ) {
     gbSkipGLSLTranslation = true;
 } );
@@ -193,6 +198,7 @@ int main( int argc, char* argv[] ) {
   
     ShaderTable tableDXSO = {};
     ShaderTable tableGLSL = {};
+    ShaderTable tableSPIRV = {};
 
     std::string currentTableName = "";
     int32_t dword = 0;
@@ -203,15 +209,21 @@ int main( int argc, char* argv[] ) {
             if (!tableDXSO.Header.Empty()) {
                 std::string filename = currentTableName + kShaderTableExtension;
                 
-                std::string fileOutputPath = GetShaderOutputPath() + kShadersD3D9Folder +filename;
+                std::string fileOutputPath = GetShaderOutputPath() + kShadersD3D9Folder + filename;
                 bool bWroteToDisk = WriteShaderTableToDisk( tableDXSO, fileOutputPath );
                 if (bWroteToDisk) {
                     shaderExtractedCount++;
                 }
 
+                fileOutputPath = GetShaderOutputPath() + kShadersVulkanFolder + filename;
+                bWroteToDisk = WriteShaderTableToDisk( tableSPIRV, fileOutputPath );
+                if ( bWroteToDisk ) {
+                    shaderExtractedCount++;
+                }
+
                 if (!gbSkipGLSLTranslation) {
                     fileOutputPath = GetShaderOutputPath() + kShadersOpenGLFolder + filename;
-                    bool bWroteToDisk = WriteShaderTableToDisk( tableGLSL, fileOutputPath );
+                    bWroteToDisk = WriteShaderTableToDisk( tableGLSL, fileOutputPath );
                     if (bWroteToDisk) {
                         shaderExtractedCount++;
                     }
@@ -220,6 +232,7 @@ int main( int argc, char* argv[] ) {
                 }
 
                 tableDXSO.Clear();
+                tableSPIRV.Clear();
                 tableGLSL.Clear();
             }
             currentTableName = entry.pShaderCategory;
@@ -250,29 +263,43 @@ int main( int argc, char* argv[] ) {
 
             tableDXSO.Header.Add( std::make_tuple( entry.Hashcode, tableDXSO.Shaders.size() ) );
             tableDXSO.Shaders.insert(tableDXSO.Shaders.end(), shaderBytecode.begin(), shaderBytecode.end());
-            
+
+            // DXSO to SPIRV (using DXVK)
+            dxvk::DxsoReader reader( reinterpret_cast< const char* >( shaderBytecode.data() ) );
+            dxvk::DxsoModule dxvkModule( reader );
+            dxvk::DxsoAnalysisInfo info = dxvkModule.analyze();
+
+            dxvk::D3D9ConstantLayout constantLayout;
+            constantLayout.floatCount = 128; // Arbitrary value for now (way overkill)
+
+            dxvk::DxsoModuleInfo dxsoModuleInfo;
+            dxvk::OpenTDUOutput* pSpirvBC = dxvkModule.compile( dxsoModuleInfo, std::to_string( entry.Hashcode ), info, constantLayout );
+            tableSPIRV.Header.Add( std::make_tuple( entry.Hashcode, tableSPIRV.Shaders.size() ) );
+
+            for ( uint32_t i = 0; i < pSpirvBC->Code.dwords(); i++ ) {
+                uint32_t dword = pSpirvBC->Code.data()[i];
+
+                tableSPIRV.Shaders.push_back( ( uint8_t )( dword & 0xff ) );
+                tableSPIRV.Shaders.push_back( ( uint8_t )( dword >> 8 ) & 0xff );
+                tableSPIRV.Shaders.push_back( ( uint8_t )( dword >> 16 ) & 0xff );
+                tableSPIRV.Shaders.push_back( ( uint8_t )( dword >> 24 ) & 0xff );
+            }
+           
             if (!gbSkipGLSLTranslation) {
+                // SPIRV to GLSL (using SPIRV-Cross)
                 tableGLSL.Header.Add( std::make_tuple( entry.Hashcode, tableGLSL.Shaders.size() ) );
                 
-                GlExtensions extensions = {};
-                GLSLCrossDependencyData dependencies = {};
+                spirv_cross::CompilerGLSL glsl( pSpirvBC->Code.data(), pSpirvBC->Code.dwords() );
 
-                GLSLShader output = {};
-                int32_t result = TranslateHLSLFromMem(
-                    (const char*)shaderBytecode.data(), 
-                    HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS | HLSLCC_FLAG_ORIGIN_UPPER_LEFT,
-                    GLLang::LANG_330, 
-                    &extensions, 
-                    &dependencies,
-                    &output
-                );
-                OTDU_ASSERT( result == 1 );
+                // Set some options.
+                spirv_cross::CompilerGLSL::Options options;
+                options.version = 330;
+                options.es = true;
+                options.vulkan_semantics = true;
+                glsl.set_common_options( options );
 
-                std::string sourceCode = output.sourceCode;
-                tableGLSL.Shaders.insert(tableGLSL.Shaders.end(), sourceCode.begin(), sourceCode.end());
-
-                sourceCode.clear();
-                FreeGLSLShader( &output );
+                std::string sourceCode = glsl.compile();
+                tableGLSL.Shaders.insert( tableGLSL.Shaders.end(), sourceCode.begin(), sourceCode.end() );
             }
         } else {
             OTDU_FATAL_ERROR("Invalid magic found (shader table entry might be invalid)\n");

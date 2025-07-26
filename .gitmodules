@@ -22,6 +22,9 @@
 [submodule "third_party/glew"]
 	path = third_party/glew
 	url = https://github.com/nigels-com/glew.git
-[submodule "third_party/HLSLCrossCompiler"]
-	path = third_party/HLSLCrossCompiler
-	url = https://github.com/James-Jones/HLSLCrossCompiler.git
+[submodule "third_party/spirv"]
+	path = third_party/spirv
+	url = https://github.com/KhronosGroup/SPIRV-Headers.git
+[submodule "third_party/spirv_cross"]
+	path = third_party/spirv_cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross
