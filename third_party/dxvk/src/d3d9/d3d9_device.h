@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../dxvk/dxvk_device.h"
-#include "../dxvk/dxvk_cs.h"
-#include "../dxvk/dxvk_staging.h"
+//#include "../dxvk/dxvk_device.h"
+//#include "../dxvk/dxvk_cs.h"
+// #include "../dxvk/dxvk_staging.h"
 
 #include "d3d9_include.h"
-#include "d3d9_cursor.h"
+//#include "d3d9_cursor.h"
 #include "d3d9_format.h"
 #include "d3d9_multithread.h"
 #include "d3d9_adapter.h"

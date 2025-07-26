@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../dxvk/dxvk_device.h"
+//#include "../dxvk/dxvk_device.h"
 #include "../d3d9/d3d9_options.h"
 
 namespace dxvk {
@@ -10,7 +10,7 @@ namespace dxvk {
 
   struct DxsoOptions {
     DxsoOptions();
-    DxsoOptions(D3D9DeviceEx* pDevice, const D3D9Options& options);
+    //DxsoOptions(D3D9DeviceEx* pDevice, const D3D9Options& options);
 
     /// True:  Copy our constant set into UBO if we are relative indexing ever.
     /// False: Copy our constant set into UBO if we are relative indexing at the start of a defined constant

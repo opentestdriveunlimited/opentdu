@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../util/config/config.h"
-#include "../dxvk/dxvk_device.h"
+//#include "../dxvk/dxvk_device.h"
 
 namespace dxvk {
 
@@ -13,7 +13,8 @@ namespace dxvk {
 
   struct D3D9Options {
 
-    D3D9Options(const Rc<DxvkDevice>& device, const Config& config);
+    D3D9Options();
+//    D3D9Options(const Rc<DxvkDevice>& device, const Config& config);
 
     /// Override PCI vendor and device IDs reported to the
     /// application. This may make apps think they are running

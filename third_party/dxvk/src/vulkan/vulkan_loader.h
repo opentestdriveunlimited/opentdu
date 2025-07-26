@@ -3,9 +3,10 @@
 #include "../util/rc/util_rc.h"
 #include "../util/rc/util_rc_ptr.h"
 
-#define VK_USE_PLATFORM_WIN32_KHR 1
+//#define VK_USE_PLATFORM_WIN32_KHR 1
 #include <vulkan/vulkan.h>
 
+#if 0
 #define VULKAN_FN(name) \
   ::PFN_ ## name name = reinterpret_cast<::PFN_ ## name>(sym(#name))
 
@@ -496,3 +497,4 @@ namespace dxvk::vk {
   };
   
 }
+#endif

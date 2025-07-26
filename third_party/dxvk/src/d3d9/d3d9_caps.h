@@ -1,6 +1,7 @@
 #pragma once
 
-#include "d3d9_include.h"
+//#include "d3d9_include.h"
+#define D3D_MAX_SIMULTANEOUS_RENDERTARGETS 4 // https://learn.microsoft.com/en-us/windows/win32/direct3d9/other-direct3d-constants
 
 namespace dxvk::caps {
 

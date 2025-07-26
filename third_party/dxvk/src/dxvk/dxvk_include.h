@@ -3,7 +3,7 @@
 #include "../util/log/log.h"
 #include "../util/log/log_debug.h"
 
-#include "../util/util_env.h"
+//#include "../util/util_env.h"
 #include "../util/util_error.h"
 #include "../util/util_flags.h"
 #include "../util/util_likely.h"
@@ -20,6 +20,6 @@
 #include "../util/sync/sync_spinlock.h"
 #include "../util/sync/sync_ticketlock.h"
 
-#include "../vulkan/vulkan_loader.h"
-#include "../vulkan/vulkan_names.h"
+//#include "../vulkan/vulkan_loader.h"
+//#include "../vulkan/vulkan_names.h"
 #include "../vulkan/vulkan_util.h"

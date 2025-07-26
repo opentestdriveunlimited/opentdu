@@ -3,7 +3,7 @@
 #include "dxso_analysis.h"
 
 #include "../d3d9/d3d9_caps.h"
-#include "../d3d9/d3d9_constant_set.h"
+//#include "../d3d9/d3d9_constant_set.h"
 #include "../d3d9/d3d9_state.h"
 #include "../d3d9/d3d9_spec_constants.h"
 #include "../d3d9/d3d9_fixed_function.h"
@@ -15,6 +15,11 @@
 
 namespace dxvk
 {
+  /**
+   * @brief The first sampler that belongs to the vertex shader according to our internal way of storing samplers
+   */
+  constexpr uint32_t FirstVSSamplerSlot = caps::MaxTexturesPS + 1;
+
     uint32_t _SetupSamplerArray( SpirvModule& spvModule )
     {
         // Old spir-v, need to enable extension

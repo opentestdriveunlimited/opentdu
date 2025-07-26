@@ -1,30 +1,53 @@
 #pragma once
 
 #include "d3d9_caps.h"
-#include "d3d9_constant_set.h"
+// #include "d3d9_constant_set.h"
 #include "../dxso/dxso_common.h"
 #include "../util/util_matrix.h"
 
-#include "d3d9_surface.h"
-#include "d3d9_shader.h"
-#include "d3d9_vertex_declaration.h"
-#include "d3d9_buffer.h"
+//#include "d3d9_surface.h"
+//#include "d3d9_shader.h"
+//#include "d3d9_vertex_declaration.h"
+//#include "d3d9_buffer.h"
 
 #include <array>
 #include <bitset>
 #include <optional>
 
 namespace dxvk {
+  #define DXVK_TSS_COUNT 32
+  
+typedef enum _D3DSAMPLERSTATETYPE {
+    D3DSAMP_ADDRESSU       = 1,
+    D3DSAMP_ADDRESSV       = 2,
+    D3DSAMP_ADDRESSW       = 3,
+    D3DSAMP_BORDERCOLOR    = 4,
+    D3DSAMP_MAGFILTER      = 5,
+    D3DSAMP_MINFILTER      = 6,
+    D3DSAMP_MIPFILTER      = 7,
+    D3DSAMP_MIPMAPLODBIAS  = 8,
+    D3DSAMP_MAXMIPLEVEL    = 9,
+    D3DSAMP_MAXANISOTROPY  = 10,
+    D3DSAMP_SRGBTEXTURE    = 11,
+    D3DSAMP_ELEMENTINDEX   = 12,
+    D3DSAMP_DMAPOFFSET     = 13,
+                                
+    D3DSAMP_FORCE_DWORD   = 0x7fffffff,
+} D3DSAMPLERSTATETYPE;
 
   static constexpr uint32_t RenderStateCount  = 256;
   static constexpr uint32_t SamplerStateCount = D3DSAMP_DMAPOFFSET + 1;
   static constexpr uint32_t SamplerCount      = caps::MaxTexturesPS + caps::MaxTexturesVS + 1;
   static constexpr uint32_t TextureStageStateCount = DXVK_TSS_COUNT;
 
-  namespace hacks::PointSize {
-    static constexpr DWORD AlphaToCoverageDisabled = MAKEFOURCC('A', '2', 'M', '0');
-    static constexpr DWORD AlphaToCoverageEnabled  = MAKEFOURCC('A', '2', 'M', '1');
-  }
+  #ifndef _WIN32
+  #define UINT uint32_t
+  #define DWORD uint32_t
+  #endif
+  // namespace hacks::PointSize {
+  //   static constexpr DWORD AlphaToCoverageDisabled = MAKEFOURCC('A', '2', 'M', '0');
+  //   static constexpr DWORD AlphaToCoverageEnabled  = MAKEFOURCC('A', '2', 'M', '1');
+  // }
   
   struct D3D9ClipPlane {
     float coeff[4] = {};
@@ -80,6 +103,88 @@ namespace dxvk {
     Vector4 inverseExtent;
   };
 
+#ifndef D3DCOLOR_DEFINED
+typedef DWORD D3DCOLOR;
+#define D3DCOLOR_DEFINED
+#endif
+
+typedef enum _D3DFOGMODE {
+    D3DFOG_NONE                 = 0,
+    D3DFOG_EXP                  = 1,
+    D3DFOG_EXP2                 = 2,
+    D3DFOG_LINEAR               = 3,
+
+    D3DFOG_FORCE_DWORD          = 0x7fffffff
+} D3DFOGMODE;
+
+typedef enum _D3DTEXTUREFILTERTYPE {
+    D3DTEXF_NONE            = 0,
+    D3DTEXF_POINT           = 1,
+    D3DTEXF_LINEAR          = 2,
+    D3DTEXF_ANISOTROPIC     = 3,
+    D3DTEXF_FLATCUBIC       = 4,
+    D3DTEXF_GAUSSIANCUBIC   = 5,
+    D3DTEXF_PYRAMIDALQUAD   = 6,
+    D3DTEXF_GAUSSIANQUAD    = 7,
+#ifndef D3D_DISABLE_9EX
+    D3DTEXF_CONVOLUTIONMONO = 8,
+#endif
+    D3DTEXF_FORCE_DWORD     = 0x7fffffff
+} D3DTEXTUREFILTERTYPE;
+
+typedef enum _D3DTEXTUREADDRESS {
+    D3DTADDRESS_WRAP            = 1,
+    D3DTADDRESS_MIRROR          = 2,
+    D3DTADDRESS_CLAMP           = 3,
+    D3DTADDRESS_BORDER          = 4,
+    D3DTADDRESS_MIRRORONCE      = 5,
+
+    D3DTADDRESS_FORCE_DWORD     = 0x7fffffff
+} D3DTEXTUREADDRESS;
+
+#ifndef D3DCOLORVALUE_DEFINED
+typedef struct _D3DCOLORVALUE {
+    float r;
+    float g;
+    float b;
+    float a;
+} D3DCOLORVALUE;
+#define D3DCOLORVALUE_DEFINED
+#endif
+
+#ifndef D3DVECTOR_DEFINED
+typedef struct _D3DVECTOR {
+    float x;
+    float y;
+    float z;
+} D3DVECTOR;
+#define D3DVECTOR_DEFINED
+#endif
+
+  typedef enum _D3DLIGHTTYPE {
+    D3DLIGHT_POINT          = 1,
+    D3DLIGHT_SPOT           = 2,
+    D3DLIGHT_DIRECTIONAL    = 3,
+
+    D3DLIGHT_FORCE_DWORD    = 0x7fffffff
+  } D3DLIGHTTYPE;
+
+  typedef struct _D3DLIGHT9 {
+      D3DLIGHTTYPE    Type;
+      D3DCOLORVALUE   Diffuse;
+      D3DCOLORVALUE   Specular;
+      D3DCOLORVALUE   Ambient;
+      D3DVECTOR       Position;
+      D3DVECTOR       Direction;
+      float           Range;
+      float           Falloff;
+      float           Attenuation0;
+      float           Attenuation1;
+      float           Attenuation2;
+      float           Theta;
+      float           Phi;
+  } D3DLIGHT9;
+
   struct D3D9Light {
     D3D9Light(const D3DLIGHT9& light, Matrix4 viewMtx)
       : Diffuse      ( Vector4(light.Diffuse.r,  light.Diffuse.g,  light.Diffuse.b,  light.Diffuse.a) )
@@ -113,6 +218,13 @@ namespace dxvk {
     float Phi;
   };
 
+typedef struct _D3DMATERIAL9 {
+    D3DCOLORVALUE   Diffuse;
+    D3DCOLORVALUE   Ambient;
+    D3DCOLORVALUE   Specular;
+    D3DCOLORVALUE   Emissive;
+    float           Power;
+} D3DMATERIAL9;
 
   struct D3D9FixedFunctionVS {
     Matrix4 WorldView;
@@ -164,12 +276,12 @@ namespace dxvk {
     } Stages[8];
   };
   
-  struct D3D9VBO {
-    Com<D3D9VertexBuffer, false> vertexBuffer;
+  // struct D3D9VBO {
+  //   Com<D3D9VertexBuffer, false> vertexBuffer;
 
-    UINT              offset = 0;
-    UINT              stride = 0;
-  };
+  //   UINT              offset = 0;
+  //   UINT              stride = 0;
+  // };
 
   constexpr D3DLIGHT9 DefaultLight = {
     D3DLIGHT_DIRECTIONAL,     // Type
@@ -256,126 +368,126 @@ namespace dxvk {
     DWORD maxAnisotropy;
   };
 
-  template <template <typename T> typename ItemType>
-  struct D3D9State {
-    D3D9State();
-    ~D3D9State();
+  // template <template <typename T> typename ItemType>
+  // struct D3D9State {
+  //   D3D9State();
+  //   ~D3D9State();
 
-    Com<D3D9VertexDecl,  false>                         vertexDecl;
-    Com<D3D9IndexBuffer, false>                         indices;
+  //   Com<D3D9VertexDecl,  false>                         vertexDecl;
+  //   Com<D3D9IndexBuffer, false>                         indices;
 
-    ItemType<std::array<DWORD, RenderStateCount>>       renderStates = {};
+  //   ItemType<std::array<DWORD, RenderStateCount>>       renderStates = {};
 
-    ItemType<std::array<
-      std::array<DWORD, SamplerStateCount>,
-      SamplerCount>>                                    samplerStates = {};
+  //   ItemType<std::array<
+  //     std::array<DWORD, SamplerStateCount>,
+  //     SamplerCount>>                                    samplerStates = {};
 
-    ItemType<std::array<D3D9VBO, caps::MaxStreams>>     vertexBuffers = {};
+  //   ItemType<std::array<D3D9VBO, caps::MaxStreams>>     vertexBuffers = {};
 
-    ItemType<std::array<
-      IDirect3DBaseTexture9*,
-      SamplerCount>>                                    textures = {};
+  //   ItemType<std::array<
+  //     IDirect3DBaseTexture9*,
+  //     SamplerCount>>                                    textures = {};
 
-    Com<D3D9VertexShader, false>                        vertexShader;
-    Com<D3D9PixelShader,  false>                        pixelShader;
+  //   Com<D3D9VertexShader, false>                        vertexShader;
+  //   Com<D3D9PixelShader,  false>                        pixelShader;
 
-    D3DVIEWPORT9                                        viewport = {};
-    RECT                                                scissorRect = {};
+  //   D3DVIEWPORT9                                        viewport = {};
+  //   RECT                                                scissorRect = {};
 
-    D3DCLIPSTATUS9                                      clipStatus = {0, 0xffffffff};
+  //   D3DCLIPSTATUS9                                      clipStatus = {0, 0xffffffff};
 
-    ItemType<std::array<
-      D3D9ClipPlane,
-      caps::MaxClipPlanes>>                             clipPlanes = {};
+  //   ItemType<std::array<
+  //     D3D9ClipPlane,
+  //     caps::MaxClipPlanes>>                             clipPlanes = {};
 
-    ItemType<std::array<
-      std::array<DWORD, TextureStageStateCount>,
-      caps::TextureStageCount>>                         textureStages = {};
+  //   ItemType<std::array<
+  //     std::array<DWORD, TextureStageStateCount>,
+  //     caps::TextureStageCount>>                         textureStages = {};
 
-    ItemType<D3D9ShaderConstantsVSSoftware>             vsConsts;
-    ItemType<D3D9ShaderConstantsPS>                     psConsts;
+  //   ItemType<D3D9ShaderConstantsVSSoftware>             vsConsts;
+  //   ItemType<D3D9ShaderConstantsPS>                     psConsts;
 
-    std::array<UINT, caps::MaxStreams>                  streamFreq = {};
+  //   std::array<UINT, caps::MaxStreams>                  streamFreq = {};
 
-    ItemType<std::array<Matrix4, caps::MaxTransforms>>  transforms = {};
+  //   ItemType<std::array<Matrix4, caps::MaxTransforms>>  transforms = {};
 
-    ItemType<D3DMATERIAL9>                              material = {};
+  //   ItemType<D3DMATERIAL9>                              material = {};
 
-    std::vector<std::optional<D3DLIGHT9>>               lights;
-    std::array<DWORD, caps::MaxEnabledLights>           enabledLightIndices;
+  //   std::vector<std::optional<D3DLIGHT9>>               lights;
+  //   std::array<DWORD, caps::MaxEnabledLights>           enabledLightIndices;
 
-    bool IsLightEnabled(DWORD Index) const {
-      const auto& enabledIndices = enabledLightIndices;
-      return std::find(enabledIndices.begin(), enabledIndices.end(), Index) != enabledIndices.end();
-    }
-  };
+  //   bool IsLightEnabled(DWORD Index) const {
+  //     const auto& enabledIndices = enabledLightIndices;
+  //     return std::find(enabledIndices.begin(), enabledIndices.end(), Index) != enabledIndices.end();
+  //   }
+  // };
 
-  using D3D9CapturableState = D3D9State<dynamic_item>;
-  using D3D9DeviceState = D3D9State<static_item>;
+  // using D3D9CapturableState = D3D9State<dynamic_item>;
+  // using D3D9DeviceState = D3D9State<static_item>;
 
-  template <
-    DxsoProgramType  ProgramType,
-    D3D9ConstantType ConstantType,
-    typename         T,
-    typename         StateType>
-  HRESULT UpdateStateConstants(
-          StateType*           pState,
-          UINT                 StartRegister,
-    const T*                   pConstantData,
-          UINT                 Count,
-          bool                 FloatEmu) {
-    auto UpdateHelper = [&] (auto& set) {
-      if constexpr (ConstantType == D3D9ConstantType::Float) {
+  // template <
+  //   DxsoProgramType  ProgramType,
+  //   D3D9ConstantType ConstantType,
+  //   typename         T,
+  //   typename         StateType>
+  // HRESULT UpdateStateConstants(
+  //         StateType*           pState,
+  //         UINT                 StartRegister,
+  //   const T*                   pConstantData,
+  //         UINT                 Count,
+  //         bool                 FloatEmu) {
+  //   auto UpdateHelper = [&] (auto& set) {
+  //     if constexpr (ConstantType == D3D9ConstantType::Float) {
 
-        if (!FloatEmu) {
-          size_t size = Count * sizeof(Vector4);
+  //       if (!FloatEmu) {
+  //         size_t size = Count * sizeof(Vector4);
 
-          std::memcpy(set->fConsts[StartRegister].data, pConstantData, size);
-        }
-        else {
-          for (UINT i = 0; i < Count; i++)
-            set->fConsts[StartRegister + i] = replaceNaN(pConstantData + (i * 4));
-        }
-      }
-      else if constexpr (ConstantType == D3D9ConstantType::Int) {
-        size_t size = Count * sizeof(Vector4i);
+  //         std::memcpy(set->fConsts[StartRegister].data, pConstantData, size);
+  //       }
+  //       else {
+  //         for (UINT i = 0; i < Count; i++)
+  //           set->fConsts[StartRegister + i] = replaceNaN(pConstantData + (i * 4));
+  //       }
+  //     }
+  //     else if constexpr (ConstantType == D3D9ConstantType::Int) {
+  //       size_t size = Count * sizeof(Vector4i);
 
-        std::memcpy(set->iConsts[StartRegister].data, pConstantData, size);
-      }
-      else {
-        for (uint32_t i = 0; i < Count; i++) {
-          const uint32_t constantIdx = StartRegister + i;
-          const uint32_t arrayIdx    = constantIdx / 32;
-          const uint32_t bitIdx      = constantIdx % 32;
+  //       std::memcpy(set->iConsts[StartRegister].data, pConstantData, size);
+  //     }
+  //     else {
+  //       for (uint32_t i = 0; i < Count; i++) {
+  //         const uint32_t constantIdx = StartRegister + i;
+  //         const uint32_t arrayIdx    = constantIdx / 32;
+  //         const uint32_t bitIdx      = constantIdx % 32;
 
-          const uint32_t bit = 1u << bitIdx;
+  //         const uint32_t bit = 1u << bitIdx;
 
-          set->bConsts[arrayIdx] &= ~bit;
-          if (pConstantData[i])
-            set->bConsts[arrayIdx] |= bit;
-        }
-      }
+  //         set->bConsts[arrayIdx] &= ~bit;
+  //         if (pConstantData[i])
+  //           set->bConsts[arrayIdx] |= bit;
+  //       }
+  //     }
 
-      return D3D_OK;
-    };
+  //     return D3D_OK;
+  //   };
 
-    return ProgramType == DxsoProgramTypes::VertexShader
-      ? UpdateHelper(pState->vsConsts)
-      : UpdateHelper(pState->psConsts);
-  }
+  //   return ProgramType == DxsoProgramTypes::VertexShader
+  //     ? UpdateHelper(pState->vsConsts)
+  //     : UpdateHelper(pState->psConsts);
+  // }
 
-  struct Direct3DState9 : public D3D9DeviceState {
+  // struct Direct3DState9 : public D3D9DeviceState {
 
-    std::array<Com<D3D9Surface, false>, caps::MaxSimultaneousRenderTargets> renderTargets;
-    Com<D3D9Surface, false> depthStencil;
+  //   std::array<Com<D3D9Surface, false>, caps::MaxSimultaneousRenderTargets> renderTargets;
+  //   Com<D3D9Surface, false> depthStencil;
 
-  };
+  // };
 
 
-  struct D3D9InputAssemblyState {
-    D3DPRIMITIVETYPE primitiveType = D3DPRIMITIVETYPE(0);
-    uint32_t streamsInstanced = 0;
-    uint32_t streamsUsed      = 0;
-  };
+  // struct D3D9InputAssemblyState {
+  //   D3DPRIMITIVETYPE primitiveType = D3DPRIMITIVETYPE(0);
+  //   uint32_t streamsInstanced = 0;
+  //   uint32_t streamsUsed      = 0;
+  // };
 
 }

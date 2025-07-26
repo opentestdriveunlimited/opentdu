@@ -10,6 +10,10 @@
 #include "util_bit.h"
 #include "util_likely.h"
 
+#ifndef _WIN32
+using WCHAR = char16_t;
+#endif
+
 namespace dxvk::str {
 
   template<size_t S> struct UnicodeChar { };

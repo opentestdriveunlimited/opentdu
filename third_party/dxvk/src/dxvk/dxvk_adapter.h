@@ -99,11 +99,11 @@ namespace dxvk {
             VkPhysicalDevice    handle);
     ~DxvkAdapter();
     
-    /**
-     * \brief Vulkan instance functions
-     * \returns Vulkan instance functions
-     */
-    Rc<vk::InstanceFn> vki() const;
+    // /**
+    //  * \brief Vulkan instance functions
+    //  * \returns Vulkan instance functions
+    //  */
+    // Rc<vk::InstanceFn> vki() const;
     
     /**
      * \brief Physical device handle
