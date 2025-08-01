@@ -43,4 +43,5 @@ void GSWeather::registerListener(WorldListener *pListener)
 
 void GSWeather::updateActiveConfig()
 {
+    OTDU_UNIMPLEMENTED;
 }

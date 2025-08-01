@@ -68,7 +68,7 @@ WeatherConfig::~WeatherConfig()
 {
 }
 
-void WeatherConfig::fillDirectionalLight(DirectionalLight& light)
+void WeatherConfig::fillDirectionalLight(DirectionalLight& light) const
 {
     light.Ambient = sunAmbientColor;
     light.Diffuse = sunDiffuseColor;
@@ -76,7 +76,7 @@ void WeatherConfig::fillDirectionalLight(DirectionalLight& light)
     light.Direction = sunDirection;
 }
 
-void WeatherConfig::fillFogDesc(FogDesc& desc)
+void WeatherConfig::fillFogDesc(FogDesc& desc) const
 {
     desc.Color = fogColor;
     desc.DistanceStart = fogRange.x();
@@ -93,4 +93,9 @@ Eigen::Vector4f WeatherConfig::getGlobalAmbientColor() const
 Eigen::Vector4f WeatherConfig::getTerrainUniformParams() const
 {
     return Eigen::Vector4f( terrainColor.x(), terrainColor.y(), terrainColor.z(), terrainContrast);
+}
+
+Eigen::Vector3f WeatherConfig::getSunDirection() const
+{
+    return sunDirection;
 }

@@ -14,6 +14,8 @@ public:
     const char* getName() const override { return "GSWeather"; }
     inline bool isConfigDirty() const { return bDirtyConfig; }
 
+    const WeatherConfig& getActiveWeatherConfig() const { return activeWeatherConfig; }
+
 public:
     GSWeather();
     ~GSWeather();
@@ -53,6 +55,7 @@ private:
     TimeOfDay timeRefreshInterval;
 
     HDRIConfig activeHDRIConfig;
+    WeatherConfig activeWeatherConfig;
 };
 
 extern GSWeather* gpWeather;

@@ -13,11 +13,12 @@ public:
     WeatherConfig(const char* pName = nullptr, const bool bHDR = false);
     ~WeatherConfig();
 
-    void fillDirectionalLight(DirectionalLight& light);
-    void fillFogDesc(FogDesc& desc);
+    void fillDirectionalLight(DirectionalLight& light) const;
+    void fillFogDesc(FogDesc& desc) const;
     
     Eigen::Vector4f getGlobalAmbientColor() const;
     Eigen::Vector4f getTerrainUniformParams() const;
+    Eigen::Vector3f getSunDirection() const;
 
 private:
     std::string name;
