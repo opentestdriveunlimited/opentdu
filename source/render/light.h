@@ -22,6 +22,7 @@ struct Light {
 struct DirectionalLight : public Light {
      DirectionalLight()
         : Light(eLightType::LT_Directional)
+        , Direction( Eigen::Vector3f::Zero() )
     {
         
     }
@@ -45,4 +46,10 @@ struct AmbientLight : public Light {
 struct LightSetup {
     std::vector<Light*> Lights;
     uint32_t Flags;
+
+    LightSetup()
+        : Flags( 0x103 )
+    {
+        
+    }
 };
