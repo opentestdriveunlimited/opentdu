@@ -289,7 +289,7 @@ bool GSRender::allocateRenderTargets()
                         pUnknownRT2 = CopyRenderTarget(pMainRTwM, 8);
                         if (pUnknownRT2 != nullptr) {
                             eViewFormat eVar6 = pMainRT->getFormat();
-                            pScnDown4RT = FUN_0050aff0(pMainRT,uVar3,uVar6,viewFormat,0x200,1);
+                            pScnDown4RT = FUN_0050aff0(pMainRT,(float)uVar3,(float)uVar6,viewFormat,0x200,1);
                             if (pScnDown4RT != nullptr) {
                                 pMainRTwM->bind2DB(&mainRTwM);
                                 pMainRT->bind2DB(&mainRT);

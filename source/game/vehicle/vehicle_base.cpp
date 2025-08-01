@@ -220,16 +220,16 @@ void VehicleBase::updateLights()
                     return;
                 }
             } else {
-                fVar8 = 0.0 - fVar8;
+                fVar8 = 0.0f - fVar8;
 
                 pLightOut = &wheelRLight;
                 pLightInt = &wheelRILight;
             }
             float fVar9 = MinWheelAttenuation;
             if (pCarState != nullptr && pCarState->isIndoor()) {
-                fVar9 = MinWheelAttenuation * 4.0;
+                fVar9 = MinWheelAttenuation * 4.0f;
             }
-            fVar9 = (1.0 - fVar9) * (1.0 - fVar8) + fVar9;
+            fVar9 = (1.0f - fVar9) * (1.0f - fVar8) + fVar9;
 
             (pLightOut->Specular).x() = (pLightOut->Specular).x() * fVar9;
             (pLightOut->Specular).y() = (pLightOut->Specular).y() * fVar9;
@@ -240,13 +240,13 @@ void VehicleBase::updateLights()
             (pLightOut->Diffuse).z() = (pLightOut->Diffuse).z() * fVar9;
             (pLightOut->Diffuse).w() = (pLightOut->Diffuse).w();
 
-            (pLightInt->Specular).x() = (pLightInt->Specular).x() * fVar9 * 0.5;
-            (pLightInt->Specular).y() = (pLightInt->Specular).y() * fVar9 * 0.5;
-            (pLightInt->Specular).z() = (pLightInt->Specular).z() * fVar9 * 0.5;
+            (pLightInt->Specular).x() = (pLightInt->Specular).x() * fVar9 * 0.5f;
+            (pLightInt->Specular).y() = (pLightInt->Specular).y() * fVar9 * 0.5f;
+            (pLightInt->Specular).z() = (pLightInt->Specular).z() * fVar9 * 0.5f;
             (pLightInt->Specular).w() = (pLightInt->Specular).w();
-            (pLightInt->Diffuse).x() = (pLightInt->Diffuse).x() * fVar9 * 0.5;
-            (pLightInt->Diffuse).y() = (pLightInt->Diffuse).y() * fVar9 * 0.5;
-            (pLightInt->Diffuse).z() = (pLightInt->Diffuse).z() * fVar9 * 0.5;
+            (pLightInt->Diffuse).x() = (pLightInt->Diffuse).x() * fVar9 * 0.5f;
+            (pLightInt->Diffuse).y() = (pLightInt->Diffuse).y() * fVar9 * 0.5f;
+            (pLightInt->Diffuse).z() = (pLightInt->Diffuse).z() * fVar9 * 0.5f;
             (pLightInt->Diffuse).w() = (pLightInt->Diffuse).w();
         }
     }

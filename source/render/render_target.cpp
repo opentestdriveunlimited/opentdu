@@ -115,9 +115,12 @@ bool RenderTarget::create(float texWidth, float texHeight, const eViewFormat vie
     texHeight = texHeight * (float)uVar4;
   }
 
+  uint32_t roundedWidth = ( uint32_t )texWidth;
+  uint32_t roundedHeight = ( uint32_t )texHeight;
+
   pTexture = gpRender->getRenderDevice()->createRenderTarget(
-      texWidth,
-      texHeight,
+      roundedWidth,
+      roundedHeight,
       viewFormat,
       aaMethod
   );
@@ -127,9 +130,9 @@ bool RenderTarget::create(float texWidth, float texHeight, const eViewFormat vie
   }
   bOwnTexture = true;
 
-  if ((bool)(~((texFlags & 1) != 0) & 1)) {
-    if ((bool)(~((texFlags >> 5 & 1) != 0) & 1)) {
-        pDepthBuffer = gpRender->getRenderDevice()->createRenderTarget(texWidth, texHeight, gDepthStencilFormat, aaMethod);
+  if ( ( texFlags & 1 ) != 0 ) {
+    if ( ( texFlags >> 5 & 1 ) != 0 ) {
+        pDepthBuffer = gpRender->getRenderDevice()->createRenderTarget( roundedWidth, roundedHeight, gDepthStencilFormat, aaMethod);
         if (pDepthBuffer == nullptr) {
             return false;
         }
@@ -172,8 +175,8 @@ bool RenderTarget::createFrom2DB( Render2DB* param_2, uint32_t uStack_4 )
     bind2DB( param_2 );
    
     pTexture = gpRender->getRenderDevice()->createRenderTarget(
-        width,
-        height,
+        ( uint32_t )width,
+        ( uint32_t )height,
         format,
         antiAliasing
     );
@@ -186,7 +189,7 @@ bool RenderTarget::createFrom2DB( Render2DB* param_2, uint32_t uStack_4 )
     bool bNoDepthBuffer = (uStack_4 >> 2) & 1;
     if (!bNoDepthBuffer) {
         if (!bUseMainDepthBuffer) {
-            pDepthBuffer = gpRender->getRenderDevice()->createRenderTarget(width, height, gDepthStencilFormat, antiAliasing);
+            pDepthBuffer = gpRender->getRenderDevice()->createRenderTarget( ( uint32_t )width, ( uint32_t )height, gDepthStencilFormat, antiAliasing);
             if (pDepthBuffer == nullptr) {
                 return false;
             }
@@ -240,8 +243,8 @@ bool RenderTarget::createFromBackbuffer()
 {
     GPUBackbuffer* pBackbuffer = gpRender->getRenderDevice()->getBackbuffer();
     if (pBackbuffer != nullptr) {
-        width = pBackbuffer->Width;
-        height = pBackbuffer->Height;
+        width = ( float )pBackbuffer->Width;
+        height = ( float )pBackbuffer->Height;
 
         format = pBackbuffer->Format;
         antiAliasing = eAntiAliasingMethod::AAM_Disabled;
@@ -277,12 +280,12 @@ void RenderTarget::setFlagsUnknown(const uint32_t param_1)
 
 uint32_t RenderTarget::getWidth()
 {
-    return width;
+    return ( uint32_t )width;
 }
 
 uint32_t RenderTarget::getHeight()
 {
-    return height;
+    return ( uint32_t )height;
 }
 
 RenderTarget* RenderTarget::GetBackBuffer()
@@ -375,9 +378,9 @@ RenderTarget* RenderTargetPool::createAndAddToPool()
 RenderTarget* CreateRenderTarget(const uint32_t width, const uint32_t height, const eViewFormat format, const eAntiAliasingMethod aaMethod, const uint32_t flags )
 {
     // FUN_0050afa0
-    if ( ( ( ( flags >> 4 ) & 1 == 0 ) && ( 0.0f < (float)width && 0.0f < (float)height ) )
+    if ( ( ( ( ( flags >> 4 ) & 1 )  == 0 ) && ( 0.0f < ( float )width && 0.0f < ( float )height ) )
       || ( width != 0 && height != 0 ) ) {
-        return gRenderTargetPool.allocate(width, height, format, flags);
+        return gRenderTargetPool.allocate(( float )width, ( float )height, format, flags);
     }
 
     return nullptr;
@@ -413,7 +416,7 @@ void ReleaseBackbufferRenderTarget()
     }
 }
 
-RenderTarget* FUN_0050aff0(RenderTarget *param_1, float param_2, float param_3, eViewFormat param_4, uint param_5, uint flags)
+RenderTarget* FUN_0050aff0(RenderTarget *param_1, float param_2, float param_3, eViewFormat param_4, uint32_t param_5, uint32_t flags)
 {
     // TODO: Not sure what's the purpose of param_1 in this context (could be sanity check/conditional alloc?)
     if ((~(int8_t)(flags >> 4) & 1) == 0) {
@@ -436,5 +439,5 @@ RenderTarget* FUN_0050aff0(RenderTarget *param_1, float param_2, float param_3, 
         return nullptr;
     }
 
-    return CreateRenderTarget(param_2, param_3, param_4, eAntiAliasingMethod::AAM_Disabled, param_5);
+    return CreateRenderTarget(( uint32_t )param_2, ( uint32_t )param_3, param_4, eAntiAliasingMethod::AAM_Disabled, param_5);
 }

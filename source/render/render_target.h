@@ -86,4 +86,4 @@ RenderTarget* CreateRenderTarget(const uint32_t width, const uint32_t height, co
 RenderTarget* CopyRenderTarget(RenderTarget* pSource, const uint32_t flags);
 bool CreateBackbufferRenderTarget(); // FUN_005f15f0
 void ReleaseBackbufferRenderTarget(); // FUN_005f1650
-RenderTarget* FUN_0050aff0(RenderTarget *param_1, float param_2, float param_3, eViewFormat param_4, uint param_5, uint flags);
+RenderTarget* FUN_0050aff0(RenderTarget *param_1, float param_2, float param_3, eViewFormat param_4, uint32_t param_5, uint32_t flags);
