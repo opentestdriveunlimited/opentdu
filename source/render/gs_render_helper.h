@@ -1,5 +1,7 @@
 #pragma once
 
+struct GPUTexture;
+
 enum class eAntiAliasingMethod : uint32_t {
     AAM_Disabled = 0,
     AAM_MSAA_X2,
@@ -113,6 +115,13 @@ struct GPUAdapterDesc {
 
 static constexpr uint32_t kMaxSimultaneousRT = 8;
 
+static bool IsDepthStencilFormat( eViewFormat format )
+{
+    return format == eViewFormat::VF_D16
+        || format == eViewFormat::VF_D24S8
+        || format == eViewFormat::VF_D24S8F;
+}
+
 static bool IsBlockCompressedFormat( eViewFormat format )
 {
     return format == eViewFormat::VF_DXT1
@@ -198,10 +207,34 @@ struct GPUBufferDesc {
     }
 };
 
+struct GPUBackbuffer
+{
+    GPUTexture* pTexture;
+    uint32_t Width;
+    uint32_t Height;
+    eViewFormat Format;
+};
+
+// Represents one entry of DAT_00fadaa8
+struct FormatCapabilities
+{
+    uint8_t bSupported : 1;
+    uint8_t bDepthStencil : 1; // ...or whatever querying 0x80001 returns
+    uint8_t bSupportMSAAx2 : 1;
+    uint8_t bSupportMSAAx4 : 1;
+    uint8_t : 0;
+};
+
+// TODO: Not sure who's supposed to own this...
+extern eViewFormat gDepthStencilFormat; // DAT_00fac8e4
+extern GPUTexture* gpMainDepthBuffer; // DAT_00f47920
+
 #ifdef OTDU_D3D9
 #include "d3d9/render_device.h"
 #elif defined(OTDU_OPENGL)
 #include "opengl/render_device.h"
+#elif defined(OTDU_VULKAN)
+#include "vulkan/render_device.h"
 #else
 static_assert(false, "Unimplemented API/missing preprocessor!");
 #endif
