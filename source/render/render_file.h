@@ -23,10 +23,12 @@ public:
 
 public:
     RenderFile();
-    ~RenderFile();
+    virtual ~RenderFile();
 
     virtual void destroy();
     virtual bool parseSection( Section* pSection ) { return true; }    
+
+    void reset();
 
     bool parseHeader( void* pFileStream );
     bool parseFile();

@@ -20,6 +20,12 @@ void RenderFile::destroy()
     OTDU_UNIMPLEMENTED;
 }
 
+void RenderFile::reset()
+{
+    pHeader = nullptr;
+    pSections = nullptr;
+}
+
 bool RenderFile::parseHeader( void* pFileStream )
 {
     pHeader = (Header*)pFileStream;
