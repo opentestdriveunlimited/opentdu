@@ -595,6 +595,8 @@ bool TestDriveGameInstance::initializeBaseServices()
     // The original code does this late (as I believe the listeners list is static and/or
     // GSWeather is statically allocated)
     OTDU_ASSERT( operationResult &= registerService<GSWeather>() );
+    // NOTE: Has to be initialized early (to retrieve player data/settings)
+    OTDU_ASSERT( operationResult &= registerService<GSPlayerData>() );
     OTDU_ASSERT( operationResult &= registerService<GSRender>() );
     OTDU_ASSERT( operationResult &= registerService<GSProfile>() );
     OTDU_ASSERT( operationResult &= registerService<GSDevice>() );
@@ -639,7 +641,6 @@ bool TestDriveGameInstance::initializeGameServices()
     OTDU_ASSERT( operationResult &= registerService<GSAI>() );
     OTDU_ASSERT( operationResult &= registerService<GSOnline>() );
     OTDU_ASSERT( operationResult &= registerService<GSTutorial>() );
-    OTDU_ASSERT( operationResult &= registerService<GSPlayerData>() );
     OTDU_ASSERT( operationResult &= registerService<GSBrandCar>() );
     OTDU_ASSERT( operationResult &= registerService<GSMngResources>() );
     OTDU_ASSERT( operationResult &= registerService<GSKeyboardPC>() );
