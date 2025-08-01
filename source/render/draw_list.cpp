@@ -111,7 +111,7 @@ void DrawList::Pool::allocate(
 {
     uint32_t poolSize = CalculatePoolSize(numPrimitive, numVertices, numIndices, param_4, param_5);
 
-    void* pMemory = TestDrive::AllocAligned(poolSize, 0);
+    void* pMemory = TestDrive::Alloc(poolSize);
     OTDU_ASSERT(pMemory);
     
     pBase = pMemory;
