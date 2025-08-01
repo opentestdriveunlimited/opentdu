@@ -22,4 +22,16 @@ struct VehiclePaint {
     ColorRGBA CustomTwoToneColor2;
 
     uint8_t bSaved : 1;
+
+    inline void clear()
+    {
+        Type = ePaintType::PT_Default;
+        PaintIndex = 0;
+        InteriorIndex = 0;
+        CustomMainColor = 0u;
+        CustomSecondColor = 0u;
+        CustomTwoToneColor1 = 0u;
+        CustomTwoToneColor2 = 0u;
+        bSaved = false;
+    }
 };
