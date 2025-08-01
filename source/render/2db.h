@@ -30,8 +30,14 @@ public:
 
 public:
     Render2DB();
-    ~Render2DB();
+    virtual ~Render2DB();
 
+    void create( void* pBuffer, uint32_t width, uint32_t height, uint32_t depth, uint32_t numMips, eViewFormat format, uint32_t flags, const char* pName);
+    bool initialize( void* pBuffer );
+
+    bool hasBeenUploaded() const;
+    Texture* getFirstBitmap() const;
+    
     virtual bool parseSection(RenderFile::Section* pSection) override;
 
     static bool CreateTexture( Texture* pTexture );
@@ -55,6 +61,24 @@ public:
         eViewFormat format,
         uint32_t flags );
 
-private:
+protected:
     RenderFile::Section* pBitmap;
+};
+
+class RuntimeRender2DB : public Render2DB {
+public:
+    RuntimeRender2DB();
+    ~RuntimeRender2DB();
+
+    bool allocateAndCreate(uint32_t width, 
+        uint32_t height, 
+        uint32_t depth, 
+        uint32_t mipCount, 
+        eViewFormat format, 
+        uint32_t flags, 
+        const char* pLabel = "RuntimeRender2DB"
+    );
+
+private:
+    void*   pBuffer;
 };

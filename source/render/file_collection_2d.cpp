@@ -1,6 +1,11 @@
 #include "shared.h"
 #include "file_collection_2d.h"
 
+void FileCollection2D::register2DB( Render2DB* render2DB )
+{
+    Render2DBs.insert( render2DB );
+}
+
 void FileCollection2D::register2DM( Render2DM* render2DM )
 {
     Render2DMs.insert( render2DM );
