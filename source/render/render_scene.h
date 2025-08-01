@@ -2,7 +2,7 @@
 
 class Camera;
 struct Viewport;
-struct RenderTarget;
+class RenderTarget;
 class DrawList;
 struct Instance;
 struct HiearchyNode;

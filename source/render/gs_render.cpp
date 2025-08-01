@@ -1,19 +1,21 @@
 #include "shared.h"
 #include "gs_render.h"
 
-#if OTDU_VULKAN
-#include "render/vulkan/render_device.h"
-#endif
-
 #include "config/gs_config.h"
 #include "system/gs_system.h"
 #include "player_data/gs_playerdata.h"
 #include "world/weather/weather_config.h"
 #include "world/weather/gs_weather.h"
+#include "render_target.h"
+
+#include "shaders/shader_register.h"
+#include "postfx/postfx_stack.h"
 
 #include "Eigen/src/Core/MathFunctions.h"
 
 GSRender* gpRender = nullptr;
+eViewFormat gDepthStencilFormat = eViewFormat::VF_D24S8F; // DAT_00fac8e4
+GPUTexture* gpMainDepthBuffer = nullptr; // DAT_00f47920
 
 GSRender::GSRender()
     : GameSystem()
@@ -38,15 +40,24 @@ GSRender::GSRender()
     , bFrameRecordingInProgress( false )
     , bFovVsLodOn( true )
     , bInitialized( false )
-    , mainRT( nullptr )
-    , scnDown4( nullptr )
-    , sunRenderTargets{ nullptr }
-    , noiseComposite( nullptr )
-    , noiseAssembleF( nullptr )
-    , noiseAssembleS( nullptr )
-    , oceanNMap( nullptr )
+    , mainRTwM()
+    , scnDown4()
+    , mainRT()
+    , pMainRTwM( nullptr )
+    , pMainRT( nullptr )
+    , pScnDown4RT( nullptr )
+    , pUnknownRT( nullptr )
+    , pUnknownRT2( nullptr )
+    , pMainRTFramebuffer( nullptr )
+    , pMainRTwMFramebuffer( nullptr )
+    , pBackbufferFramebuffer( nullptr )
+    , pUnknownRTFramebuffer( nullptr )
+    , pUnknownRT2Framebuffer( nullptr )
+    , pSunFramebuffer( nullptr )
     , shaderUniforms{ Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero() }
     , projectionMatrix( Eigen::Matrix4f::Identity() )
+    , defaultAmbientLight()
+    , defaultDirectionalLight()
     , globalLODFactor( 1.0f )
     , fovVsLodFactor( 1.0f )
     , fovVsLodFactorStart( 0.4f )
@@ -93,7 +104,9 @@ bool GSRender::initialize( TestDriveGameInstance* )
     gpSystem->resizeGameWindow( renderWidth, renderHeight, gpConfig->FullscreenMode, gpConfig->bWindowed );
 
     pRenderDevice = new RenderDevice();
+#if OTDU_WIN32
     pRenderDevice->bindWindowHandle( gpSystem->getWindowHandle() );
+#endif
     pRenderDevice->resize( renderWidth, renderHeight );
     pRenderDevice->initialize();
 
@@ -104,10 +117,11 @@ bool GSRender::initialize( TestDriveGameInstance* )
 
     gpConfig->setScreenRatio( abs( aspectRatio - 1.777778f ) <= abs( aspectRatio - 1.333333f ) );
 
-    activeAA = gpConfig->AntiAliasing;
-    bHDREnabled = gpConfig->bEnableHDRI;
+    activeAA = gpPlayerData->getAAMethod();
+    bHDREnabled = gpPlayerData->isHDREnabled();
     bWasHDREnabled = bHDREnabled;
 
+    allocateDeviceResources();
     allocateRenderTargets();
 
     //projectionMatrix << xScale, 0, 0, 0,
@@ -144,7 +158,15 @@ void GSRender::tick(float deltaTime)
 
 void GSRender::terminate()
 {
+    mainRTwM.destroy();
+    scnDown4.destroy();
+    mainRT.destroy();
 
+    pMainRTwM->destroy(pRenderDevice);
+    pMainRT->destroy(pRenderDevice);
+    pScnDown4RT->destroy(pRenderDevice);
+    pUnknownRT->destroy(pRenderDevice);
+    pUnknownRT2->destroy(pRenderDevice);
 }
 
 void GSRender::beginFrame()
@@ -158,7 +180,7 @@ void GSRender::endFrame()
     frameIndex++;
 }
 
-void GSRender::setLODQuality(const int32_t qualityIndex)
+void GSRender::setLODQuality(const uint32_t qualityIndex)
 {
     if (qualityIndex < 0 || 2 < qualityIndex) {
         return;
@@ -217,24 +239,95 @@ void GSRender::onWeatherConfigChange(WeatherConfig* param_1)
 void GSRender::flushDrawCommands(bool param_1)
 {
     // FUN_005066e0
-    OTDU_UNIMPLEMENTED;
+    OTDU_IMPLEMENTATION_SKIPPED("FUN_005066e0");
 }
 
-void GSRender::allocateRenderTargets()
+bool GSRender::initializeShaderCache()
 {
-    //eViewFormat viewFormat = ( bHDREnabled ) ? VF_A16B16G16R16 : VF_X8R8G8B8;
+    gShaderRegister.releaseCachedShaderInstances();
+    /* DAT_00fadbe0 = 0;
+       DAT_00fadbec = 0;*/
+    gShaderRegister.registerMasterTable();
+    gPostFXStack.releaseResources();
+    return true;
+}
 
-    //int32_t width = ( int32_t )( renderWidth + ( ( renderWidth >> 0x1f ) & 3 ) ) >> 2;
-    //int32_t height = ( int32_t )( renderHeight + ( ( renderHeight >> 0x1f ) & 3 ) ) >> 2;
+bool GSRender::allocateDeviceResources()
+{
+    bool bVar1 = CreateBackbufferRenderTarget();
+    return bVar1;
+}
 
-    //// TODO: MSAA support
-    //GPUTextureDesc mainRTDesc( renderWidth, renderHeight, 1, 1, viewFormat, RTF_ReadOnly, "MainRT" );
-    //mainRT = pRenderDevice->createTexture( &mainRTDesc );
+bool GSRender::allocateRenderTargets()
+{
+    uint32_t height = renderHeight;
+    uint32_t width = renderWidth;
+    bool bSDR = bHDREnabled;
+    uint32_t uVar6 = height >> 0x1f;
+    uint32_t uVar3 = width >> 0x1f;
 
-    //GPUTextureDesc scnDown4Desc( width, height, 1, 1, viewFormat, RTF_ReadOnly, "ScnDown4" );
-    //scnDown4 = pRenderDevice->createTexture( &scnDown4Desc );
+    eViewFormat viewFormat = (bSDR) ? VF_X8R8G8B8 : VF_A16B16G16R16F;
+    uint32_t uVar7 = (bSDR) ? 0 : 6;
+    bool bVar2 = false;
+    bVar2 = mainRTwM.allocateAndCreate(width, height, 1, 1, viewFormat, 0x200, "MainRTwM");
+    if (!bVar2) {
+        return false;
+    }
+    uVar6 = (uint32_t)(height + (uVar6 & 3)) >> 2;
+    uVar3 = (uint32_t)(width + (uVar3 & 3)) >> 2;
+    bVar2 = scnDown4.allocateAndCreate(uVar3, uVar6, 1, 1, viewFormat, 0x200, "ScnDown4");
 
-    //allocateAtmosphereResources();
+    if (bVar2) {
+        bVar2 = mainRT.allocateAndCreate(width, height, 1, 1, viewFormat, 0x200, "MainRT");
+        if (bVar2) {
+            pMainRTwM = CreateRenderTarget(width, height, viewFormat, activeAA, uVar7);
+            if (pMainRTwM != nullptr) {
+                pMainRT = CopyRenderTarget(pMainRTwM, 8);
+                if (pMainRT != nullptr) {
+                    pUnknownRT = CopyRenderTarget(pMainRTwM, 8);
+                    if (pUnknownRT != nullptr) {
+                        pUnknownRT2 = CopyRenderTarget(pMainRTwM, 8);
+                        if (pUnknownRT2 != nullptr) {
+                            eViewFormat eVar6 = pMainRT->getFormat();
+                            pScnDown4RT = FUN_0050aff0(pMainRT,uVar3,uVar6,viewFormat,0x200,1);
+                            if (pScnDown4RT != nullptr) {
+                                pMainRTwM->bind2DB(&mainRTwM);
+                                pMainRT->bind2DB(&mainRT);
+                                pUnknownRT->bind2DB(&mainRTwM);
+                                pUnknownRT2->bind2DB(&mainRT);
+
+                                RenderTarget* peVar3 = RenderTarget::GetBackBuffer();
+                                peVar3->bind2DB(&mainRT);
+                                pScnDown4RT->bind2DB(&scnDown4);
+
+                                pMainRTFramebuffer = new FramebufferAttachments();
+                                pMainRTFramebuffer->pAttachments[0] = pMainRTwM;
+
+                                pMainRTwMFramebuffer = new FramebufferAttachments();
+                                pMainRTwMFramebuffer->pAttachments[0] = pMainRT;
+
+                                pBackbufferFramebuffer = new FramebufferAttachments();
+                                pBackbufferFramebuffer->pAttachments[0] = RenderTarget::GetBackBuffer();
+
+                                pUnknownRTFramebuffer = new FramebufferAttachments();
+                                pUnknownRTFramebuffer->pAttachments[0] = pUnknownRT;
+                                
+                                pUnknownRT2Framebuffer = new FramebufferAttachments();
+                                pUnknownRT2Framebuffer->pAttachments[0] = pUnknownRT2;
+
+                                pSunFramebuffer = new FramebufferAttachments();
+                                pUnknownRT2Framebuffer->pAttachments[0] = pUnknownRT;
+                                
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 void GSRender::allocateAtmosphereResources()

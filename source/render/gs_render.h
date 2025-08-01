@@ -7,10 +7,12 @@
 #include "viewport.h"
 #include "light.h"
 #include "render_scene.h"
+#include "2db.h"
 
-struct RenderTarget;
+class RenderTarget;
 class RenderScene;
 class CameraGame;
+struct FramebufferAttachments;
 
 struct RenderPass {
     RenderScene* pScene;
@@ -51,7 +53,7 @@ public:
     void beginFrame();
     void endFrame();
 
-    void setLODQuality( const int32_t qualityIndex );
+    void setLODQuality( const uint32_t qualityIndex );
 
     virtual void onWeatherConfigChange(WeatherConfig* param_1 ) override;
 
@@ -90,15 +92,31 @@ private:
     uint8_t bFovVsLodOn : 1;
     uint8_t bInitialized : 1;
 
-    GPUTexture* mainRT; // SDR/HDR (+MSAA or regular)
-    GPUTexture* scnDown4;
+    RuntimeRender2DB mainRTwM;
+    RuntimeRender2DB scnDown4;
+    RuntimeRender2DB mainRT;
 
-    GPUTexture* sunRenderTargets[kNumSunRT];
+    RenderTarget* pMainRTwM;
+    RenderTarget* pMainRT;
+    RenderTarget* pScnDown4RT;
 
-    GPUTexture* noiseComposite;
-    GPUTexture* noiseAssembleF;
-    GPUTexture* noiseAssembleS;
-    GPUTexture* oceanNMap;
+    // Backbuffer sized RTs; no idea what they're used for (yet)
+    RenderTarget* pUnknownRT;
+    RenderTarget* pUnknownRT2;
+
+    FramebufferAttachments* pMainRTFramebuffer;
+    FramebufferAttachments* pMainRTwMFramebuffer;
+    FramebufferAttachments* pBackbufferFramebuffer;
+    FramebufferAttachments* pUnknownRTFramebuffer;
+    FramebufferAttachments* pUnknownRT2Framebuffer;
+    FramebufferAttachments* pSunFramebuffer;
+    
+    // GPUTexture* sunRenderTargets[kNumSunRT];
+
+    // GPUTexture* noiseComposite;
+    // GPUTexture* noiseAssembleF;
+    // GPUTexture* noiseAssembleS;
+    // GPUTexture* oceanNMap;
 
     // 0
     // 1 - Wind Params
@@ -120,12 +138,10 @@ private:
     RenderScene sceneCarPlayerCarAlpha;
     RenderScene sceneNearAfterCarAlpha;
     RenderScene sceneCarPlayerPPCarAlpha;
-
     RenderScene sceneNoiseComposeSlow;
-
-    AmbientLight ambientLightBack;
-    DirectionalLight directionalLightBack;
-    std::vector<Light*> lightsBack;
+    // AmbientLight ambientLightBack;
+    // DirectionalLight directionalLightBack;
+    // std::vector<Light*> lightsBack;
     
     float globalLODFactor;
     float fovVsLodFactor;
@@ -149,7 +165,10 @@ private:
     float interiorFarPlane;
 
 private:
-    void allocateRenderTargets();
+    bool initializeShaderCache();
+    bool allocateDeviceResources();
+
+    bool allocateRenderTargets();
     void allocateAtmosphereResources();
 
     void updateWeatherParams();
