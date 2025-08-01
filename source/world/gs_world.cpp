@@ -42,3 +42,9 @@ void GSWorld::pushGlobal2DM( Render2DM* pRender2DM )
     OTDU_ASSERT( pRender2DM );
     collection2D.register2DM( pRender2DM );
 }
+
+void GSWorld::pushGlobal2DB( Render2DB* pRender2DB )
+{
+    OTDU_ASSERT( pRender2DB );
+    collection2D.register2DB( pRender2DB );
+}

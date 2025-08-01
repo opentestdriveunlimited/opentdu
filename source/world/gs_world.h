@@ -5,6 +5,7 @@
 
 class StreamingManager;
 class Render2DM;
+class Render2DB;
 
 class GSWorld : public GameSystem {
 public:
@@ -19,6 +20,7 @@ public:
     void terminate() override;
 
     void pushGlobal2DM( Render2DM* pRender2DM );
+    void pushGlobal2DB( Render2DB* pRender2DB );
 
 private:
     StreamingManager* pStreamingManager;
