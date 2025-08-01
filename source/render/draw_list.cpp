@@ -161,8 +161,8 @@ DrawList::~DrawList()
 }
 
 bool DrawList::initialize(
-    uint32_t numPrimitives, 
-    uint32_t numVertices, 
+    uint32_t newNumPrimitives, 
+    uint32_t newNumVertices, 
     uint32_t numIndices,
     bool param_7, 
     DrawStreams* param_8, 
@@ -177,12 +177,12 @@ bool DrawList::initialize(
         numIndices = numIndices + 1;
     }
 
-    if ((numVertices & 1) != 0) {
-        numVertices = numVertices + 1;
+    if ((newNumVertices & 1) != 0) {
+        newNumVertices = newNumVertices + 1;
     }
 
-    numPrimitives = numPrimitives;
-    numVertices = numVertices;
+    numPrimitives = newNumPrimitives;
+    numVertices = newNumVertices;
     bDynamic = param_7;
 
     if (param_10) {
