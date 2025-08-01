@@ -28,6 +28,9 @@ GSPlayerData::GSPlayerData()
     , resolutionWidth( 1280 )
     , resolutionHeight( 720 )
     , refreshRate( 60 )
+    , lodQuality( 2 )
+    , antiAliasing( eAntiAliasingMethod::AAM_Disabled )
+    , bHDREnabled( false )
     , languageStr( "us" )
     , timeout( 0.0f )
     , pMutex( new TestDriveMutex() )
@@ -107,6 +110,16 @@ void GSPlayerData::setLODQuality( const int32_t newValue )
 const char *GSPlayerData::getLanguage()
 {
     return languageStr.empty() ? "us" : languageStr.c_str();
+}
+
+eAntiAliasingMethod GSPlayerData::getAAMethod() const
+{
+    return antiAliasing;
+}
+
+bool GSPlayerData::isHDREnabled() const
+{
+    return bHDREnabled;
 }
 
 void GSPlayerData::updateUnitSystem()

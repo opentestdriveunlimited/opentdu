@@ -5,6 +5,8 @@
 #include "core/locale.h"
 #include "core/notifier.h"
 
+#include "render/gs_render_helper.h"
+
 class GSPlayerData : public GameSystem, public Notifiable {
 public:
     const char* getName() const override { return "Service : PlayerData"; }
@@ -23,6 +25,8 @@ public:
     void setLODQuality( const int32_t newValue );
 
     const char* getLanguage();
+    eAntiAliasingMethod getAAMethod() const;
+    bool isHDREnabled() const;
 
     void setUnitSystem( const bool bUseImperial );
 
@@ -47,6 +51,8 @@ private:
     uint32_t refreshRate;
     int32_t lodQuality;
 
+    eAntiAliasingMethod antiAliasing;
+    uint8_t bHDREnabled : 1;
     std::string languageStr;
     
     TestDriveMutex* pMutex;
