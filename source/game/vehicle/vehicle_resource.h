@@ -8,11 +8,11 @@ class BankVehicle;
 #include "render/file_collection_3d.h"
 
 struct VehicleResource {
-    BankVehicle* pResourceBank;
-    std::string Render2DMPath;
-    Render2DM Resource2DM;
-    std::string Render3DDPath;
-    Render3DD Resource3DD;
-    FileCollection2D Collection2D;
-    FileCollection3D Collection3D;  
+    BankVehicle* pResourceBank = nullptr;
+    std::string Render2DMPath = "";
+    Render2DM* pResource2DM = nullptr;
+    std::string Render3DDPath = "";
+    Render3DD* pResource3DD = nullptr;
+    FileCollection2D Collection2D = {};
+    FileCollection3D Collection3D = {};
 };

@@ -21,3 +21,14 @@ CarState::CarState()
 CarState::~CarState()
 {
 }
+
+Eigen::Vector3f CarState::getWorldPosition() const
+{
+    Eigen::Vector4f position = body.WorldMatrix.row(3);
+    return Eigen::Vector3f(position.x(), position.y(), position.z());
+}
+
+bool CarState::isIndoor() const
+{
+    return bIsIndoor;
+}

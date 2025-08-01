@@ -154,6 +154,9 @@ public:
     CarState();
     ~CarState();
 
+    Eigen::Vector3f getWorldPosition() const;
+    bool isIndoor() const;
+
 private:
     static constexpr const uint32_t kMaxNumWheels = 4;
 

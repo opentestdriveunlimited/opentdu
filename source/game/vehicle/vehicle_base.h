@@ -8,6 +8,7 @@ class CarState;
 #include "paint.h"
 #include "filesystem/bank.h"
 #include "physics/engine_simulation.h"
+#include "render/particles/vehicle_particles.h"
 
 static constexpr uint32_t kMaxNumWheels = 4;
 
@@ -33,7 +34,24 @@ struct VehicleBaseResources {
     uint8_t bEngineResource : 1;
 };
 
+struct VehicleSceneNode {
+    Eigen::Matrix4f modelMatrix;
+    Instance* pInstance;
+    HiearchyNode* pSceneNode;
+};
+
 class VehicleBase {
+public:
+    static float FlareScaleStart;
+    static float FlareScaleRatio;
+    static float FlareZBiasRatio;
+    static float FlareOldStartDistScale;
+    static float FlareOldLengthDistScale;
+    static float FlareOldScaleRatio;
+
+    static bool bApplyWheelAttenuation;
+    static float MinWheelAttenuation;
+
 public:
     enum class eType {
         VBT_Car = 0,
@@ -58,9 +76,40 @@ public:
         VHS_Closed = 3	
     };
 
+    enum class eFlareType {
+        FT_Brake = 0,
+        FT_BrakeFL = 1,
+        FT_BrakeFR = 2,
+        FT_BrakeRL = 3,
+        FT_BrakeRR = 4,
+        FT_BlinkL = 5,
+        FT_BlinkR = 6,
+        FT_Reverse = 7,
+        FT_ReverseFL = 8,
+        FT_ReverseFR = 9,
+        FT_ReverseRL = 0xa,
+        FT_ReverseRR = 0xb,
+        FT_Headlights = 0xc,
+        FT_HeadlightsRear = 0xd,
+        FT_Warnings = 0xe,
+        FT_HeadlightsFL = 0xf,
+        FT_HeadlightsFR = 0x10,
+        FT_HeadlightsRL = 0x11,
+        FT_HeadlightsRR = 0x12,
+
+        FT_Count
+    };
+
 public:
     VehicleBase();
     ~VehicleBase();
+
+    virtual void initialize();
+    void reset();
+    void tick(float param_2);
+
+    Instance* getInstanceByIndex(const uint32_t param_2);
+    void setFlareValue(eFlareType param_2, const float param_3);
 
 private:
     CarState* pCarState;
@@ -156,4 +205,17 @@ private:
     std::vector<HiearchyNode*> flaresFL;
     std::vector<HiearchyNode*> flaresFR;
     std::vector<Instance*> flares;
+
+    std::vector<VehicleSceneNode> childrenNodes;
+    std::stack<Instance*> alphaInstances;
+
+    VehicleParticles particles;
+
+    uint32_t numMaterialInterior;
+    uint32_t numColorInterior;
+    uint32_t numColor2Interior;
+    uint32_t numDynamicMaterial;
+
+private:
+    void updateLights();
 };

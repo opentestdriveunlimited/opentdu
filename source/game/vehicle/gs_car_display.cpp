@@ -11,7 +11,7 @@ GSCarDisplay::GSCarDisplay()
 
 GSCarDisplay::~GSCarDisplay()
 {
-
+    gpCarDisplay = nullptr;
 }
 
 bool GSCarDisplay::initialize( TestDriveGameInstance* )
