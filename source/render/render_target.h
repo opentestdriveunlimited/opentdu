@@ -31,6 +31,8 @@ public:
     uint32_t getWidth();
     uint32_t getHeight();
 
+    eAntiAliasingMethod getAntiAliasingMethod() const;
+
     static RenderTarget* GetBackBuffer();
 
 private:
@@ -71,7 +73,8 @@ public:
     RenderTarget* allocateUninitialized();
     RenderTarget* allocate(const float width, const float height, const eViewFormat format, const uint32_t flags);
     RenderTarget* allocateFromOriginal(RenderTarget* param_1, const uint32_t flags);
-    
+    RenderTarget* allocateFrom2DB(Render2DB* param_1, const uint32_t flags);
+
     void removeFromPool( RenderTarget* param_1 );
 
 private:
@@ -87,3 +90,4 @@ RenderTarget* CopyRenderTarget(RenderTarget* pSource, const uint32_t flags);
 bool CreateBackbufferRenderTarget(); // FUN_005f15f0
 void ReleaseBackbufferRenderTarget(); // FUN_005f1650
 RenderTarget* FUN_0050aff0(RenderTarget *param_1, float param_2, float param_3, eViewFormat param_4, uint32_t param_5, uint32_t flags);
+RenderTarget* CreateRenderTargetFrom2DB(Render2DB* param_1, uint32_t param_2);

@@ -65,102 +65,102 @@ bool RenderTarget::create()
 
 bool RenderTarget::create(float texWidth, float texHeight, const eViewFormat viewFormat, const eAntiAliasingMethod aaMethod, const uint32_t texFlags)
 {
-  // FUN_005fd3e0
-  bool bVar1 = false;
-  bool bVar2 = false;
-  bool bVar3 = false;
-  uint32_t uVar4 = 0;
-  float originalWidth = -1.0f;
-  float originalHeight = -1.0f;
-  
-  FormatCapabilities caps = gpRender->getRenderDevice()->getFormatCapabilities(viewFormat);
-  if (!caps.bSupported) {
-    OTDU_LOG_ERROR("Could not create render target: view format %u is not render target capable!\n", viewFormat);
-    return false;
-  }
-
-  bool bSupportSampleCount = true;
-  switch (aaMethod) {
-  case eAntiAliasingMethod::AAM_MSAA_X2:
-    bSupportSampleCount = caps.bSupportMSAAx2;
-    break;
-  case eAntiAliasingMethod::AAM_MSAA_X4:
-    bSupportSampleCount = caps.bSupportMSAAx4;
-    break;
-  default:
-    break;
-  };
-  
-  if (!bSupportSampleCount) {
-    OTDU_LOG_ERROR("Could not create render target: view format %u does not support the requested number of sample %u!\n", viewFormat, aaMethod);
-    return false;
-  }
-
-  // Calls CheckDepthStencilMatch() against the default depthstencil format.
-  // I don't think this is still a thing with modern gfx APIs so we can skip this call
-  // bVar3 = FUN_00512f60(viewFormat);
-  // if (!bVar3) {
-  //   viewFormat = VF_X8R8G8B8; // Fail safe to create a RT compatible with the main zbuffer
-  // }
-
-  if ((texFlags >> 4 & 1) == 0) {
-    originalWidth = -1.0;
-    originalHeight = -1.0;
-  } else {
-    uVar4 = gBackbuffer->getWidth();
-    originalWidth = texWidth;
-    originalHeight = texHeight;
-    texWidth = texWidth * (float)uVar4;
-    uVar4 = gBackbuffer->getHeight();
-    texHeight = texHeight * (float)uVar4;
-  }
-
-  uint32_t roundedWidth = ( uint32_t )texWidth;
-  uint32_t roundedHeight = ( uint32_t )texHeight;
-
-  pTexture = gpRender->getRenderDevice()->createRenderTarget(
-      roundedWidth,
-      roundedHeight,
-      viewFormat,
-      aaMethod
-  );
-
-  if (pTexture == nullptr) {
+    // FUN_005fd3e0
+    bool bVar1 = false;
+    bool bVar2 = false;
+    bool bVar3 = false;
+    uint32_t uVar4 = 0;
+    float originalWidth = -1.0f;
+    float originalHeight = -1.0f;
+    
+    FormatCapabilities caps = gpRender->getRenderDevice()->getFormatCapabilities(viewFormat);
+    if (!caps.bSupported) {
+      OTDU_LOG_ERROR("Could not create render target: view format %u is not render target capable!\n", viewFormat);
       return false;
-  }
-  bOwnTexture = true;
-
-  if ( ( texFlags & 1 ) != 0 ) {
-    if ( ( texFlags >> 5 & 1 ) != 0 ) {
-        pDepthBuffer = gpRender->getRenderDevice()->createRenderTarget( roundedWidth, roundedHeight, gDepthStencilFormat, aaMethod);
-        if (pDepthBuffer == nullptr) {
-            return false;
-        }
-        bOwnZBuffer = true;
-    } else {
-        pDepthBuffer = gpMainDepthBuffer;
-        bOwnZBuffer = false;
     }
-  }
-  antiAliasing = aaMethod;
-  widthNoPadding = originalWidth;
-  uVar4 = 0;
-  width = texWidth;
-  height = texHeight;
-  heightNoPadding = originalHeight;
-  format = viewFormat;
-  flags = texFlags;
-  if ((texFlags & 1) != 0) {
-    uVar4 = 4;
-  }
-  if ((texFlags >> 5 & 1) != 0) {
-    uVar4 = uVar4 | 0x20;
-  }
-  if ((texFlags >> 4 & 1) != 0) {
-    uVar4 = uVar4 | 0x10;
-  }
-  flagsUnknown = uVar4;
-  return true;
+
+    bool bSupportSampleCount = true;
+    switch (aaMethod) {
+    case eAntiAliasingMethod::AAM_MSAA_X2:
+      bSupportSampleCount = caps.bSupportMSAAx2;
+      break;
+    case eAntiAliasingMethod::AAM_MSAA_X4:
+      bSupportSampleCount = caps.bSupportMSAAx4;
+      break;
+    default:
+      break;
+    };
+    
+    if (!bSupportSampleCount) {
+      OTDU_LOG_ERROR("Could not create render target: view format %u does not support the requested number of sample %u!\n", viewFormat, aaMethod);
+      return false;
+    }
+
+    // Calls CheckDepthStencilMatch() against the default depthstencil format.
+    // I don't think this is still a thing with modern gfx APIs so we can skip this call
+    // bVar3 = FUN_00512f60(viewFormat);
+    // if (!bVar3) {
+    //   viewFormat = VF_X8R8G8B8; // Fail safe to create a RT compatible with the main zbuffer
+    // }
+
+    if ((texFlags >> 4 & 1) == 0) {
+      originalWidth = -1.0;
+      originalHeight = -1.0;
+    } else {
+      uVar4 = gBackbuffer->getWidth();
+      originalWidth = texWidth;
+      originalHeight = texHeight;
+      texWidth = texWidth * (float)uVar4;
+      uVar4 = gBackbuffer->getHeight();
+      texHeight = texHeight * (float)uVar4;
+    }
+
+    uint32_t roundedWidth = ( uint32_t )texWidth;
+    uint32_t roundedHeight = ( uint32_t )texHeight;
+
+    pTexture = gpRender->getRenderDevice()->createRenderTarget(
+        roundedWidth,
+        roundedHeight,
+        viewFormat,
+        aaMethod
+    );
+
+    if (pTexture == nullptr) {
+        return false;
+    }
+    bOwnTexture = true;
+
+    if ( ( texFlags & 1 ) != 0 ) {
+      if ( ( texFlags >> 5 & 1 ) != 0 ) {
+          pDepthBuffer = gpRender->getRenderDevice()->createRenderTarget( roundedWidth, roundedHeight, gDepthStencilFormat, aaMethod);
+          if (pDepthBuffer == nullptr) {
+              return false;
+          }
+          bOwnZBuffer = true;
+      } else {
+          pDepthBuffer = gpMainDepthBuffer;
+          bOwnZBuffer = false;
+      }
+    }
+    antiAliasing = aaMethod;
+    widthNoPadding = originalWidth;
+    uVar4 = 0;
+    width = texWidth;
+    height = texHeight;
+    heightNoPadding = originalHeight;
+    format = viewFormat;
+    flags = texFlags;
+    if ((texFlags & 1) != 0) {
+      uVar4 = 4;
+    }
+    if ((texFlags >> 5 & 1) != 0) {
+      uVar4 = uVar4 | 0x20;
+    }
+    if ((texFlags >> 4 & 1) != 0) {
+      uVar4 = uVar4 | 0x10;
+    }
+    flagsUnknown = uVar4;
+    return true;
 }
    
 bool RenderTarget::createFrom2DB( Render2DB* param_2, uint32_t uStack_4 )
@@ -288,6 +288,11 @@ uint32_t RenderTarget::getHeight()
     return ( uint32_t )height;
 }
 
+eAntiAliasingMethod RenderTarget::getAntiAliasingMethod() const
+{
+    return antiAliasing;
+}
+
 RenderTarget* RenderTarget::GetBackBuffer()
 {
     return gBackbuffer;
@@ -329,6 +334,20 @@ RenderTarget* RenderTargetPool::allocateFromOriginal(RenderTarget* param_1, cons
     RenderTarget* peVar2 = createAndAddToPool();
 
     bool bVar1 = peVar2->createWithCopy(param_1, flags); 
+    if (!bVar1) {
+        peVar2->destroy(gpRender->getRenderDevice());
+        removeFromPool(peVar2);
+        TestDrive::Free(peVar2);
+        return nullptr;
+    }
+    return peVar2;
+}
+
+RenderTarget* RenderTargetPool::allocateFrom2DB(Render2DB* param_1, const uint32_t flags)
+{
+    RenderTarget* peVar2 = createAndAddToPool();
+
+    bool bVar1 = peVar2->createFrom2DB(param_1, flags); 
     if (!bVar1) {
         peVar2->destroy(gpRender->getRenderDevice());
         removeFromPool(peVar2);
@@ -440,4 +459,22 @@ RenderTarget* FUN_0050aff0(RenderTarget *param_1, float param_2, float param_3, 
     }
 
     return CreateRenderTarget(( uint32_t )param_2, ( uint32_t )param_3, param_4, eAntiAliasingMethod::AAM_Disabled, param_5);
+}
+
+RenderTarget* CreateRenderTargetFrom2DB(Render2DB* param_1, uint32_t param_2)
+{
+    if (param_1 == nullptr) {
+        return nullptr;
+    }
+
+    const Texture* pUnderlyingTexture = param_1->getFirstBitmap();
+    if (pUnderlyingTexture->bUploaded) {
+        RenderTarget* pOutput = gRenderTargetPool.allocateFrom2DB(param_1, param_2);
+        if (pOutput != nullptr) {
+            pOutput->bind2DB( param_1 );
+            return pOutput;
+        }
+    }
+
+    return nullptr;
 }
