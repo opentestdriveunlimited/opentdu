@@ -2,7 +2,8 @@
 #include "render_scene.h"
 
 RenderScene::RenderScene()
-    : frustum()
+    : RenderObjectBase()
+    , frustum()
     , fogDesc()
     , pActiveCamera( nullptr )
     , pActiveViewport( nullptr )

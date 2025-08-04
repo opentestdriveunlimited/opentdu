@@ -9,6 +9,7 @@ struct HiearchyNode;
 struct InstanceWithCustomMaterial;
 
 #include "frustum.h"
+#include "render_object_base.h"
 
 enum class eFogType : uint32_t {
     FT_None = 0,
@@ -41,10 +42,11 @@ struct RenderSceneCommands {
     uint32_t RefCount = 0u;
 };
 
-class RenderScene {
+class RenderScene : public RenderObjectBase {
 public:
     inline void setUnknownMask(const uint64_t value) { unknownMask = value; }
     inline FogDesc& getFogDescWrite() { return fogDesc; }
+    inline Frustum& getFrustumWrite() { return frustum; }
 
 public:
     RenderScene();
