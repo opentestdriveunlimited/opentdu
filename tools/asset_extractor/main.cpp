@@ -151,6 +151,23 @@ static bool WriteShaderTableToDisk( const ShaderTable& shaderTable, const std::s
     return true;
 }
 
+static bool WriteShaderTableSourceToDisk( const std::string& shaderTable, const std::string& fileOutputPath)
+{
+    std::filesystem::path folderFS = std::filesystem::path( fileOutputPath );
+    if ( !gbForceExtraction && std::filesystem::exists( folderFS ) ) {
+        OTDU_LOG_INFO( "'%s' already exists; skipping...\n", fileOutputPath.c_str() );
+        return false;
+    }
+
+    std::ofstream outputFileStream;
+    outputFileStream.open( fileOutputPath.c_str(), std::ios_base::out );
+    outputFileStream.write( shaderTable.data(), sizeof( char ) * shaderTable.size() );
+    outputFileStream.close();
+
+    OTDU_LOG_INFO( "Wrote shader table source '%s'\n", fileOutputPath.c_str() );
+    return true;
+}
+
 int main( int argc, char* argv[] ) {
     // Parse cmdline args
     memset( gpPathToExecutable, 0, sizeof( char ) * OTDU_MAX_PATH );
@@ -197,8 +214,8 @@ int main( int argc, char* argv[] ) {
     constexpr uint32_t kNumShaderEntries = sizeof( kMasterShaderTable ) / sizeof( kMasterShaderTable[0] );
   
     ShaderTable tableDXSO = {};
-    ShaderTable tableGLSL = {};
     ShaderTable tableSPIRV = {};
+    std::string tableSource = "";
 
     std::string currentTableName = "";
     int32_t dword = 0;
@@ -222,8 +239,9 @@ int main( int argc, char* argv[] ) {
                 }
 
                 if (!gbSkipGLSLTranslation) {
-                    fileOutputPath = GetShaderOutputPath() + kShadersOpenGLFolder + filename;
-                    bWroteToDisk = WriteShaderTableToDisk( tableGLSL, fileOutputPath );
+                    fileOutputPath = GetShaderOutputPath() + kShadersOpenGLFolder + currentTableName + kShaderTableSourceExtension;
+
+                    bWroteToDisk = WriteShaderTableSourceToDisk( tableSource, fileOutputPath );
                     if (bWroteToDisk) {
                         shaderExtractedCount++;
                     }
@@ -233,7 +251,7 @@ int main( int argc, char* argv[] ) {
 
                 tableDXSO.Clear();
                 tableSPIRV.Clear();
-                tableGLSL.Clear();
+                tableSource.clear();
             }
             currentTableName = entry.pShaderCategory;
         }
@@ -270,7 +288,7 @@ int main( int argc, char* argv[] ) {
             dxvk::DxsoAnalysisInfo info = dxvkModule.analyze();
 
             dxvk::D3D9ConstantLayout constantLayout;
-            constantLayout.floatCount = 128; // Arbitrary value for now (way overkill)
+            constantLayout.floatCount = 64; // Arbitrary value for now (way overkill)
 
             dxvk::DxsoModuleInfo dxsoModuleInfo;
             dxvk::OpenTDUOutput* pSpirvBC = dxvkModule.compile( dxsoModuleInfo, std::to_string( entry.Hashcode ), info, constantLayout );
@@ -286,9 +304,7 @@ int main( int argc, char* argv[] ) {
             }
            
             if (!gbSkipGLSLTranslation) {
-                // SPIRV to GLSL (using SPIRV-Cross)
-                tableGLSL.Header.Add( std::make_tuple( entry.Hashcode, tableGLSL.Shaders.size() ) );
-                
+                // SPIRV to GLSL (using SPIRV-Cross) 
                 spirv_cross::CompilerGLSL glsl( pSpirvBC->Code.data(), pSpirvBC->Code.dwords() );
 
                 // Set some options.
@@ -296,10 +312,19 @@ int main( int argc, char* argv[] ) {
                 options.version = 330;
                 options.es = true;
                 options.vulkan_semantics = true;
+               
                 glsl.set_common_options( options );
 
+                spv::ExecutionModel entryPointType = entry.ShaderStage == eShaderType::ST_Vertex 
+                                ? spv::ExecutionModel::ExecutionModelVertex
+                                : spv::ExecutionModel::ExecutionModelFragment;
+                std::string entryHashcode = IntegerToHexString(entry.Hashcode);
+                std::string entryPointName = "main_" + entryHashcode;
+                glsl.rename_entry_point("main", entryPointName, entryPointType);
                 std::string sourceCode = glsl.compile();
-                tableGLSL.Shaders.insert( tableGLSL.Shaders.end(), sourceCode.begin(), sourceCode.end() );
+                tableSource += "\n#ifdef COMPILE_" + entryHashcode + "\n";
+                tableSource += sourceCode;
+                tableSource += "\n#endif // ifdef COMPILE_" + entryHashcode + "\n";
             }
         } else {
             OTDU_FATAL_ERROR("Invalid magic found (shader table entry might be invalid)\n");
@@ -314,18 +339,26 @@ int main( int argc, char* argv[] ) {
             shaderExtractedCount++;
         }
 
-        if ( !gbSkipGLSLTranslation ) {
-            fileOutputPath = GetShaderOutputPath() + kShadersOpenGLFolder + filename;
-            bool bWroteToDisk = WriteShaderTableToDisk( tableGLSL, fileOutputPath );
-            if ( bWroteToDisk ) {
+        fileOutputPath = GetShaderOutputPath() + kShadersVulkanFolder + filename;
+        bWroteToDisk = WriteShaderTableToDisk( tableSPIRV, fileOutputPath );
+        if ( bWroteToDisk ) {
+            shaderExtractedCount++;
+        }
+
+      if (!gbSkipGLSLTranslation) {
+            fileOutputPath = GetShaderOutputPath() + kShadersOpenGLFolder + currentTableName + kShaderTableSourceExtension;
+
+            bWroteToDisk = WriteShaderTableSourceToDisk( tableSource, fileOutputPath );
+            if (bWroteToDisk) {
                 shaderExtractedCount++;
             }
         } else {
-            OTDU_LOG_INFO( "Skipping GLSL translation ('-skip_glsl' found in command line)\n" );
+            OTDU_LOG_INFO( "Skipping GLSL translation ('-skip_glsl' found in command line)\n");
         }
 
         tableDXSO.Clear();
-        tableGLSL.Clear();
+        tableSPIRV.Clear();
+        tableSource.clear();
     }
     fileStream.seekg(0, std::ios::beg);
     dword = 0;
@@ -340,7 +373,7 @@ int main( int argc, char* argv[] ) {
         for ( uint32_t i = 0; i < kPackedIniFileCount; i++ ) {
             const TestDrivePackedIniEntry& packedIni = kPackedIniFiles[i];
             if ( dword == packedIni.FirstDword ) {
-                OTDU_LOG_INFO( "Reading packed config file '%s'...\n", packedIni.Name );
+                OTDU_LOG_INFO( "Reading packed config file '%s' at offset %p...\n", packedIni.Name, fileStream.tellg() );
 
                 int8_t* pBuffer = new int8_t[packedIni.LengthInBytes];
                 memset( pBuffer, 0, sizeof( int8_t ) * packedIni.LengthInBytes );
