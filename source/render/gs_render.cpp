@@ -122,16 +122,6 @@ bool GSRender::initialize( TestDriveGameInstance* )
     bWasHDREnabled = bHDREnabled;
 
     allocateDeviceResources();
-    allocateRenderTargets();
-
-    //projectionMatrix << xScale, 0, 0, 0,
-    //    0, yScale, 0, 0,
-    //    0, 0, -( zFar + zNear ) / ( zFar - zNear ), -1,
-    //    0, 0, -2 * zNear * zFar / ( zFar - zNear ), 0;
-
-    Eigen::Vector4<float> vector1( 0.0f, 0.0f, 200.0f, 1.0f );
-    Eigen::Vector4<float> vector2( 0.0f, 0.0f, 0.0f, 1.0f );
-    Eigen::Vector4<float> vector3( 0.0f, 1.0f, 0.0f, 1.0f );
 
     projectionMatrix( 1, 0 ) = 1.570796f; // 90.0 deg
     projectionMatrix( 1, 1 ) = aspectRatio;
@@ -141,7 +131,6 @@ bool GSRender::initialize( TestDriveGameInstance* )
     projectionMatrix( 1, 2 ) = cosf( static_cast< float >( EIGEN_PI_4 ) );
     projectionMatrix( 1, 3 ) = sinf( static_cast< float >( EIGEN_PI_4 ) );
 
-    vector2 -= vector1;
     projectionMatrix( 2, 0 ) = projectionMatrix( 1, 3 ) / projectionMatrix( 1, 2 );
 
     gpWeather->registerListener( this );
@@ -254,8 +243,59 @@ bool GSRender::initializeShaderCache()
 
 bool GSRender::allocateDeviceResources()
 {
+    // FUN_00995520
     bool bVar1 = CreateBackbufferRenderTarget();
+
+    bool bVar13 = allocateRenderTargets();
+    if (!bVar13) {
+        OTDU_LOG_ERROR("Failed to allocate global render targets!\n");
+        return false;
+    }
+
+    bVar13 = allocateAtmosphereResources();
+    if (!bVar13) {
+        OTDU_LOG_ERROR("Failed to allocate sun/ocean render targets!\n");
+        return false;
+    }
+
+    bVar13 = setupSunPostFXStack();
+    if (!bVar13) {
+        OTDU_LOG_ERROR("Failed to setup sun PostFX stack!\n");
+        return false;
+    }
+
+
+    Eigen::Vector4<float> vector1( 0.0f, 0.0f, 200.0f, 1.0f );
+    Eigen::Vector4<float> vector2( 0.0f, 0.0f, 0.0f, 1.0f );
+    Eigen::Vector4<float> vector3( 0.0f, 1.0f, 0.0f, 1.0f );
+
+    setupScenes(nearPlane, farPlane);
+
     return bVar1;
+}
+
+bool GSRender::setupSunPostFXStack()
+{
+
+}
+
+void GSRender::setupScenes(float nearZ, float farZ)
+{
+    scenePreNear.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneNearOpaque.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneNear.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneNearNoFog.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneOcclusionDOFPrepass.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneOcclusionDOF.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneNearPrePassVegetation.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneParticles.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneCarPlayerPrepass.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneCarPlayer.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneNearOpaqueCarAlpha.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneNearCarAlpha.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneNearAfterCarAlpha.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneCarPlayerPPCarAlpha.getFrustumWrite().setPlanes(nearZ, farZ);
+    sceneCarPlayerCarAlpha.getFrustumWrite().setPlanes(nearZ, farZ);
 }
 
 bool GSRender::allocateRenderTargets()
@@ -330,9 +370,9 @@ bool GSRender::allocateRenderTargets()
     return false;
 }
 
-void GSRender::allocateAtmosphereResources()
+bool GSRender::allocateAtmosphereResources()
 {
-    /*static constexpr const char* kResourcesName[kNumSunRT] = {
+    static constexpr const char* kResourcesName[kNumSunRT] = {
         "SUN_DS_64x64",
         "SUN_DS_16x16",
         "SUN_DS_4x4",
@@ -343,13 +383,23 @@ void GSRender::allocateAtmosphereResources()
         "SUN_DAZZLE_COEFF_BK"
     };
 
-    GPUTextureDesc rtDesc( 64, 64, 1, 1, VF_X8R8G8B8, RTF_ReadOnly, kResourcesName[0] );
-    sunRenderTargets[0] = pRenderDevice->createTexture( &rtDesc );
-
+    bool bVar1 = sun2DBs[0].allocateAndCreate(0x40,0x40,1,1, VF_X8R8G8B8, 0x200, "SUN_DS_64x64");
+    if (!bVar1) {
+        return false;
+    }
+    
+    uint32_t uVar7 = 0;
+    eAntiAliasingMethod activeAA = pMainRT->getAntiAliasingMethod();
+    pSunRTs[0] = CreateRenderTarget(0x40, 0x40, VF_X8R8G8B8, activeAA, uVar7);
+    pSunRTs[0]->bind2DB( &sun2DBs[0] );
+    
     uint32_t dimension = 16;
-    for ( int32_t i = 1; i < 8; i++ ) {
-        rtDesc.Fill( dimension, dimension, 1, 1, VF_X8R8G8B8, RTF_ReadOnly, kResourcesName[i]);
-        sunRenderTargets[i] = pRenderDevice->createTexture( &rtDesc );
+    for ( int32_t i = 1; i < kNumSunRT; i++ ) {
+        bVar1 = sun2DBs[i].allocateAndCreate(dimension,dimension,1,1,VF_X8R8G8B8,0x200,kResourcesName[i]);
+        if (!bVar1) {
+            return false;
+        }
+        pSunRTs[i] = CreateRenderTargetFrom2DB( &sun2DBs[i], 2 );
         
         dimension >>= 2;
         if ( dimension < 2 ) {
@@ -357,17 +407,54 @@ void GSRender::allocateAtmosphereResources()
         }
     }
 
-    rtDesc.Fill( 32, 32, 1, 1,   VF_X8R8G8B8, RTF_ReadOnly, "NOISE_COMPOSITE" );
-    noiseComposite = pRenderDevice->createTexture( &rtDesc );
+    pSunRealLumFramebuffer = new FramebufferAttachments();
+    pSunRealLumFramebuffer->pAttachments[0] = pSunRTs[0];
+    
+    pSunEyeLumFramebuffer = new FramebufferAttachments();
+    pSunRealLumFramebuffer->pAttachments[0] = pSunRTs[4];
+    
+    pSunDazzleCoeffFramebuffer = new FramebufferAttachments();
+    pSunRealLumFramebuffer->pAttachments[0] = pSunRTs[6];
+    
+    bool bVar2 = noiseComposite.allocateAndCreate(0x20,0x20,1,1,VF_X8R8G8B8,0x200,"NOISE_COMPOSITE");
+    if (bVar2) {
+        pNoiseCompositeRT = CreateRenderTargetFrom2DB(&noiseComposite, 2);
 
-    rtDesc.Fill( 256, 256, 1, 1, VF_X8R8G8B8, RTF_ReadOnly, "NOISE_ASSEMBLE_F" );
-    noiseAssembleF = pRenderDevice->createTexture( &rtDesc );
+        if (pNoiseCompositeRT != nullptr) {
+            pNoiseCompositeFramebuffer = new FramebufferAttachments();
+            pNoiseCompositeFramebuffer->pAttachments[0] = pNoiseCompositeRT;
 
-    rtDesc.Fill( 256, 256, 1, 1, VF_X8R8G8B8, RTF_ReadOnly, "NOISE_ASSEMBLE_S" );
-    noiseAssembleS = pRenderDevice->createTexture( &rtDesc );
+            bVar2 = noiseAssembleF.allocateAndCreate(0x100,0x100,1,1,VF_X8R8G8B8,0x200,"NOISE_ASSEMBLE_F");
+            if (bVar2) {
+                bVar2 = noiseAssembleS.allocateAndCreate(0x100,0x100,1,1,VF_X8R8G8B8,0x200,"NOISE_ASSEMBLE_S");
+                if (bVar2) {
+                    pNoiseAssembleFRT = CreateRenderTargetFrom2DB(&noiseAssembleF, 2);
+                    pNoiseAssembleSRT = CreateRenderTargetFrom2DB(&noiseAssembleS, 2);
 
-    rtDesc.Fill( 128, 128, 1, 1, VF_X8R8G8B8, RTF_ReadOnly, "OceanNMap" );
-    oceanNMap = pRenderDevice->createTexture( &rtDesc );*/
+                    if (pNoiseAssembleFRT != nullptr && pNoiseAssembleSRT != nullptr) {
+                        pNoiseAssembleFFramebuffer = new FramebufferAttachments();
+                        pNoiseAssembleFFramebuffer->pAttachments[0] = pNoiseAssembleFRT;
+                        
+                        pNoiseAssembleSFramebuffer = new FramebufferAttachments();
+                        pNoiseAssembleSFramebuffer->pAttachments[0] = pNoiseAssembleSRT;
+
+                        bVar2 = oceanNMap.allocateAndCreate(0x80,0x80,1,1,VF_X8R8G8B8,0xc200,"OceanNMap");
+                        if (bVar2) {
+                            pOceanNMapRT = CreateRenderTargetFrom2DB(&oceanNMap, 2);
+
+                            if (pOceanNMapRT != nullptr) {
+                                pOceanNMapFramebuffer = new FramebufferAttachments();
+                                pOceanNMapFramebuffer->pAttachments[0] = pOceanNMapRT;
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 void GSRender::updateWeatherParams()

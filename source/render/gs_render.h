@@ -95,6 +95,10 @@ private:
     RuntimeRender2DB mainRTwM;
     RuntimeRender2DB scnDown4;
     RuntimeRender2DB mainRT;
+    RuntimeRender2DB noiseComposite;
+    RuntimeRender2DB noiseAssembleF;
+    RuntimeRender2DB noiseAssembleS;
+    RuntimeRender2DB oceanNMap;
 
     RenderTarget* pMainRTwM;
     RenderTarget* pMainRT;
@@ -104,13 +108,32 @@ private:
     RenderTarget* pUnknownRT;
     RenderTarget* pUnknownRT2;
 
+    RuntimeRender2DB sun2DBs[kNumSunRT];
+    RenderTarget* pSunRTs[kNumSunRT];
+
+    RenderTarget* pNoiseCompositeRT;
+    RenderTarget* pNoiseAssembleFRT;
+    RenderTarget* pNoiseAssembleSRT;
+
+    RenderTarget* pOceanNMapRT;
+
     FramebufferAttachments* pMainRTFramebuffer;
     FramebufferAttachments* pMainRTwMFramebuffer;
     FramebufferAttachments* pBackbufferFramebuffer;
     FramebufferAttachments* pUnknownRTFramebuffer;
     FramebufferAttachments* pUnknownRT2Framebuffer;
+
     FramebufferAttachments* pSunFramebuffer;
+    FramebufferAttachments* pSunRealLumFramebuffer;
+    FramebufferAttachments* pSunEyeLumFramebuffer;
+    FramebufferAttachments* pSunDazzleCoeffFramebuffer;
+
+    FramebufferAttachments* pNoiseCompositeFramebuffer;
+    FramebufferAttachments* pNoiseAssembleFFramebuffer;
+    FramebufferAttachments* pNoiseAssembleSFramebuffer;
     
+    FramebufferAttachments* pOceanNMapFramebuffer;
+
     // GPUTexture* sunRenderTargets[kNumSunRT];
 
     // GPUTexture* noiseComposite;
@@ -139,6 +162,11 @@ private:
     RenderScene sceneNearAfterCarAlpha;
     RenderScene sceneCarPlayerPPCarAlpha;
     RenderScene sceneNoiseComposeSlow;
+    RenderScene sceneNearNoFog;
+    RenderScene sceneOcclusionDOFPrepass;
+    RenderScene sceneOcclusionDOF;
+    RenderScene sceneNearCarAlpha;
+    
     // AmbientLight ambientLightBack;
     // DirectionalLight directionalLightBack;
     // std::vector<Light*> lightsBack;
@@ -168,8 +196,12 @@ private:
     bool initializeShaderCache();
     bool allocateDeviceResources();
 
+    bool setupSunPostFXStack();
+
+    void setupScenes(float nearZ, float farZ);
+
     bool allocateRenderTargets();
-    void allocateAtmosphereResources();
+    bool allocateAtmosphereResources();
 
     void updateWeatherParams();
 };
