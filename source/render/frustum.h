@@ -8,6 +8,7 @@ public:
     ~Frustum();
 
     void updateProjectionMatrices();
+    void setPlanes(float nearPlane, float farPlane);
 
 private:
     Eigen::Vector4f zLimits;

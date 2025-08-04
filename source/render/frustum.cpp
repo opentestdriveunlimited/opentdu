@@ -32,14 +32,17 @@ void Frustum::updateProjectionMatrices()
     orthoProjectionMatrix.row(0)[0] = 2.0f / orthoWidth;
     orthoProjectionMatrix.row(1)[1] = 2.0f / orthoHeight;
 
-    float fVar9 = zProjection.x() - zProjection.y();
-    float fVar8 = 1.0f / fVar9;
-    float fVar7 = fVar8 * 1.0f; // fVar7;
+    float fVar1 = zProjection.x();
+    float fVar7 = zProjection.y();
+    float fVar9 = fVar1 - fVar7;
+    float fVar8 = 1.0 / fVar9;
+    fVar7 = fVar8 * fVar7;
+
     projectionMatrix.row(2)[2] = fVar7;
-    projectionMatrix.row(3)[2] = fVar7 * zProjection.x();
+    projectionMatrix.row(3)[2] = fVar7 * fVar1;
 
     orthoProjectionMatrix.row(2)[2] = fVar8;
-    orthoProjectionMatrix.row(3)[2] = (-1.0f / fVar9) * zProjection.x();
+    orthoProjectionMatrix.row(3)[2] = (-1.0f / fVar9) * fVar1;
 
     if (pCamera != nullptr) {
         float fVar6 = tan(pCamera->getFOV() * 0.5f);
@@ -48,6 +51,36 @@ void Frustum::updateProjectionMatrices()
         projectionMatrix.row(1)[1] = (1.0f / fVar6);
     }
     
-    // Eigen::Matrix4f local_50 = Eigen::Vector4f( 1.0f, 0.0f, 0.0f, 0.0f ) * projectionMatrix;
-    //projectionMatrix = local_50;
+    // Eigen::Matrix4f local_50 = projectionMatrix * Eigen::Vector4f( 1.0f, 0.0f, 0.0f, 0.0f );
+    // projectionMatrix = local_50;
+}
+
+void Frustum::setPlanes(float nearPlane, float farPlane)
+{
+    zLimits.x() = nearPlane;
+    zProjection.x() = nearPlane;
+
+    float fVar1 = zProjection.y();
+    float fVar4 = 1.0f / (nearPlane - fVar1);
+
+    projectionMatrix.col(2)[2] = fVar4 * fVar1;
+    projectionMatrix.col(3)[2] = fVar4 * nearPlane * fVar1;
+
+    orthoProjectionMatrix.col(2)[2] = fVar4;
+    orthoProjectionMatrix.col(3)[2] = (-1.0f / (nearPlane - fVar1)) * nearPlane;
+
+    zLimits.y() = farPlane;
+    zProjection.y() = farPlane;
+
+    fVar1 = zProjection.x();
+    float fVar5 = 1.0f / (fVar1 - farPlane);
+    fVar4 = fVar5 * farPlane;
+
+    projectionMatrix.col(2)[2] = fVar4;
+    projectionMatrix.col(3)[2] = fVar4 * fVar1;
+
+    orthoProjectionMatrix.col(2)[2] = fVar5;
+    orthoProjectionMatrix.col(3)[2] = (-1.0f / (fVar1 - farPlane)) * fVar1;
+
+    updateProjectionMatrices();
 }
