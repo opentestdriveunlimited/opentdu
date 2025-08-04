@@ -366,7 +366,7 @@ RuntimeRender2DB::RuntimeRender2DB()
 RuntimeRender2DB::~RuntimeRender2DB()
 {
     if (pBuffer != nullptr) {
-        delete pBuffer;
+        TestDrive::Free(pBuffer);
         pBuffer = nullptr;
     }
 }
