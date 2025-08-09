@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/color.h"
+
 struct GPUTexture;
 
 enum class eAntiAliasingMethod : uint32_t {
@@ -219,10 +221,19 @@ struct GPUBackbuffer
 struct FormatCapabilities
 {
     uint8_t bSupported : 1;
-    uint8_t bDepthStencil : 1; // ...or whatever querying 0x80001 returns
+    uint8_t bSupportBlending : 1; // 0x80001 in ASM (ie. D3DUSAGE_QUERY_POSTPIXELSHADER_BLENDING | D3DUSAGE_RENDERTARGET)
     uint8_t bSupportMSAAx2 : 1;
     uint8_t bSupportMSAAx4 : 1;
     uint8_t : 0;
+};
+
+struct Viewport {
+    float X = 0.0f;
+    float Y = 0.0f;
+    float Width = 1.0f;
+    float Height = 1.0f;
+    ColorRGBA ClearColor = gColorBlackNoAlpha;
+    uint32_t Flags = 0x7;
 };
 
 // TODO: Not sure who's supposed to own this...
