@@ -21,6 +21,8 @@ ShaderRegister::ShaderRegister()
 
 ShaderRegister::~ShaderRegister()
 {
+    releaseCachedShaderInstances();
+
     for ( auto& table : shaderTableBinary ) {
         TestDrive::Free( table.second );
     }
@@ -59,7 +61,7 @@ void ShaderRegister::retrieveShadersForMaterial( Material* param_1, const uint32
     // TODO: Not sure why this is cached (they might be caching the whole struct?)
     latestFoundHashcode = local_58.PermutationHashcode;
     
-    bool bFoundPermutations = retrieveVSPSForFlags( local_58, param_1->pVertexShaders[index], param_1->pPixelShaders[index] );
+    bool bFoundPermutations = retrieveVSPSForFlags( local_58, const_cast<GPUShader*>(param_1->pVertexShaders[index]), const_cast<GPUShader*>(param_1->pPixelShaders[index]) );
     if ( !bFoundPermutations ) {
         // TODO: This is redundant; we might want to keep this in devbuild only to avoid unecessary
         // overhead
@@ -71,7 +73,7 @@ void ShaderRegister::retrieveShadersForMaterial( Material* param_1, const uint32
         local_58.PermutationFlags.pCustomFlags[0] = param_1 == pDefaultMaterial /*PTR_DAT_00f47514*/;
         local_58.PermutationHashcode = 0x3dafe4f6b9bae7f4;
 
-        bool bFoundPermutations = retrieveVSPSForFlags( local_58, param_1->pVertexShaders[index], param_1->pPixelShaders[index] );
+        bool bFoundPermutations = retrieveVSPSForFlags( local_58, const_cast<GPUShader*>(param_1->pVertexShaders[index]), const_cast<GPUShader*>(param_1->pPixelShaders[index]) );
         OTDU_ASSERT_FATAL( bFoundPermutations );
     }
 
@@ -108,14 +110,11 @@ void ShaderRegister::registerShader( const ShaderTableEntry* pTableEntry )
 
         int8_t* pShaderContent = ( int8_t* )pShaderTable;
 
-        ShaderTableHeaderEntry_t* pHeaderIt = ( ShaderTableHeaderEntry_t* )( ( int8_t* )pShaderTable + sizeof( size_t ) );
+        ShaderTableHeaderEntry* pHeaderIt = ( ShaderTableHeaderEntry* )( ( int8_t* )pShaderTable + sizeof( size_t ) );
         for ( size_t i = 0; i < header.NumEntries; i++ ) {
-            uint64_t hashcode = std::get<1>( *pHeaderIt );
-            uint64_t offset = std::get<0>( *pHeaderIt );
-            
-            int8_t* pShaderPointer = pShaderContent + offset;
+            int8_t* pShaderPointer = pShaderContent + pHeaderIt->Offset;
 
-            shaderBinaries.insert( std::make_pair( hashcode, pShaderPointer ) );
+            shaderBinaries.insert( std::make_pair( pHeaderIt->Hashcode, std::make_tuple( pShaderPointer, pHeaderIt->Size ) ) );
             pHeaderIt++;
         }
 
@@ -129,7 +128,7 @@ void ShaderRegister::registerShader( const ShaderTableEntry* pTableEntry )
         return;
     }
 
-    CachedShader cachedShader = { nullptr, shaderBinIt->second, pTableEntry->Flag0, pTableEntry->Flag1, pTableEntry->Flag2, pTableEntry->Flag3 };
+    CachedShader cachedShader = { nullptr, std::get<0>( shaderBinIt->second ), std::get<1>( shaderBinIt->second ), pTableEntry->Flag0, pTableEntry->Flag1, pTableEntry->Flag2, pTableEntry->Flag3 };
     if ( pTableEntry->ShaderStage == eShaderType::ST_Vertex ) {
         cachedVertexShaders.insert( std::make_pair( pTableEntry->Hashcode, cachedShader ) );
     } else if ( pTableEntry->ShaderStage == eShaderType::ST_Pixel ) {
@@ -162,7 +161,7 @@ void ShaderRegister::releaseCachedShaderInstances()
     pixelShaderInstanceCount = 0u;
 }
 
-GPUShader* ShaderRegister::getShader( RenderDevice* pDevice, eShaderType type, uint64_t hashcode )
+const GPUShader* ShaderRegister::getShader( RenderDevice* pDevice, eShaderType type, uint64_t hashcode )
 {
     CachedShader* pCacheEntry = nullptr;
     switch ( type ) {
@@ -190,7 +189,7 @@ GPUShader* ShaderRegister::getShader( RenderDevice* pDevice, eShaderType type, u
 
     if ( pCacheEntry->pShader == nullptr ) {
         OTDU_LOG_INFO("Creating shader %p (type: %u)\n", hashcode, type );
-        pCacheEntry->pShader = pDevice->createShader( type, pCacheEntry->pShaderBin );
+        pCacheEntry->pShader = pDevice->createShader( type, pCacheEntry->pShaderBin, pCacheEntry->ShaderBinSize );
 
         if ( pCacheEntry->pShader == nullptr ) {
             OTDU_LOG_ERROR( "Failed to find shader with hashcode %p (type: %u)\n", hashcode, type );
@@ -199,6 +198,28 @@ GPUShader* ShaderRegister::getShader( RenderDevice* pDevice, eShaderType type, u
     }
 
     return pCacheEntry->pShader;
+}
+
+void ShaderRegister::invalidateShader( eShaderType type, uint64_t hashcode )
+{
+    RenderDevice* pDevice = gpRender->getRenderDevice();
+    if (type == eShaderType::ST_Vertex) {
+        auto it = cachedVertexShaders.find(hashcode);
+        if (it != cachedVertexShaders.end()) {
+            pDevice->destroyShader( it->second.pShader );
+            it->second.pShader = nullptr;
+            vertexShaderInstanceCount--;
+        }
+    } else if (type == eShaderType::ST_Pixel) {
+        auto it = cachedPixelShaders.find(hashcode);
+        if (it != cachedPixelShaders.end()) {
+            pDevice->destroyShader( it->second.pShader );
+            it->second.pShader = nullptr;
+            pixelShaderInstanceCount--;
+        }
+    } else {
+        OTDU_FATAL_ERROR( "Unimplemented shader stage %u!\n", type );
+    }
 }
 
 void ShaderRegister::fillParameterFlags( Material* param_1, ShaderPermutationFlags* param_2 )
@@ -309,7 +330,7 @@ void ShaderRegister::fillParameterFlags( Material* param_1, ShaderPermutationFla
     }
 }
 
-bool ShaderRegister::retrieveVSPSForFlags( ShaderPermutationFlags& param_1, CachedShader* pOutVertexShader, CachedShader* pOutPixelShader )
+bool ShaderRegister::retrieveVSPSForFlags( ShaderPermutationFlags& param_1, GPUShader* pOutVertexShader, GPUShader* pOutPixelShader )
 {
     bool bVar2 = true;
     if ( pOutVertexShader != nullptr ) {
@@ -318,7 +339,7 @@ bool ShaderRegister::retrieveVSPSForFlags( ShaderPermutationFlags& param_1, Cach
 
         auto it = cachedVertexShaders.find( permutationHashcode );
         if ( it != cachedVertexShaders.end() ) {
-            pOutVertexShader = &it->second;
+            pOutVertexShader = it->second.pShader;
         } else {
             bVar2 = false;
         }
@@ -330,7 +351,7 @@ bool ShaderRegister::retrieveVSPSForFlags( ShaderPermutationFlags& param_1, Cach
 
         auto it = cachedPixelShaders.find( permutationHashcode );
         if ( it != cachedPixelShaders.end() ) {
-            pOutPixelShader = &it->second;
+            pOutPixelShader = it->second.pShader;
         } else {
             bVar2 = false;
         }

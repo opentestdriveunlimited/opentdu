@@ -123,12 +123,12 @@ static void WriteShaderTableHeaderToStream(const ShaderTableHeader& header, std:
     size_t tableSize = header.GetHeaderSize();
     outputFileStream.write( ( const char* )&header.NumEntries, sizeof( size_t ) );
     for (auto& headerEntry : header.Entries) {
-        uint64_t hashcode = std::get<0>(headerEntry);
-        uint64_t offsetInFile = std::get<1>(headerEntry);
+        uint64_t offsetInFile = headerEntry.Offset;
         offsetInFile += tableSize;
 
-        outputFileStream.write( ( const char* )&hashcode, sizeof( uint64_t ) );
+        outputFileStream.write( ( const char* )&headerEntry.Hashcode, sizeof( uint64_t ) );
         outputFileStream.write( ( const char* )&offsetInFile, sizeof( uint64_t ) );
+        outputFileStream.write( ( const char* )&headerEntry.Size, sizeof( uint64_t ) );
     }
 }
 
@@ -279,7 +279,12 @@ int main( int argc, char* argv[] ) {
                 shaderBytecode.push_back( ( word >> 8 ) & 0xff );
             }
 
-            tableDXSO.Header.Add( std::make_tuple( entry.Hashcode, tableDXSO.Shaders.size() ) );
+            ShaderTableHeaderEntry headerEntry;
+            headerEntry.Hashcode = entry.Hashcode;
+            headerEntry.Offset = tableDXSO.Shaders.size();
+            headerEntry.Size = shaderBytecode.size();
+
+            tableDXSO.Header.Add( headerEntry );
             tableDXSO.Shaders.insert(tableDXSO.Shaders.end(), shaderBytecode.begin(), shaderBytecode.end());
 
             // DXSO to SPIRV (using DXVK)
@@ -292,7 +297,10 @@ int main( int argc, char* argv[] ) {
 
             dxvk::DxsoModuleInfo dxsoModuleInfo;
             dxvk::OpenTDUOutput* pSpirvBC = dxvkModule.compile( dxsoModuleInfo, std::to_string( entry.Hashcode ), info, constantLayout );
-            tableSPIRV.Header.Add( std::make_tuple( entry.Hashcode, tableSPIRV.Shaders.size() ) );
+            
+            headerEntry.Offset = tableSPIRV.Shaders.size();
+            headerEntry.Size = pSpirvBC->Code.size();
+            tableSPIRV.Header.Add( headerEntry );
 
             for ( uint32_t i = 0; i < pSpirvBC->Code.dwords(); i++ ) {
                 uint32_t dword = pSpirvBC->Code.data()[i];

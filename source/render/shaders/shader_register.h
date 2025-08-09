@@ -10,15 +10,21 @@ struct GPUShader;
 struct ShaderTableEntry;
 class RenderDevice;
 
-using ShaderTableHeaderEntry_t = std::tuple<uint64_t, uint64_t>; // Key: Hashcode Value: Offset in file (absolute)
+struct ShaderTableHeaderEntry
+{
+    uint64_t Hashcode; // Hashcode (from the game; not the actual bytecode hash)
+    uint64_t Offset; // Offset in file (absolute)
+    uint64_t Size; // Size (in bytes)
+};
+
 struct ShaderTableHeader
 {
     size_t NumEntries;
-    std::vector<ShaderTableHeaderEntry_t> Entries;
+    std::vector<ShaderTableHeaderEntry> Entries;
 
     inline size_t GetHeaderSize() const
     {
-        return NumEntries * (sizeof(uint64_t) * 2) + sizeof( size_t );
+        return NumEntries * sizeof(ShaderTableHeaderEntry) + sizeof( size_t );
     }
     
     inline void Clear()
@@ -32,7 +38,7 @@ struct ShaderTableHeader
         return NumEntries == 0ull;
     }
 
-    inline void Add(ShaderTableHeaderEntry_t entry)
+    inline void Add(ShaderTableHeaderEntry entry)
     {
         Entries.push_back(entry);
         NumEntries++;
@@ -82,16 +88,6 @@ struct ShaderPermutationFlags
     void initialize( MaterialParameter* param_1, uint8_t param_2 );
 };
 
-struct CachedShader
-{
-    GPUShader*      pShader = nullptr; // Shader instance
-    void*           pShaderBin = nullptr; // Shader bytecode (or source for GLSL)
-    uint32_t        Flag0 = 0u;
-    uint32_t        Flag1 = 0u;
-    uint32_t        Flag2 = 0u;
-    uint32_t        Flag3 = 0u;
-};
-
 class ShaderRegister {
 public:
     ShaderRegister();
@@ -103,11 +99,24 @@ public:
     
     void releaseCachedShaderInstances();
 
-    GPUShader* getShader( RenderDevice* pDevice, eShaderType type, uint64_t hashcode );
+    const GPUShader* getShader( RenderDevice* pDevice, eShaderType type, uint64_t hashcode );
+    void invalidateShader( eShaderType type, uint64_t hashcode );
+
+private:
+    struct CachedShader 
+    {
+        GPUShader*      pShader = nullptr; // Shader instance
+        void*           pShaderBin = nullptr; // Shader bytecode (or source for GLSL)
+        uint64_t        ShaderBinSize = 0ull;
+        uint32_t        Flag0 = 0u;
+        uint32_t        Flag1 = 0u;
+        uint32_t        Flag2 = 0u;
+        uint32_t        Flag3 = 0u;
+    };
 
 private:
     void fillParameterFlags( Material* param_1, ShaderPermutationFlags* param_2 );
-    bool retrieveVSPSForFlags( ShaderPermutationFlags& param_1, CachedShader* pOutVertexShader, CachedShader* pOutPixelShader );
+    bool retrieveVSPSForFlags( ShaderPermutationFlags& param_1, GPUShader* pOutVertexShader, GPUShader* pOutPixelShader );
 
 private:
     uint64_t latestFoundHashcode;
@@ -115,7 +124,7 @@ private:
     Material* pDefaultMaterial;
 
     std::unordered_map<std::string, void*> shaderTableBinary;
-    std::unordered_map<uint64_t, void*> shaderBinaries;
+    std::unordered_map<uint64_t, std::tuple<void*, uint64_t>> shaderBinaries;
 
     std::unordered_map<uint64_t, CachedShader> cachedVertexShaders;
     std::unordered_map<uint64_t, CachedShader> cachedPixelShaders;

@@ -2,7 +2,7 @@
 
 #include "render/render_file.h"
 
-struct CachedShader;
+struct GPUShader;
 
 enum eMaterialParameterType : uint32_t {
     MPT_Unknown = 0,
@@ -147,8 +147,8 @@ struct Material
     uint32_t StencilRefCW;
     uint32_t StencilMaskCW;
     uint32_t StenwilWriteMaskCW;
-    CachedShader* pVertexShaders[4];
-    CachedShader* pPixelShaders[4];
+    const GPUShader* pVertexShaders[4];
+    const GPUShader* pPixelShaders[4];
     Eigen::Vector4f AmbientColor;
     Eigen::Vector4f DiffuseColor;
     Eigen::Vector4f SpecularColor;
