@@ -10,11 +10,14 @@
 #include "GLFW/glfw3native.h"
 #endif
 
+struct GLFWwindow;
+
 class GSSystem : public GameSystem {
 public:
     const char* getName() const override { return "Service : Sys"; }
     inline const bool isWindowActivated() const { return bWindowActivated; }
-
+    inline GLFWwindow* getWindow() const { return pWindow; }
+    
 #if OTDU_WIN32
     inline HWND getWindowHandle() const { return glfwGetWin32Window( pWindow ); }
 #endif
