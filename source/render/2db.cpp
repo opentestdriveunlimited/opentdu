@@ -10,6 +10,9 @@
 static constexpr uint32_t kBitmapMagic = 0x50414d42; // BMAP (BitMAP)
 static constexpr uint32_t k2DBMagic    = 0x4244322e; // .2DB (2DBitmap)
 
+static constexpr uint32_t k2DBSize = sizeof(Texture) + sizeof(RenderFile::Header) + sizeof(RenderFile::Section);
+static_assert(k2DBSize == 0x50, "Must match (or else 2DB parsing will fail!)");
+
 Render2DB::Render2DB()
     : RenderFile()
     , pBitmap( nullptr )
@@ -25,14 +28,14 @@ Render2DB::~Render2DB()
 bool Render2DB::hasBeenUploaded() const
 {
     OTDU_ASSERT( pBitmap );
-    Texture* pTexture = (Texture*)pBitmap;
+    Texture* pTexture = (Texture*)( pBitmap + 1 );
     return pTexture->bUploaded == 1;
 }
 
 Texture* Render2DB::getFirstBitmap() const
 {
     OTDU_ASSERT( pBitmap );
-    return (Texture*)pBitmap;
+    return (Texture*)( pBitmap + 1 );
 }
 
 void Render2DB::create( void* pBuffer, uint32_t width, uint32_t height, uint32_t depth, uint32_t numMips, eViewFormat format, uint32_t flags, const char* pName )
@@ -46,7 +49,7 @@ void Render2DB::create( void* pBuffer, uint32_t width, uint32_t height, uint32_t
     p2DBHeader->VersionMajor = 2;
     p2DBHeader->VersionMinor = 0;
     p2DBHeader->Flags = 0;
-    p2DBHeader->Size = size + 0x50;
+    p2DBHeader->Size = size + k2DBSize;
     p2DBHeader->Hashcode = k2DBMagic;
 
     RenderFile::Section* pBMapSection  = (RenderFile::Section*)( p2DBHeader + 1 );
@@ -107,6 +110,7 @@ bool Render2DB::parseSection(RenderFile::Section* pSection)
 
 bool Render2DB::CreateTexture(Texture* pTexture)
 {
+    // FUN_005121d0
     if (pTexture == nullptr) {
         return false;
     }
@@ -133,11 +137,9 @@ bool Render2DB::CreateTexture(Texture* pTexture)
         if ((pTexture->Flags & 0x400) != 0) {
             PrepareTexture(pTexture);
         }
-
-        return true;
     }
    
-    return false;
+    return true;
 }
 
 bool Render2DB::PrepareTexture(Texture *pTexture)
@@ -208,7 +210,7 @@ int32_t Render2DB::CalcSize( uint32_t width, uint32_t height, uint32_t depth, ui
 {
     if ( ( flags & 0x200 ) != 0 ) 
     {
-        return 0x50;
+        return k2DBSize;
     }
 
     return CalcTextureSize( width, height, depth, numMips, format, flags ) + 0x5f & 0xfffffff0;
@@ -380,7 +382,7 @@ bool RuntimeRender2DB::allocateAndCreate(uint32_t width,
     const char* pLabel
 )
 {
-    uint32_t uVar1 = Render2DB::CalcTextureSize(width, height, depth, mipCount, format, flags);
+    uint32_t uVar1 = Render2DB::CalcSize(width, height, depth, mipCount, format, flags);
     if (uVar1 != 0) {
         pBuffer = TestDrive::Alloc( uVar1 );
         create(pBuffer, width, height, depth, mipCount, format, flags, pLabel);
