@@ -43,13 +43,19 @@ struct GPUTexture {
 };
 
 struct GPUShader {
-    // TODO:
+    VkShaderModule ShaderModule;
 };
+
+struct GPUPipelineState {
+    VkPipeline PipelineState;
+};
+
+class RenderTarget;
 
 class RenderDevice {
 public:
 #if OTDU_WIN32
-    inline void bindWindowHandle( HWND handle ) { activeWindow = handle; }
+    inline void bindWindowHandle( HWND handle ) { } // TODO: REMOVE ME
 #endif
     inline uint32_t getInternalFrameIndex() const { return frameIndex % PendingFrameCount; }
 
@@ -61,9 +67,9 @@ public:
 
     GPUTexture*   createTexture( struct Texture* pTexture );
     GPUTexture*   createRenderTarget( const uint32_t width, const uint32_t height, const eViewFormat format, const eAntiAliasingMethod msaaSampleCount );
-
     GPUBuffer*    createBuffer( const struct GPUBufferDesc* desc );
-    GPUShader*    createShader( eShaderType type, const void* pBytecode );
+    GPUShader*    createShader( eShaderType type, const void* pBytecode, const size_t bytecodeSize );
+    GPUPipelineState* createPipelineState( struct Material* pMaterial );
 
     void* lockBuffer( GPUBuffer* pBuffer, const uint32_t offset, const uint32_t size );
     void unlockBuffer( GPUBuffer* pBuffer );
@@ -73,43 +79,67 @@ public:
     void destroyTexture( GPUTexture* pTexture );
     void destroyBuffer( GPUBuffer* pBuffer );
     void destroyShader( GPUShader* pShader );
+    void destroyPipelineState( GPUPipelineState* pPipelineState );
 
     void resize( uint32_t width, uint32_t height );
 
     GPUBackbuffer* getBackbuffer();
     FormatCapabilities getFormatCapabilities( eViewFormat format );
 
+    void bindRenderTargetAndSetViewport( RenderTarget* pRenderTarget, const uint32_t index ); // FUN_005f5e10
+    void bindRenderTarget( RenderTarget* pRenderTarget, const uint32_t index, const bool bBlitBound2DB ); // FUN_005f16e0
+    void blitBound2DBToRT( RenderTarget* pRenderTarget ); // FUN_005fd1d0
+    void bindToFramebuffer( RenderTarget* pRenderTarget, const uint32_t index );
+
+    void setViewport( Viewport& vp );
+    bool retrieveAdapterInfos( const uint32_t adapterIndex, struct GPUAdapterDesc* pOutDesc );
+
 private:
-    // Device extension, extra extensions can be added here
-    std::vector<const char*> m_deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,  // Needed for display on the screen
-    };
+    VkInstance          instance;
+    std::vector<const char*> instanceExtensions;
+    std::vector<const char*> instanceLayers;
+    std::vector<VkExtensionProperties> instanceExtensionsAvailable;
+    std::vector<VkExtensionProperties> deviceExtensionsAvailable;
 
-    VkInstance                         m_instance{};        // The Vulkan instance
-    VkPhysicalDevice                   m_physicalDevice{};  // The physical device (GPU)
-    VkDevice                           m_device{};          // The logical device (interface to the physical device)
-    std::vector<QueueInfo>             m_queues{};          // The queue used to submit command buffers to the GPU
-    VkDebugUtilsMessengerEXT           m_callback{ VK_NULL_HANDLE };  // The debug callback
-    std::vector<const char*> m_instanceExtensions = { VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME };
-    std::vector<const char*> m_instanceLayers = {};  // Add extra layers here
-    std::vector<VkExtensionProperties> m_instanceExtensionsAvailable{};
-    std::vector<VkExtensionProperties> m_deviceExtensionsAvailable{};
-    // Device features, extra features can be added here
-    VkPhysicalDeviceFeatures2        m_deviceFeatures;
+    std::vector<VkPhysicalDevice> physicalDevices;
+    VkPhysicalDevice physicalDevice;
+    uint32_t physicalDeviceIndex;
+    std::vector<const char*> deviceExtensions;
 
-    VmaAllocator        m_allocator;
+    VkDevice device;
+    std::vector<QueueInfo> queues;
+
+#if OTDU_DEVBUILD
+    VkDebugUtilsMessengerEXT           debugCallback;
+#endif
+
+    VmaAllocator        allocator;
+    VkSurfaceKHR        surface;
 
     uint32_t frameIndex;
-#if OTDU_WIN32
-    HWND activeWindow;
-#endif
 
     GPUBackbuffer* pBackbuffer;
 
     FormatCapabilities formatCaps[eViewFormat::VF_Count];
 
+    // TODO: For now assume single thread cmd submission (should be good enough for a D3D9 game).
+    VkCommandBuffer activeCmdBuffer;
+
+    RenderTarget* pBoundRenderTargets[kMaxSimultaneousRT];
+    VkFramebufferCreateInfo framebufferInfos;
+
+    VkSwapchainKHR swapchain;
+    std::vector<VkImage> swapchainImages;
+
 private:
     QueueInfo getQueue( VkQueueFlagBits flags ) const;
-    void getAvailableDeviceExtensions();
+    std::vector<VkExtensionProperties> getAvailableDeviceExtensions();
+
+    bool createVulkanInstance();
+    bool selectPhysicalDevice();
+    bool createDevice();
+    void createDebugCallback();
+    void createVMAAllocator();
+    bool createSwapchain();
 };
 #endif
