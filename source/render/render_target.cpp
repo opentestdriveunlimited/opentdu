@@ -298,6 +298,16 @@ RenderTarget* RenderTarget::GetBackBuffer()
     return gBackbuffer;
 }
 
+Render2DB *RenderTarget::getBound2DB()
+{
+    return p2DB;
+}
+
+GPUTexture *RenderTarget::getTextureColor()
+{
+    return pTexture;
+}
+
 RenderTargetPool::RenderTargetPool()
     : pListHead( nullptr )
     , numPooledRT( 0 )

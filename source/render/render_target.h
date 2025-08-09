@@ -35,6 +35,9 @@ public:
 
     static RenderTarget* GetBackBuffer();
 
+    Render2DB* getBound2DB();
+    GPUTexture* getTextureColor();
+
 private:
     float width;
     float height;
