@@ -1,5 +1,6 @@
 #include "shared.h"
 #include "texture_cache.h"
+#include "gs_render.h"
 
 #include "2db.h"
 
@@ -43,6 +44,15 @@ bool TextureCache::insertIntoCache(Texture* pTexture)
 void TextureCache::insertAndUpload(Texture* pTexture, const bool bForce)
 {
     if (bForce || !pTexture->bUploaded) {
+        if (pTexture->pTexture == nullptr) {
+            GPUTexture* pGPUTexture = gpRender->getRenderDevice()->createTexture( pTexture );
+            if (pGPUTexture == nullptr) {
+                OTDU_LOG_ERROR("Failed to create 2DB!\n");
+                return;
+            }
+            pTexture->pTexture = pGPUTexture;
+        }
+
         Render2DB::PrepareTexture(pTexture);
         insertIntoCache(pTexture);
     }
