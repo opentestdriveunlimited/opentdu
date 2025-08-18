@@ -1,9 +1,12 @@
 #include "shared.h"
 #include "postfx_stack.h"
 
-#include "render/gs_render.h"
+#include "postfx_instance.h"
 
 PostFXStack gPostFXStack = {};
+
+// Arbitrary limit from the original game.
+static constexpr uint32_t kMaxNumEffect = 64;
 
 PostFXStack::PostFXStack()
 {
@@ -15,6 +18,12 @@ PostFXStack::~PostFXStack()
     releaseResources();
 }
 
+void PostFXStack::registerEffect(PostFX* param_2)
+{
+    OTDU_ASSERT( effects.size() < kMaxNumEffect );
+    effects.push_back(param_2);
+}
+
 bool PostFXStack::releaseResources()
 {
     // FUN_005f5d60
@@ -23,33 +32,4 @@ bool PostFXStack::releaseResources()
     }
 
     return true;
-}
-
-PostFX::PostFX()
-    : pVertexShader( nullptr )
-    , pPixelShader( nullptr )
-    , bInitialized( false )
-{
-
-}
-
-
-PostFX::~PostFX()
-{
-    releaseResources();
-}
-
-void PostFX::releaseResources()
-{
-    if ( pVertexShader != nullptr ) {
-        gpRender->getRenderDevice()->destroyShader( pVertexShader );
-        pVertexShader = nullptr;
-    }
-
-    if ( pPixelShader != nullptr ) {
-        gpRender->getRenderDevice()->destroyShader( pPixelShader );
-        pPixelShader = nullptr;
-    }
-
-    bInitialized = false;
 }

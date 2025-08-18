@@ -1,26 +1,13 @@
 #pragma once
 
-struct GPUShader;
-
-class PostFX {
-public:
-    PostFX();
-    ~PostFX();
-
-    virtual void releaseResources();
-
-protected:
-    GPUShader* pVertexShader;
-    GPUShader* pPixelShader;
-
-    uint8_t bInitialized : 1;
-};
+class PostFX;
 
 class PostFXStack {
 public:
     PostFXStack();
     ~PostFXStack();
 
+    void registerEffect(PostFX* param_2);
     bool releaseResources();
 
 private:
