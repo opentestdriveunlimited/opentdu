@@ -14,7 +14,9 @@ inline void OutputToDebugger( const char* pFormatedString )
 #else
 inline void OutputToDebugger( const char* pFormatedString )
 {
+#ifndef OTDU_LOG_STDOUT // Redundant if we already redirect logs to stdout...
     printf( "%s", pFormatedString );
+#endif
 }
 #endif
 
