@@ -10,11 +10,27 @@ struct GPUShader;
 struct ShaderTableEntry;
 class RenderDevice;
 
+static constexpr uint64_t kInvalidMetadataOffset = 0xffffffffffffffffull;
+
 struct ShaderTableHeaderEntry
 {
     uint64_t Hashcode; // Hashcode (from the game; not the actual bytecode hash)
     uint64_t Offset; // Offset in file (absolute)
     uint64_t Size; // Size (in bytes)
+    uint64_t MetadataOffset; // Metadata offset in file (absolute). kInvalidMetadataOffset if unavailable/unused
+};
+
+// Infos extracted from DxvkShaderCreateInfo (only relevant infos for D3D9 are stored).
+// NOTE: This struct does not include the binding reflection (stored right after NumBindings).
+// During parsing, you must make sure to read 'sizeof(DxvkBindingInfo) * NumBindings' before reading
+// the next metadata entry.
+struct ShaderMetadataSPIRV 
+{
+    uint32_t InputMask;
+    uint32_t OutputMask;
+    uint32_t FlatShadingInputs;
+    uint32_t SamplerPushConstantsSize; // samplerDwordCount * sizeof(uint32_t) 
+    uint32_t NumBindings; // (SPIRV) Num of binding metadata (DxvkBindingInfo) to read
 };
 
 struct ShaderTableHeader
@@ -49,11 +65,13 @@ struct ShaderTable
 {
     ShaderTableHeader   Header;
     std::vector<int8_t> Shaders;
+    std::vector<int8_t> Metadata;
 
     inline void Clear()
     {
         Header.Clear();
         Shaders.clear();
+        Metadata.clear();
     }
 };
 
@@ -125,6 +143,8 @@ private:
 
     std::unordered_map<std::string, void*> shaderTableBinary;
     std::unordered_map<uint64_t, std::tuple<void*, uint64_t>> shaderBinaries;
+    // Pointer to shader metadata/reflection. Only valid for SPIRV (for now).
+    std::unordered_map<uint64_t, ShaderMetadataSPIRV*> shaderMetadata;
 
     std::unordered_map<uint64_t, CachedShader> cachedVertexShaders;
     std::unordered_map<uint64_t, CachedShader> cachedPixelShaders;

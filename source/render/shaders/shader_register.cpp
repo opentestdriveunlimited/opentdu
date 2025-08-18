@@ -115,6 +115,11 @@ void ShaderRegister::registerShader( const ShaderTableEntry* pTableEntry )
             int8_t* pShaderPointer = pShaderContent + pHeaderIt->Offset;
 
             shaderBinaries.insert( std::make_pair( pHeaderIt->Hashcode, std::make_tuple( pShaderPointer, pHeaderIt->Size ) ) );
+
+            if (pHeaderIt->MetadataOffset != kInvalidMetadataOffset) {
+                ShaderMetadataSPIRV* pShaderMetadataPointer = ( ShaderMetadataSPIRV* )( pShaderContent + pHeaderIt->MetadataOffset );
+                shaderMetadata.insert( std::make_pair( pHeaderIt->Hashcode, pShaderMetadataPointer ) );
+            }
             pHeaderIt++;
         }
 
@@ -140,20 +145,26 @@ void ShaderRegister::registerShader( const ShaderTableEntry* pTableEntry )
 
 void ShaderRegister::releaseCachedShaderInstances()
 {
-    RenderDevice* pDevice = gpRender->getRenderDevice();
-    for ( auto& entry : cachedVertexShaders ) {
-        CachedShader& shader = entry.second;
-        if ( shader.pShader != nullptr ) {
-            pDevice->destroyShader( shader.pShader );
-            shader.pShader = nullptr;
-        }
-    }
-    
-    for ( auto& entry : cachedPixelShaders ) {
-        CachedShader& shader = entry.second;
-        if ( shader.pShader != nullptr ) {
-            pDevice->destroyShader( shader.pShader );
-            shader.pShader = nullptr;
+    if (gpRender != nullptr)
+    {
+        RenderDevice* pDevice = gpRender->getRenderDevice();
+        if (pDevice != nullptr)
+        {
+            for ( auto& entry : cachedVertexShaders ) {
+                CachedShader& shader = entry.second;
+                if ( shader.pShader != nullptr ) {
+                    pDevice->destroyShader( shader.pShader );
+                    shader.pShader = nullptr;
+                }
+            }
+            
+            for ( auto& entry : cachedPixelShaders ) {
+                CachedShader& shader = entry.second;
+                if ( shader.pShader != nullptr ) {
+                    pDevice->destroyShader( shader.pShader );
+                    shader.pShader = nullptr;
+                }
+            }
         }
     }
 
