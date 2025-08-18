@@ -161,6 +161,7 @@ struct Material
     uint16_t getOTNumber();
     MaterialParameter* getParameterByIndex( const uint32_t index );
     uint16_t getOTForParameter( MaterialParameter* param_1 );
+    void bind();
 };
 static_assert( sizeof( Material ) == 0xd0, "Size mismatch; material deserialization will fail!!" );
 

@@ -4,6 +4,7 @@ class CarState;
 
 #include "vehicle_resource.h"
 #include "render/light.h"
+#include "render/setup_node.h"
 #include "render/hiearchy_node.h"
 #include "paint.h"
 #include "filesystem/bank.h"
@@ -149,9 +150,9 @@ private:
     float armLength;
     float dotFork;
     
-    LightSetup lightCfg;
-    LightSetup lightCfgWheelL;
-    LightSetup lightCfgWheelR;
+    LightSetupNode lightCfg;
+    LightSetupNode lightCfgWheelL;
+    LightSetupNode lightCfgWheelR;
 
     DirectionalLight mainLight;
     DirectionalLight mainLightInterior;

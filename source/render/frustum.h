@@ -9,6 +9,9 @@ public:
 
     void updateProjectionMatrices();
     void setPlanes(float nearPlane, float farPlane);
+    void setCamera(Camera* param_2, bool param_3);
+
+    void setOrthoDimensions(float width, float height);
 
 private:
     Eigen::Vector4f zLimits;

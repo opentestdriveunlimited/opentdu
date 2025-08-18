@@ -56,22 +56,22 @@ void VehicleBase::initialize()
     // Exterior
     gpWeather->getActiveWeatherConfig().fillDirectionalLight(mainLight);
     gpWeather->getActiveWeatherConfig().fillDirectionalLight(mainLightInterior);
-    lightCfg.Lights.push_back(&mainLight);
-    lightCfg.Lights.push_back(&mainLightInterior);
+    lightCfg.addLight(&mainLight);
+    lightCfg.addLight(&mainLightInterior);
 
     // Wheels (left)
     wheelLLight = mainLight;
     wheelLILight = mainLightInterior;
 
-    lightCfgWheelL.Lights.push_back(&wheelLLight);
-    lightCfgWheelL.Lights.push_back(&wheelLILight);
+    lightCfgWheelL.addLight(&wheelLLight);
+    lightCfgWheelL.addLight(&wheelLILight);
 
     // Wheels (right)
     wheelRLight = mainLight;
     wheelRILight = mainLightInterior;
 
-    lightCfgWheelR.Lights.push_back(&wheelRLight);
-    lightCfgWheelR.Lights.push_back(&wheelRILight);
+    lightCfgWheelR.addLight(&wheelRLight);
+    lightCfgWheelR.addLight(&wheelRILight);
 
     currentEnvFactor = 1.0f;
     currentEnvFactorBackFace = 0.1f;

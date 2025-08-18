@@ -7,9 +7,12 @@ class DrawList;
 struct Instance;
 struct HiearchyNode;
 struct InstanceWithCustomMaterial;
+struct FramebufferAttachments;
+class LightSetupNode;
 
 #include "frustum.h"
 #include "render_object_base.h"
+#include "setup_node.h"
 
 enum class eFogType : uint32_t {
     FT_None = 0,
@@ -47,12 +50,22 @@ public:
     inline void setUnknownMask(const uint64_t value) { unknownMask = value; }
     inline FogDesc& getFogDescWrite() { return fogDesc; }
     inline Frustum& getFrustumWrite() { return frustum; }
+    inline uint32_t getFlags() const { return flags; }
+    inline void setFlags(uint32_t newFlags) { flags = newFlags; }
 
 public:
     RenderScene();
     ~RenderScene();
 
+    void create(Camera *param_2, Viewport *param_3,FramebufferAttachments *param_4,uint32_t param_5,const char *param_6,bool param_7,RenderScene * param_8,RenderScene *param_9);
+    void copy(RenderScene *param_2,const char *param_3);
     void enqueueDynamicDrawList(DrawList* pDrawList);
+
+    void setSceneType(bool param_1);
+    void setShaderIndexes(uint32_t vsIndex, uint32_t psIndex);
+
+    void addLightSetup(LightSetupNode* param_2);
+    void copyDrawCommands(RenderScene *param_2);
 
 private:
     Frustum     frustum;
@@ -65,12 +78,17 @@ private:
     uint32_t    activeVertexShaderIndex;
     uint32_t    activePixelShaderIndex;
     
-    RenderSceneCommands drawCommands;
+    RenderSceneCommands* pDrawCommands;
+
+    SetupGraph sceneSetup;
 
     // TODO: Not sure what is it used
     std::vector<Eigen::Vector4f*> vectorRegister;
 
-    std::vector<RenderTarget*> framebufferAttachments;
+    FramebufferAttachments* framebufferAttachments;
 
     uint8_t     bOrthoProjection : 1;
+
+private:
+    void initialize(Camera *param_2, Viewport *param_3,FramebufferAttachments *param_4,uint32_t param_5,const char *param_6);
 };

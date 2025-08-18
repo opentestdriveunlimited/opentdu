@@ -38,6 +38,8 @@ public:
     Render2DB* getBound2DB();
     GPUTexture* getTextureColor();
 
+    void resolveMSAA( uint32_t param_2 );
+
 private:
     float width;
     float height;

@@ -236,9 +236,39 @@ struct Viewport {
     uint32_t Flags = 0x7;
 };
 
+enum eBlendMode : uint8_t {
+    BM_Unknown = 0,
+    BM_Zero = 1,
+    BM_One = 2,
+    BM_SrcColor=3,
+    BM_InvSrcColor=4,
+    BM_SrcAlpha=5,
+    BM_InvSrcAlpha=6,
+    BM_DstAlpha=7,
+    BM_InvDstAlpha=8,
+    BM_DstColor=9,
+    BM_InvDstColor=10,
+    BM_SrcAlphaSat=11,
+    BM_BothSrcAlpha=12,
+    BM_BothInvSrcAlpha=13,
+    BM_Count,
+};
+
+enum eBlendOP : uint8_t {
+    BO_Unknown = 0,
+    BO_Add = 1,
+    BO_Sub = 2,
+    BO_RevSub = 3,
+    BO_Min = 4,
+    BO_Max = 5,
+    BO_Disabled = 6,
+    BO_Count,
+};
+
 // TODO: Not sure who's supposed to own this...
 extern eViewFormat gDepthStencilFormat; // DAT_00fac8e4
 extern GPUTexture* gpMainDepthBuffer; // DAT_00f47920
+extern class RenderScene* gpActiveRenderScene; // DAT_00fe77c0
 
 #ifdef OTDU_D3D9
 #include "d3d9/render_device.h"

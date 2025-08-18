@@ -51,6 +51,7 @@ struct GPUPipelineState {
 };
 
 class RenderTarget;
+class Render2DB;
 
 class RenderDevice {
 public:
@@ -93,6 +94,23 @@ public:
 
     void setViewport( Viewport& vp );
     bool retrieveAdapterInfos( const uint32_t adapterIndex, struct GPUAdapterDesc* pOutDesc );
+
+    // D3D9 Emulation (might want to remove this later and treat this as a regular cbuffer).
+    void setFloatConstants( eShaderType stage, float* pFloats, uint32_t numFloat );
+
+    void bindTexture( Texture* pTexture, const uint32_t index );
+
+    // NOTE: This is done at low level to avoid introducing PSO/pipeline state at
+    // high level (and make adoption of old immediate binding style APIs)
+    void bindMaterial( Material* pMaterial );
+
+    void clearFramebuffer(const bool bClearColor, const bool bClearDepth, const bool bClearStencil);
+    void beginRenderPass();
+
+    void bindVertexBuffer(GPUBuffer* pBuffer, const uint32_t index, const uint32_t stride);
+    void draw(uint32_t numVertex, uint32_t numInstance, uint32_t firstVertex = 0, uint32_t firstInstance = 0);
+
+    void blit(Render2DB* pSrc, RenderTarget* pDst, const bool bLinearFiltering);
 
 private:
     VkInstance          instance;

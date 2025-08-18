@@ -37,7 +37,7 @@ void MngNumber::draw()
         return;
     }
 
-    gpRender->getRenderPassByIndex( 0x4a ).pScene->enqueueDynamicDrawList( pDrawList );
+    gpRender->getRenderPass<eRenderPass::RP_2D>().pScene->enqueueDynamicDrawList( pDrawList );
 }
 
 void MngNumber::terminate()

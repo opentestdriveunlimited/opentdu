@@ -397,6 +397,11 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
     return iVar6;
 }
 
+void Material::bind()
+{
+    OTDU_UNIMPLEMENTED;
+}
+
 uint16_t Material::getOTNumber()
 {
     MaterialParameter* peVar1 = nullptr;

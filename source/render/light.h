@@ -42,14 +42,3 @@ struct AmbientLight : public Light {
 
     Eigen::Vector4f Color;
 };
-
-struct LightSetup {
-    std::vector<Light*> Lights;
-    uint32_t Flags;
-
-    LightSetup()
-        : Flags( 0x103 )
-    {
-        
-    }
-};

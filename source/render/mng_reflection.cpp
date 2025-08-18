@@ -30,7 +30,7 @@ MngReflection::~MngReflection()
 
 bool MngReflection::initialize(TestDriveGameInstance *)
 {
-    RenderPass& reflectionRenderPass = gpRender->getRenderPassByIndex( 0x27 );
+    RenderPass& reflectionRenderPass = gpRender->getRenderPass<eRenderPass::RP_Reflect>();
 
     pScene = reflectionRenderPass.pScene;
     pCamera = reflectionRenderPass.pCamera;
@@ -49,7 +49,7 @@ void MngReflection::terminate()
     instances.clear();
     hiearchyNodes.clear();
     
-    RenderPass& renderPass = gpRender->getRenderPassByIndex( 0x27 );
+    RenderPass& renderPass = gpRender->getRenderPass<eRenderPass::RP_Reflect>();
     renderPass.bEnabled = false;
 
     pScene = nullptr;
@@ -58,7 +58,7 @@ void MngReflection::terminate()
 
 void MngReflection::reset()
 {
-    RenderPass& renderPass = gpRender->getRenderPassByIndex( 0x21 );
+    RenderPass& renderPass = gpRender->getRenderPass<eRenderPass::RP_Occlusion>();
     renderPass.pViewport->ClearColor = ReflectionBackgroundColor;
     clearFlagsBackup = ~(renderPass.pViewport->Flags & 1);
     renderPass.pViewport->Flags |= 1;
@@ -67,7 +67,7 @@ void MngReflection::reset()
 void MngReflection::pause()
 {
     if (clearFlagsBackup != 0) {
-        RenderPass& renderPass = gpRender->getRenderPassByIndex( 0x21 );
+        RenderPass& renderPass = gpRender->getRenderPass<eRenderPass::RP_Occlusion>();
         renderPass.pViewport->Flags &= 0xfffffffe;
     }
 }

@@ -308,6 +308,12 @@ GPUTexture *RenderTarget::getTextureColor()
     return pTexture;
 }
 
+void RenderTarget::resolveMSAA(uint32_t param_2)
+{
+    // FUN_005fd160
+    OTDU_UNIMPLEMENTED;
+}
+
 RenderTargetPool::RenderTargetPool()
     : pListHead( nullptr )
     , numPooledRT( 0 )

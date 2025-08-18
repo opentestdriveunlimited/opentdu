@@ -84,3 +84,18 @@ void Frustum::setPlanes(float nearPlane, float farPlane)
 
     updateProjectionMatrices();
 }
+
+void Frustum::setCamera(Camera* param_2, bool param_3)
+{
+    pCamera = param_2;
+    bIs2DProjection = param_3;
+}
+
+void Frustum::setOrthoDimensions(float width, float height)
+{
+    orthoWidth = width;
+    orthoHeight = height;
+    
+    orthoProjectionMatrix.col(0)[0] = 3.3333333f;
+    orthoProjectionMatrix.col(1)[1] = 2.0f / orthoHeight;
+}

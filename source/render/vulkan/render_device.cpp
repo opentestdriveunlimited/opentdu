@@ -500,39 +500,7 @@ void RenderDevice::blitBound2DBToRT(RenderTarget *pRenderTarget)
         return;
     }
     
-    Texture* pBound2DBTexture = pBound2DB->getFirstBitmap();
-    GPUTexture* pTextureRT = pRenderTarget->getTextureColor();
-
-    VkImage srcImage = pBound2DBTexture->pTexture->Image[0];
-    VkImage dstImage = pTextureRT->Image[frameIndex % PendingFrameCount];
-
-    VkImageBlit region = {};
-    region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.srcSubresource.mipLevel = 0;
-    region.srcSubresource.baseArrayLayer = 0;
-    region.srcSubresource.layerCount = 1;
-    region.srcOffsets[0] = { 0, 0, 0 };
-    region.srcOffsets[1] = { pBound2DBTexture->Width, pBound2DBTexture->Height, pBound2DBTexture->Depth };
-
-    region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.dstSubresource.mipLevel = 0;
-    region.dstSubresource.baseArrayLayer = 0;
-    region.dstSubresource.layerCount = 1;
-    region.dstOffsets[0] = { 0, 0, 0 };
-    region.dstOffsets[1].x = pRenderTarget->getWidth();
-    region.dstOffsets[1].y = pRenderTarget->getHeight();
-    region.dstOffsets[1].z = 1;
-
-    // TODO: Check if we could potentially use copy instead (to save some GPU time)
-    vkCmdBlitImage( activeCmdBuffer, 
-                    srcImage,
-                    VK_IMAGE_LAYOUT_GENERAL,
-                    dstImage,
-                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                    1,
-                    &region,
-                    VK_FILTER_NEAREST
-    );
+    blit(pBound2DB, pRenderTarget, false);
 }
 
 void RenderDevice::bindToFramebuffer(RenderTarget *pRenderTarget, const uint32_t index)
@@ -551,6 +519,78 @@ void RenderDevice::setViewport(Viewport &vp)
     viewport.maxDepth = 1.0f;
 
     vkCmdSetViewport( activeCmdBuffer, 0, 1, &viewport );
+}
+
+void RenderDevice::setFloatConstants(eShaderType stage, float *pFloats, uint32_t numFloat)
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderDevice::bindTexture( Texture* pTexture, const uint32_t index )
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderDevice::bindMaterial( Material* pMaterial )
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderDevice::clearFramebuffer(const bool bClearColor, const bool bClearDepth, const bool bClearStencil)
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderDevice::beginRenderPass()
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderDevice::bindVertexBuffer(GPUBuffer * pBuffer, const uint32_t index, const uint32_t stride)
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderDevice::draw(uint32_t numVertex, uint32_t numInstance, uint32_t firstVertex, uint32_t firstInstance)
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderDevice::blit(Render2DB *pBound2DB, RenderTarget *pDst, const bool bLinearFiltering)
+{
+    Texture* pSrc = pBound2DB->getFirstBitmap();
+    GPUTexture* pTextureRT = pDst->getTextureColor();
+
+    VkImage srcImage = pSrc->pTexture->Image[0];
+    VkImage dstImage = pTextureRT->Image[frameIndex % PendingFrameCount];
+
+    VkImageBlit region = {};
+    region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.srcSubresource.mipLevel = 0;
+    region.srcSubresource.baseArrayLayer = 0;
+    region.srcSubresource.layerCount = 1;
+    region.srcOffsets[0] = { 0, 0, 0 };
+    region.srcOffsets[1] = { pSrc->Width, pSrc->Height, pSrc->Depth };
+
+    region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.dstSubresource.mipLevel = 0;
+    region.dstSubresource.baseArrayLayer = 0;
+    region.dstSubresource.layerCount = 1;
+    region.dstOffsets[0] = { 0, 0, 0 };
+    region.dstOffsets[1].x = pDst->getWidth();
+    region.dstOffsets[1].y = pDst->getHeight();
+    region.dstOffsets[1].z = 1;
+
+    // TODO: Check if we could potentially use copy instead (to save some GPU time)
+    vkCmdBlitImage( activeCmdBuffer, 
+                    srcImage,
+                    VK_IMAGE_LAYOUT_GENERAL,
+                    dstImage,
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    1,
+                    &region,
+                    VK_FILTER_NEAREST
+    );
 }
 
 GPUShader* RenderDevice::createShader( eShaderType type, const void* pBytecode, const size_t bytecodeSize )
