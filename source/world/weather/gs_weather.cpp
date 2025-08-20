@@ -26,7 +26,7 @@ bool GSWeather::initialize( TestDriveGameInstance* pGameInstance )
     return true;
 }
 
-void GSWeather::tick(float deltaTime)
+void GSWeather::tick(float totalTime, float deltaTime)
 {
 
 }
@@ -39,6 +39,11 @@ void GSWeather::terminate()
 void GSWeather::registerListener(WorldListener *pListener)
 {
     registeredListeners.push_back( pListener );
+}
+
+void GSWeather::unregisterListener(WorldListener *pListener)
+{
+    std::find_if(registeredListeners.begin(), registeredListeners.end(), [=](WorldListener* x) { return x == pListener; });
 }
 
 void GSWeather::updateActiveConfig()

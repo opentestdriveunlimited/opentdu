@@ -20,6 +20,12 @@ public:
     Eigen::Vector4f getTerrainUniformParams() const;
     Eigen::Vector3f getSunDirection() const;
 
+    float getWindSpeed() const;
+    float getTreeWindSpeed(float param_2, Eigen::Vector4f& param_3) const;
+
+    Eigen::Vector3f getRandomizedWindDirection(float param_1, Eigen::Vector4f& param_3) const;
+    float getRandomizedLeafWindSpeed(Eigen::Vector4f& param_3) const;
+
 private:
     std::string name;
 

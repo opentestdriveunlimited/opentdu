@@ -3,6 +3,10 @@
 
 #include "render/light.h"
 #include "render/render_scene.h"
+#include "gs_timer.h"
+
+static float DAT_016a6a30 = 0.0f;
+static float DAT_00fab8d4 = 0.1f;
 
 WeatherConfig::WeatherConfig(const char *pName, const bool bHDR)
     : name( pName ? pName : "WEATHER_CFG_UNKNOWN" )
@@ -98,4 +102,45 @@ Eigen::Vector4f WeatherConfig::getTerrainUniformParams() const
 Eigen::Vector3f WeatherConfig::getSunDirection() const
 {
     return sunDirection;
+}
+
+float WeatherConfig::getWindSpeed() const
+{
+    return windSpeed;
+}
+
+float WeatherConfig::getTreeWindSpeed(float param_2, Eigen::Vector4f &param_3) const
+{
+    float fVar1 = sin((param_2 / noisePeriodTemporal) * 6.2831855f
+                        * gGSTimer.GameTotalTime +
+                        (param_2 / noisePeriod) * 6.2831855f
+                        * param_3.norm());
+    return (fVar1 * maxWindSpeedRandomized + 1.0f) * windSpeed;
+}
+
+Eigen::Vector3f WeatherConfig::getRandomizedWindDirection(float param_1, Eigen::Vector4f &param_3) const
+{
+    float fVar1 = sin((param_1 / noisePeriodTemporal) * 6.2831855f
+                        * gGSTimer.GameTotalTime +
+                        (param_1 / noisePeriod) * 6.2831855f
+                        * param_3.norm());
+    fVar1 = fVar1 * maxWindSpeed * 0.0055555557f * 0.31830987f;
+    float fVar2 = cos(fVar1);
+    fVar1 = sin(fVar1);
+
+    Eigen::Vector3f param_4 = {
+        (fVar2 * windDirection.x() + fVar1 * windDirection.z()),
+        0.0f,
+        (fVar2 * windDirection.z() - fVar1 * windDirection.x())
+    };
+    return param_4;
+}
+
+float WeatherConfig::getRandomizedLeafWindSpeed(Eigen::Vector4f &param_3) const
+{ 
+    float fVar1 = sin((6.2831855f / noisePeriodTemporal) *
+                        gGSTimer.GameTotalTime +
+                        (6.2831855f / noisePeriod) 
+                        * param_3.norm());
+    return (fVar1 * DAT_016a6a30 + 1.0f) * windSpeed * leafWindSpeed * DAT_00fab8d4;
 }

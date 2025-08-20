@@ -15,16 +15,18 @@ public:
     inline bool isConfigDirty() const { return bDirtyConfig; }
 
     const WeatherConfig& getActiveWeatherConfig() const { return activeWeatherConfig; }
+    const WeatherConfig& getActiveRandomizedWeatherConfig() const { return activeRandomizedWeatherConfig; }
 
 public:
     GSWeather();
     ~GSWeather();
 
     bool initialize( TestDriveGameInstance* pGameInstance ) override;
-    void tick(float deltaTime) override;
+    void tick(float totalTime, float deltaTime) override;
     void terminate() override;
 
     void registerListener( WorldListener* pListener );
+    void unregisterListener( WorldListener* pListener );
     void updateActiveConfig();
 
 private:
@@ -56,6 +58,7 @@ private:
 
     HDRIConfig activeHDRIConfig;
     WeatherConfig activeWeatherConfig;
+    WeatherConfig activeRandomizedWeatherConfig;
 };
 
 extern GSWeather* gpWeather;
