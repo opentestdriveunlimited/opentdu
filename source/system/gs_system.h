@@ -28,7 +28,7 @@ public:
 
     bool initialize( TestDriveGameInstance* ) override;
 
-    void tick(float deltaTime) override;
+    void tick(float totalTime, float deltaTime) override;
     void terminate() override;
 
     void resizeGameWindow( const uint32_t width, const uint32_t height, const eFullscreenMode fullscreenMode, const bool bWindowed );

@@ -1,7 +1,7 @@
 #include "shared.h"
 #include "thread.h"
 
-static constexpr char* kThreadDefaultName = "UNAMED THREAD";
+static constexpr const char* kThreadDefaultName = "UNAMED THREAD";
 
 TestDriveThread::TestDriveThread( const char* pThreadName /*= nullptr */ )
     : stackSize( 0x3000 )
@@ -59,6 +59,8 @@ bool TestDriveThread::initialize(  StartRoutine_t pThreadStartRoutine, void* lpP
     pthread_attr_setstacksize( &attributes, stackSize );
 
     int result = pthread_create( &threadHandle, &attributes, pThreadStartRoutine, lpParameter );
+    OTDU_ASSERT( result == 0 );
+
     pthread_attr_destroy( &attributes );
 
     return result == 0;

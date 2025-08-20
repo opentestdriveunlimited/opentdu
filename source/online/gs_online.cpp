@@ -19,7 +19,7 @@ bool GSOnline::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSOnline::tick(float deltaTime)
+void GSOnline::tick(float totalTime, float deltaTime)
 {
 
 }

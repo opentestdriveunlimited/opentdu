@@ -20,7 +20,7 @@ bool GSScenaric::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSScenaric::tick(float deltaTime)
+void GSScenaric::tick(float totalTime, float deltaTime)
 {
 
 }

@@ -1,10 +1,14 @@
 #include "shared.h"
 #include "event.h"
 
-static constexpr char* kEventDefaultName = "UNAMED EVENT";
+static constexpr const char* kEventDefaultName = "UNAMED EVENT";
 
 TestDriveEvent::TestDriveEvent( const char* pEventName /*= nullptr */ )
+#if defined( OTDU_MACOS )
+    : semaphore( false )
+#else
     : semaphore( NULL )
+#endif
     , name( kEventDefaultName )
     , bInitialized( 0 )
     , bMarkedForDeletion( 0 )

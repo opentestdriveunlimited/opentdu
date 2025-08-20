@@ -29,7 +29,7 @@ void GlobalLogger::Write( const char* pFormat, ... )
     va_list argList;
     va_start( argList, pFormat );
 
-    int32_t bufferOutputSize = vsnprintf( pBuffer, sizeof( pBuffer ), pFormat, argList );
+    size_t bufferOutputSize = vsnprintf( pBuffer, sizeof( pBuffer ), pFormat, argList );
     OTDU_ASSERT( bufferOutputSize < sizeof( pBuffer ) );
 
     va_end( argList );

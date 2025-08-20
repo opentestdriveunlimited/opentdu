@@ -113,7 +113,7 @@ bool GSFlash::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSFlash::tick(float deltaTime)
+void GSFlash::tick(float totalTime, float deltaTime)
 {
 
 }

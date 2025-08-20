@@ -184,7 +184,7 @@ public:
     ~GSFile();
 
     bool initialize( TestDriveGameInstance* ) override;
-    void tick(float deltaTime) override;
+    void tick(float totalTime, float deltaTime) override;
     void terminate() override;
 
     bool loadFile(const char *pFilename, void **pOutContent, uint32_t *pOutContentSize);

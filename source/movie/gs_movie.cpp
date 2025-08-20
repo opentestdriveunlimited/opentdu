@@ -19,7 +19,7 @@ bool GSMovie::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSMovie::tick(float deltaTime)
+void GSMovie::tick(float totalTime, float deltaTime)
 {
 
 }

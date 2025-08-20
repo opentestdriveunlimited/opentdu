@@ -16,7 +16,7 @@ public:
     ~MngFlashLocalize();
 
     virtual bool initialize( TestDriveGameInstance* ) override;
-    void reset();
+    void reset() override;
 
     int32_t FUN_00716f60(uint64_t param_1);
     void FUN_00717ff0(FlashPlayer* param_2, uint64_t param_3, uint64_t param_4, uint32_t param_5);

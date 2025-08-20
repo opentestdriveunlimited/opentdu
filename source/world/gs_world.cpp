@@ -27,7 +27,7 @@ bool GSWorld::initialize( TestDriveGameInstance* pGameInstance )
     return true;
 }
 
-void GSWorld::tick(float deltaTime)
+void GSWorld::tick(float totalTime, float deltaTime)
 {
 
 }
@@ -47,4 +47,9 @@ void GSWorld::pushGlobal2DB( Render2DB* pRender2DB )
 {
     OTDU_ASSERT( pRender2DB );
     collection2D.register2DB( pRender2DB );
+}
+
+void GSWorld::removeGlobal2DB(Render2DB *pRender2DB)
+{
+    collection2D.unregister2DB(pRender2DB);
 }

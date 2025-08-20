@@ -112,7 +112,7 @@ public:
 
 public:
     const char* getName() const override { return "DataBase"; }
-    inline const size_t getNumCars() const { return cars.size(); }
+    inline size_t getNumCars() const { return cars.size(); }
     inline const std::vector<CarConfig>& getCarList() const { return cars; }
 
 public:

@@ -16,7 +16,7 @@ bool GSProfile::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSProfile::tick(float deltaTime)
+void GSProfile::tick(float totalTime, float deltaTime)
 {
 
 }

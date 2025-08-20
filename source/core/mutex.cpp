@@ -3,7 +3,7 @@
 
 #include "time.h"
 
-static constexpr char* kMutexDefaultName = "UNAMED MUTEX";
+static constexpr const char* kMutexDefaultName = "UNAMED MUTEX";
 
 TestDriveMutex::TestDriveMutex( const char* pMutexName /*= nullptr */ )
     : name( kMutexDefaultName )

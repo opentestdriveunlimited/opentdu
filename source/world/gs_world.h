@@ -16,11 +16,13 @@ public:
     ~GSWorld();
 
     bool initialize( TestDriveGameInstance* pGameInstance ) override;
-    void tick(float deltaTime) override;
+    void tick(float totalTime, float deltaTime) override;
     void terminate() override;
 
     void pushGlobal2DM( Render2DM* pRender2DM );
     void pushGlobal2DB( Render2DB* pRender2DB );
+
+    void removeGlobal2DB( Render2DB* pRender2DB );
 
 private:
     StreamingManager* pStreamingManager;

@@ -142,7 +142,7 @@ bool GSFile::initialize( TestDriveGameInstance* )
     return bInitialized;
 }
 
-void GSFile::tick(float deltaTime)
+void GSFile::tick(float totalTime, float deltaTime)
 {
     if (gpTestDriveInstance == nullptr || !gpTestDriveInstance->hasRequestedExit()) {
         if (initStep == 1) {

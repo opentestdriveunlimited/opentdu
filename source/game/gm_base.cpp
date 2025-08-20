@@ -68,7 +68,7 @@ void GameMode::mainLoop(TestDriveGameInstance* param_1)
     bMessageBoxVisible = false;
 
     do {
-        gpSystem->tick(gGSTimer.GameDeltaTime);
+        gpSystem->tick(gGSTimer.GameTotalTime, gGSTimer.GameDeltaTime);
         gpRender->flushDrawCommands(false);
     } while (!gpSystem->isWindowActivated());
 
