@@ -59,6 +59,7 @@ public:
     inline void bindWindowHandle( HWND handle ) { } // TODO: REMOVE ME
 #endif
     inline uint32_t getInternalFrameIndex() const { return frameIndex % PendingFrameCount; }
+    inline void setTime(float param_2) { time = param_2; }
 
 public:
     RenderDevice();
@@ -148,6 +149,10 @@ private:
 
     VkSwapchainKHR swapchain;
     std::vector<VkImage> swapchainImages;
+
+    float shaderConstants[2][kNumShaderConstants];
+
+    float time;
 
 private:
     QueueInfo getQueue( VkQueueFlagBits flags ) const;

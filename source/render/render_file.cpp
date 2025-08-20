@@ -17,13 +17,20 @@ RenderFile::~RenderFile()
 
 void RenderFile::destroy()
 {
-    OTDU_UNIMPLEMENTED;
+    reset();
+    unparse();
 }
 
 void RenderFile::reset()
 {
+    // FUN_00505020
     pHeader = nullptr;
     pSections = nullptr;
+}
+
+void RenderFile::unparse()
+{
+    OTDU_UNIMPLEMENTED;
 }
 
 bool RenderFile::parseHeader( void* pFileStream )

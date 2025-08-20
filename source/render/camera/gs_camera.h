@@ -24,7 +24,7 @@ public:
     ~GSCamera();
 
     bool initialize( TestDriveGameInstance* ) override;
-    void tick(float deltaTime) override;
+    void tick(float totalTime, float deltaTime) override;
     void terminate() override;
 
 private:

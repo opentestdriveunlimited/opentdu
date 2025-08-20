@@ -3,6 +3,7 @@
 #include "core/color.h"
 
 struct GPUTexture;
+class RenderTarget;
 
 enum class eAntiAliasingMethod : uint32_t {
     AAM_Disabled = 0,
@@ -116,6 +117,14 @@ struct GPUAdapterDesc {
 };
 
 static constexpr uint32_t kMaxSimultaneousRT = 8;
+static constexpr const uint32_t kNumShaderConstants = 32;
+
+struct FramebufferAttachments {
+    RenderTarget* pAttachments[kMaxSimultaneousRT] = { 
+        nullptr, nullptr, nullptr, nullptr, 
+        nullptr, nullptr, nullptr, nullptr 
+    };
+};
 
 static bool IsDepthStencilFormat( eViewFormat format )
 {

@@ -15,6 +15,7 @@ struct FileCollection2D
     void register2DB( Render2DB* render2DB );
     void register2DM( Render2DM* render2DM );
     void unregister2DM( Render2DM* render2DM );
+    void unregister2DB( Render2DB* render2DB );
 
 private:
     void bindBitmapReferences( Render2DM* render2DM );

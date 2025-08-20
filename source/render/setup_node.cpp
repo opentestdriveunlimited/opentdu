@@ -1,6 +1,9 @@
 #include "shared.h"
 #include "setup_node.h"
 
+static uint32_t gNumLights = 0; // DAT_00facb20
+static Light* DAT_00facb18 = nullptr; // DAT_00facb18
+
 SetupNode::SetupNode()
     : flags( 0 )
 {
@@ -44,7 +47,27 @@ void LightSetupNode::addLight(Light *light)
 {
     if (lights.size() < kMaxNumLightPerScene) {
         lights.push_back(light);
+        
+        gNumLights++;
+        DAT_00facb18 = lights.back();
     }
+}
+
+void LightSetupNode::removeLight(Light *light)
+{
+    // FUN_0050b7a0
+    auto it = std::find_if(lights.begin(), lights.end(), [=](Light* x) { return x == light; });
+    if (it != lights.end()) {
+        lights.erase(it);
+
+        gNumLights--;
+        DAT_00facb18 = lights.back();
+    }
+}
+
+bool LightSetupNode::isEmpty() const
+{
+    return lights.empty();
 }
 
 SetupGraph::SetupGraph()
@@ -56,6 +79,28 @@ SetupGraph::SetupGraph()
 SetupGraph::~SetupGraph()
 {
 
+}
+
+void SetupGraph::removeLightNodes()
+{
+    // FUN_0050de60
+    if ((flags & 1) != 0) {
+        return;
+    }
+
+    // This is basically FUN_0050dda0 (without the custom container the game uses)
+    std::remove_if(nodes.begin(), nodes.end(), [](SetupNode* x) { return x->getType() == 0x0; });
+}
+
+void SetupGraph::removeFrustumNodes()
+{
+    // FUN_0050de60
+    if (((flags >> 2) & 1) != 0) {
+        return;
+    }
+
+    // This is basically FUN_0050dda0 (without the custom container the game uses)
+    std::remove_if(nodes.begin(), nodes.end(), [](SetupNode* x) { return x->getType() == 0x02; });
 }
 
 bool SetupGraph::addNode(SetupNode *node)

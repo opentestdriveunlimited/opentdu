@@ -11,6 +11,7 @@ class RenderTarget
 {
 public:
     RenderTarget* pNextRT; // Used for linked list traversal
+    inline bool isPooled() const { return pNextRT != nullptr; }
 
 public:
     RenderTarget();
@@ -64,12 +65,6 @@ private:
     uint8_t bOwnZBuffer : 1;
 };
 
-static constexpr uint32_t kMaxNumAttachments = 4; // Based on D3D9 limits (could be raised in the future)
-
-struct FramebufferAttachments {
-    RenderTarget* pAttachments[kMaxNumAttachments] = { nullptr, nullptr, nullptr, nullptr };
-};
-
 class RenderTargetPool {
 public:
     RenderTargetPool();
@@ -96,3 +91,4 @@ bool CreateBackbufferRenderTarget(); // FUN_005f15f0
 void ReleaseBackbufferRenderTarget(); // FUN_005f1650
 RenderTarget* FUN_0050aff0(RenderTarget *param_1, float param_2, float param_3, eViewFormat param_4, uint32_t param_5, uint32_t flags);
 RenderTarget* CreateRenderTargetFrom2DB(Render2DB* param_1, uint32_t param_2);
+void ReleasePooledRenderTarget(RenderTarget* param_1); // FUN_0050b0b0

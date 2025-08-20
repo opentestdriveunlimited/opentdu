@@ -32,3 +32,8 @@ void FileCollection2D::unregister2DM( Render2DM* render2DM )
 {
     Render2DMs.erase( render2DM );
 }
+
+void FileCollection2D::unregister2DB( Render2DB* render2DB )
+{
+    Render2DBs.erase( render2DB );
+}

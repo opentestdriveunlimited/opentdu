@@ -26,6 +26,16 @@ RenderScene::~RenderScene()
     
 }
 
+void RenderScene::destroy()
+{
+    // FUN_0050b1e0
+    sceneSetup.removeLightNodes();
+    sceneSetup.removeFrustumNodes();
+
+    freeDrawCommands();
+    gpRender->getFrameGraph()->removeObject(this);
+}
+
 void RenderScene::create(Camera * param_2, Viewport * param_3, FramebufferAttachments * param_4, uint32_t param_5, const char * param_6, bool param_7, RenderScene * param_8, RenderScene * param_9)
 {
     // FUN_0050b140
@@ -126,4 +136,14 @@ void RenderScene::copyDrawCommands(RenderScene * param_2)
         pDrawCommands = param_2->pDrawCommands;
         pDrawCommands->RefCount++;
     }
+}
+
+void RenderScene::freeDrawCommands()
+{
+    // FUN_00508a40
+    if (pDrawCommands != nullptr && pDrawCommands->RefCount != 0) {
+        pDrawCommands->RefCount--;
+    }
+
+    pDrawCommands = nullptr;
 }

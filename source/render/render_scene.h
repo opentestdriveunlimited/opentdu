@@ -57,6 +57,8 @@ public:
     RenderScene();
     ~RenderScene();
 
+    void destroy();
+
     void create(Camera *param_2, Viewport *param_3,FramebufferAttachments *param_4,uint32_t param_5,const char *param_6,bool param_7,RenderScene * param_8,RenderScene *param_9);
     void copy(RenderScene *param_2,const char *param_3);
     void enqueueDynamicDrawList(DrawList* pDrawList);
@@ -91,4 +93,5 @@ private:
 
 private:
     void initialize(Camera *param_2, Viewport *param_3,FramebufferAttachments *param_4,uint32_t param_5,const char *param_6);
+    void freeDrawCommands();
 };

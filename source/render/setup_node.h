@@ -23,6 +23,9 @@ public:
     uint32_t getType() const override;
 
     void addLight(Light* light);
+    void removeLight(Light* light);
+
+    bool isEmpty() const;
 
 private:
     std::vector<Light*> lights;
@@ -32,6 +35,9 @@ class SetupGraph {
 public:
     SetupGraph();
     ~SetupGraph();
+
+    void removeLightNodes();
+    void removeFrustumNodes();
 
     bool addNode(SetupNode* node);
 

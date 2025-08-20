@@ -368,6 +368,16 @@ RuntimeRender2DB::RuntimeRender2DB()
 RuntimeRender2DB::~RuntimeRender2DB()
 {
     if (pBuffer != nullptr) {
+        destroy();
+    }
+}
+
+void RuntimeRender2DB::destroy()
+{
+    gpWorld->removeGlobal2DB(this);
+    RenderFile::destroy();
+
+    if (pBuffer != nullptr) {
         TestDrive::Free(pBuffer);
         pBuffer = nullptr;
     }

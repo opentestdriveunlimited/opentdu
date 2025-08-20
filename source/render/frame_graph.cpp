@@ -11,7 +11,7 @@ FrameGraph::~FrameGraph()
 {
 }
 
-void FrameGraph::pushObject(RenderScene *param_2, bool param_3)
+void FrameGraph::pushObject(RenderObjectBase *param_2, bool param_3)
 {
     // FUN_0050b340
     if (param_3) {
@@ -34,6 +34,11 @@ void FrameGraph::insertAfterObject(RenderObjectBase *param_2, RenderObjectBase *
         }
     }
     OTDU_ASSERT(false);
+}
+
+void FrameGraph::removeObject(RenderObjectBase *pObject)
+{
+    std::remove_if(renderNodes.begin(), renderNodes.end(), [=](RenderObjectBase* x) { return x == pObject; });
 }
 
 void FrameGraph::pushBackObject(RenderObjectBase *param_2)

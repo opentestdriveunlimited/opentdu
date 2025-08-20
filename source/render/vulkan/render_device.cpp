@@ -181,12 +181,14 @@ RenderDevice::RenderDevice()
     , pBackbuffer( nullptr )
     , activeCmdBuffer( VK_NULL_HANDLE )
     , framebufferInfos{}
+    , time(0.0f)
 {
     deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     instanceExtensions.push_back(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
 
     memset(pBoundRenderTargets, 0, sizeof(RenderTarget*) * kMaxSimultaneousRT);
     memset(formatCaps, 0, sizeof(FormatCapabilities) * eViewFormat::VF_Count);
+    memset(shaderConstants, 0, sizeof(float) * 2 * kNumShaderConstants);
 }
 
 RenderDevice::~RenderDevice()
@@ -523,7 +525,10 @@ void RenderDevice::setViewport(Viewport &vp)
 
 void RenderDevice::setFloatConstants(eShaderType stage, float *pFloats, uint32_t numFloat)
 {
-    OTDU_UNIMPLEMENTED;
+    OTDU_ASSERT( stage == eShaderType::ST_Vertex || stage == eShaderType::ST_Pixel );
+
+    uint32_t stageIndex = (stage == eShaderType::ST_Vertex) ? 0 : 1;
+    memcpy(shaderConstants[stageIndex], pFloats, numFloat * sizeof(float));
 }
 
 void RenderDevice::bindTexture( Texture* pTexture, const uint32_t index )

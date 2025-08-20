@@ -13,7 +13,6 @@
 
 class RenderTarget;
 class RenderScene;
-struct FramebufferAttachments;
 class PostFXNodeTexSample;
 class PostFXNodeDownscale;
 class PostFXNodeBlit;
@@ -31,8 +30,6 @@ struct RenderPass {
     RenderScene* pSceneCopy;
     uint8_t bIs3DScene : 1;
     uint8_t bEnabled : 1;
-
-    //RenderPass();
 };
 
 enum eRenderPass : uint32_t {
@@ -114,7 +111,7 @@ enum eRenderPass : uint32_t {
     RP_After2D                          = 0x4b,
 };
 
-class GSRender : public GameSystem, WorldListener {
+class GSRender : public GameSystem, public WorldListener {
 public:
     const char* getName() const override { return "Service : Render"; }
     inline RenderDevice* getRenderDevice() const { return pRenderDevice; }
@@ -133,7 +130,8 @@ public:
     ~GSRender();
 
     bool initialize( TestDriveGameInstance* ) override;
-    void tick(float deltaTime) override;
+    void tick(float totalTime, float deltaTime) override;
+    void draw( float deltaTime ) override;
     void terminate() override;
 
     void beginFrame();
@@ -222,33 +220,33 @@ private:
 
     RenderTarget* pOceanNMapRT;
 
-    FramebufferAttachments* pMainRTFramebuffer;
-    FramebufferAttachments* pMainRTwMFramebuffer;
-    FramebufferAttachments* pBackbufferFramebuffer;
-    FramebufferAttachments* pUnknownRTFramebuffer;
-    FramebufferAttachments* pUnknownRT2Framebuffer;
+    FramebufferAttachments mainRTFramebuffer;
+    FramebufferAttachments mainRTwMFramebuffer;
+    FramebufferAttachments backbufferFramebuffer;
+    FramebufferAttachments unknownRTFramebuffer;
+    FramebufferAttachments unknownRT2Framebuffer;
 
-    FramebufferAttachments* pSunFramebuffer;
-    FramebufferAttachments* pSunRealLumFramebuffer;
-    FramebufferAttachments* pSunEyeLumFramebuffer;
-    FramebufferAttachments* pSunDazzleCoeffFramebuffer;
+    FramebufferAttachments sunFramebuffer;
+    FramebufferAttachments sunRealLumFramebuffer;
+    FramebufferAttachments sunEyeLumFramebuffer;
+    FramebufferAttachments sunDazzleCoeffFramebuffer;
 
-    FramebufferAttachments* pNoiseCompositeFramebuffer;
-    FramebufferAttachments* pNoiseAssembleFFramebuffer;
-    FramebufferAttachments* pNoiseAssembleSFramebuffer;
+    FramebufferAttachments noiseCompositeFramebuffer;
+    FramebufferAttachments noiseAssembleFFramebuffer;
+    FramebufferAttachments noiseAssembleSFramebuffer;
     
-    FramebufferAttachments* pOceanNMapFramebuffer;
+    FramebufferAttachments oceanNMapFramebuffer;
 
-    FramebufferAttachments* pRTArrayAVTLRFront[kNumAvtScenes];
-    FramebufferAttachments* pRTArrayAVTLRBack[kNumAvtScenes];
+    FramebufferAttachments rtArrayAVTLRFront[kNumAvtScenes];
+    FramebufferAttachments rtArrayAVTLRBack[kNumAvtScenes];
 
-    FramebufferAttachments* pHUDMapFramebuffer;
-    FramebufferAttachments* pShadowFramebuffer;
-    FramebufferAttachments* pShadowCockpitFramebuffer;
-    FramebufferAttachments* pEnvmapBackFramebuffer;
-    FramebufferAttachments* pEnvmapMiniFramebuffer;
+    FramebufferAttachments hudMapFramebuffer;
+    FramebufferAttachments shadowFramebuffer;
+    FramebufferAttachments shadowCockpitFramebuffer;
+    FramebufferAttachments envmapBackFramebuffer;
+    FramebufferAttachments envmapMiniFramebuffer;
 
-    FramebufferAttachments* pCarFramebuffer;
+    FramebufferAttachments carFramebuffer;
 
     PostFXNodeTexSample*    pPostFXMainHDR;
     PostFXNodeDownscale*    pPostFXMainHDRDownscale;
@@ -274,11 +272,9 @@ private:
     Camera cameraReflection;
     Camera cameraHelmet;
 
-    // 0
-    // 1 - Wind Params
-    // 2 - Terrain Params
+    // 0 - Wind Params
+    // 1 - Terrain Params
     Eigen::Vector4f shaderUniforms[8];
-    Eigen::Matrix4f projectionMatrix;
 
     AmbientLight defaultAmbientLight;
     DirectionalLight defaultDirectionalLight;
@@ -389,6 +385,9 @@ private:
     Eigen::Vector3f sunDirection;
     FrameGraph* frameGraph;
 
+    RenderScene* pActiveScene;
+    Camera* pActiveCamera;
+
 private:
     bool initializeShaderCache();
     bool allocateDeviceResources();
@@ -402,6 +401,12 @@ private:
 
     void updateWeatherParams();
     void setupRenderPasses();
+
+    void updateWind(); // FUN_009981d0
+    void destroyDeviceResources(); // FUN_009949e0
+    void FUN_00990290();
+    void FUN_00993df0();
+    void FUN_00994330();
 };
 
 extern GSRender* gpRender;

@@ -8,8 +8,9 @@ public:
     FrameGraph();
     ~FrameGraph();
 
-    void pushObject(RenderScene* pObject, bool bPushBack);
+    void pushObject(RenderObjectBase* pObject, bool bPushBack);
     void insertAfterObject(RenderObjectBase* pObject, RenderObjectBase* pObjToInsertAfter);
+    void removeObject(RenderObjectBase* pObject);
 
 private:
     std::list<RenderObjectBase*> renderNodes;

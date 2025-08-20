@@ -29,6 +29,7 @@ public:
     virtual bool parseSection( Section* pSection ) { return true; }    
 
     void reset();
+    void unparse();
 
     bool parseHeader( void* pFileStream );
     bool parseFile();

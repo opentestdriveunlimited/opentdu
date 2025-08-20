@@ -16,13 +16,73 @@
 #include "postfx/effects/postfx_blit.h"
 
 #include "render/frame_graph.h"
-
-#include "Eigen/src/Core/MathFunctions.h"
+#include "gs_timer.h"
 
 GSRender* gpRender = nullptr;
 eViewFormat gDepthStencilFormat = eViewFormat::VF_D24S8F; // DAT_00fac8e4
 GPUTexture* gpMainDepthBuffer = nullptr; // DAT_00f47920
 RenderScene* gpActiveRenderScene = nullptr;
+static float gUVATime = 0.0f; // DAT_016a2c14
+
+// Used to calculate weather stuff (but appears to never be modified at runtime; could be some debug leftover)
+static Eigen::Vector4f DAT_00fac360 = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+struct RenderBucket
+{
+    uint32_t TransparencyOrder;
+    const char* pName;
+    uint32_t Flags;
+    float Time;
+};
+
+// DAT_00f71ef8
+static RenderBucket gRenderBuckets[45] = {
+    RenderBucket{ 0x00, "CAR",                      0, 0.0f },
+    RenderBucket{ 0x01, "CAR_ALPHATEST",            0, 0.0f },
+    RenderBucket{ 0x02, "AVATAR",                   0, 0.0f },
+    RenderBucket{ 0x03, "AVATAR_ALPHATEST",         0, 0.0f },
+    RenderBucket{ 0x04, "BUILDING",                 0, 0.0f },
+    RenderBucket{ 0x05, "BUILDING_ALPHATEST",       0, 0.0f },
+    RenderBucket{ 0x06, "VEGETATION",               8, 0.0f },
+    RenderBucket{ 0x07, "VEGETATION_ALPHATEST",     8, 0.0f },
+    RenderBucket{ 0x08, "OPAQUE",                   0, 0.0f },
+    RenderBucket{ 0x09, "ALPHATEST",                0, 0.0f },
+    RenderBucket{ 0x0a, "ROAD",                     0, 0.0f },
+    RenderBucket{ 0x0b, "HEIGHTMAP",                0, 0.0f },
+    RenderBucket{ 0x0c, "HEIGHTMAP_ALPHATEST",      0, 0.0f },
+    RenderBucket{ 0x0d, "HEIGHTMAP_ALPHA",          0, 0.0f },
+    RenderBucket{ 0x0e, "WATER_SEA",                0, 0.0f },
+    RenderBucket{ 0x0f, "WATER",                    0, 0.0f },
+    RenderBucket{ 0x10, "WATER_FULLALPHA",          0, 0.0f },
+    RenderBucket{ 0x11, "CLOUD",                    0, 0.0f },
+    RenderBucket{ 0x12, "CLOUD_FULLALPHA",          0, 0.0f },
+    RenderBucket{ 0x13, "ROAD_PATCH",               0, 0.0f },
+    RenderBucket{ 0x14, "SHADOW",                   0, 0.0f },
+    RenderBucket{ 0x15, "HARDINST",                 0, 0.0f },
+    RenderBucket{ 0x16, "FULLALPHA_FAR",            0, 0.0f },
+    RenderBucket{ 0x17, "IMPOSTOR",                 0, 0.0f },
+    RenderBucket{ 0x18, "IMPOSTOR_FAR",             0, 0.0f },
+    RenderBucket{ 0x19, "TALLGRASS",                0, 0.0f },
+    RenderBucket{ 0x1a, "ELECTRICAL",               0, 0.0f },
+    RenderBucket{ 0x1b, "AVATAR_ALPHA",             0, 0.0f },
+    RenderBucket{ 0x1c, "BUILDING_ALPHA",           0, 0.0f },
+    RenderBucket{ 0x1d, "BUILDING_FULLALPHA",       0, 0.0f },
+    RenderBucket{ 0x1e, "AVATAR_FULLALPHA_0",       0, 0.0f },
+    RenderBucket{ 0x1f, "AVATAR_FULLALPHA_1",       0, 0.0f },
+    RenderBucket{ 0x20, "AVATAR_FULLALPHA_2",       0, 0.0f },
+    RenderBucket{ 0x21, "AVATAR_FULLALPHA_3",       0, 0.0f },
+    RenderBucket{ 0x22, "CAR_ALPHA",                0, 0.0f },
+    RenderBucket{ 0x23, "VEGETATION_ALPHA",         8, 0.0f },
+    RenderBucket{ 0x24, "VEGETATION_FULLALPHA",     8, 0.0f },
+    RenderBucket{ 0x25, "SHADOW_PLANE",             0, 0.0f },
+    RenderBucket{ 0x26, "ALPHA",                    0, 0.0f },
+    RenderBucket{ 0x27, "SHADOW_INT",               0, 0.0f },
+    RenderBucket{ 0x28, "FULLALPHA",                0, 0.0f },
+    RenderBucket{ 0x29, "SUN",                      0, 0.0f },
+    RenderBucket{ 0x2a, "FRONTEND",                 4, 0.0f },
+    RenderBucket{ 0x2b, "VIDEO",                    4, 0.0f },
+    RenderBucket{ 0x2c, "PROFILE",                  4, 0.0f },
+};
 
 GSRender::GSRender()
     : GameSystem()
@@ -35,6 +95,23 @@ GSRender::GSRender()
     , clearColorDepthViewport()
     , clearColorStencilViewport()
     , clearDepthViewport()
+    , viewportBack()
+    , viewportHUDMap()
+    , viewportNoise()
+    , viewportShadowClear()
+    , viewportShadow()
+    , viewportEnvmapBack()
+    , viewportEnvmapNear()
+    , viewportNear()
+    , viewportParticles()
+    , viewportSun()
+    , viewportInterior()
+    , viewportAvatar()
+    , viewportHelmet()
+    , viewport2D()
+    , viewportLRFront()
+    , viewportLRBack()
+    , viewportCockpitAvatar()
     , renderWidth( 0 )
     , renderHeight( 0 )
     , frameIndex( 0 )
@@ -65,19 +142,6 @@ GSRender::GSRender()
     , pNoiseAssembleFRT( nullptr )
     , pNoiseAssembleSRT( nullptr )
     , pOceanNMapRT( nullptr )
-    , pMainRTFramebuffer( nullptr )
-    , pMainRTwMFramebuffer( nullptr )
-    , pBackbufferFramebuffer( nullptr )
-    , pUnknownRTFramebuffer( nullptr )
-    , pUnknownRT2Framebuffer( nullptr )
-    , pSunFramebuffer( nullptr )
-    , pSunRealLumFramebuffer( nullptr )
-    , pSunEyeLumFramebuffer( nullptr )
-    , pSunDazzleCoeffFramebuffer( nullptr )
-    , pNoiseCompositeFramebuffer( nullptr )
-    , pNoiseAssembleFFramebuffer( nullptr )
-    , pNoiseAssembleSFramebuffer( nullptr )
-    , pOceanNMapFramebuffer( nullptr )
     , pPostFXMainHDR( nullptr )
     , pPostFXMainHDRDownscale( nullptr )
     , pSunAvgLum( nullptr )
@@ -86,10 +150,95 @@ GSRender::GSRender()
     , pSunDazzleLUTCopy( nullptr )
     , pSunBillboard( nullptr )
     , pSunDownscaleChain{ nullptr, nullptr, nullptr }
+    , camera2D()
+    , cameraMain()
+    , cameraLRFront()
+    , cameraLRBack()
+    , cameraShadow()
+    , cameraShadowCockpit()
+    , cameraEnvMapBack()
+    , cameraEnvMap()
+    , cameraReflection()
+    , cameraHelmet()
     , shaderUniforms{ Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero(), Eigen::Vector4f::Zero() }
-    , projectionMatrix( Eigen::Matrix4f::Identity() )
     , defaultAmbientLight()
     , defaultDirectionalLight()
+    , lightsDefault()
+    , sceneNear()
+    , scenePreNear()
+    , sceneNearOpaque()
+    , sceneCarPlayerPrepass()
+    , sceneNearPrePassVegetation()
+    , sceneParticles()
+    , sceneCarPlayer()
+    , sceneNearOpaqueCarAlpha()
+    , sceneCarPlayerCarAlpha()
+    , sceneNearAfterCarAlpha()
+    , sceneCarPlayerPPCarAlpha()
+    , sceneNoiseComposeSlow()
+    , sceneNearNoFog()
+    , sceneOcclusionDOFPrepass()
+    , sceneOcclusionDOF()
+    , sceneNearCarAlpha()
+    , sceneNoiseAssembleSlow()
+    , sceneNoiseComposeFast()
+    , sceneNoiseAssembleFast()
+    , sceneOceanNmap()
+    , sceneAVTLRFront()
+    , sceneAVTLRBack()
+    , sceneHUDMap()
+    , sceneShadowClear()
+    , sceneShadow()
+    , sceneShadowCockpitClear()
+    , sceneShadowCockpit()
+    , sceneEnvMapBack()
+    , sceneEnvMap()
+    , sceneBack()
+    , sceneEnvMapMini()
+    , sceneSunComputeEyeLum()
+    , sceneSunComputeDazzleCoeff()
+    , sceneOcclusion()
+    , sceneBack2D()
+    , sceneClearDepth()
+    , sceneReflectPrepass()
+    , sceneReflect()
+    , sceneNearCompositing()
+    , sceneSunCore()
+    , sceneCarPlayerCompositing()
+    , sceneCockpit()
+    , sceneOcclusionCockpit()
+    , sceneCockpitAvatarPrepassCarAlpha()
+    , sceneCockpitAvatarPrepass()
+    , sceneCockpitCarAlpha()
+    , scenePostCockpit()
+    , sceneCockpitAvatar()
+    , sceneCockpitAvatarCarAlpha()
+    , sceneSunHalo()
+    , sceneSunMarker()
+    , sceneHelmet()
+    , sceneHelmetCarAlpha()
+    , sceneSunExtractMarker()
+    , sceneCockpitCompositing()
+    , sceneSunDazzle()
+    , sceneSpotMap2D()
+    , sceneBefore2D()
+    , scene2D()
+    , sceneAfter2D()
+    , ambientLightBack()
+    , directionalLightBack()
+    , lightsBack()
+    , default2DAmbientLight()
+    , default2DDirectionalLight()
+    , lights2DDefault()
+    , lightLRAmbient( 0.0f, 0.0f, 0.0f, 1.0f )
+    , lightLRDiffuse( 0.0f, 0.0f, 0.0f, 1.0f )
+    , lightLRDirectionFront( 0.0f, 0.0f, 0.0f )
+    , lightLRDirectionBack( 0.0f, 0.0f, 0.0f )
+    , lightLRFront()
+    , lightLRBack()
+    , lightsLRFront()
+    , lightsLRBack()
+    , lightsEnvmap()
     , globalLODFactor( 1.0f )
     , fovVsLodFactor( 1.0f )
     , fovVsLodFactorStart( 0.4f )
@@ -109,6 +258,8 @@ GSRender::GSRender()
     , interiorFarPlane( 40.0f )
     , sunDirection(0.0f, -0.4f, -1.0f)
     , frameGraph( new FrameGraph() )
+    , pActiveScene( nullptr )
+    , pActiveCamera( nullptr )
 {
     sunDirection.normalize();
 
@@ -166,72 +317,49 @@ bool GSRender::initialize( TestDriveGameInstance* )
     return true;
 }
 
-void GSRender::tick(float deltaTime)
+void GSRender::tick(float totalTime, float deltaTime)
 {
+    // FUN_00998710
+    pRenderDevice->setTime(totalTime);
+    
+    if (gpWeather->isConfigDirty()) {
+        gpWeather->updateActiveConfig();
+    }
 
+    float fVar2 = gpWeather->getActiveRandomizedWeatherConfig().getWindSpeed();
+    if (vegetationWindSpeedLimit <= gpWeather->getActiveRandomizedWeatherConfig().getWindSpeed()) {
+        fVar2 = vegetationWindSpeedLimit;
+    }
+    gUVATime = vegetationUVAFactor * fVar2 * deltaTime + gUVATime;
+    gRenderBuckets[6].Time = gUVATime;
+    gRenderBuckets[7].Time = gUVATime;
+    gRenderBuckets[0x23].Time = gUVATime;
+    gRenderBuckets[0x24].Time = gUVATime;
+    updateWind();
+
+    pActiveScene = nullptr;
+    pActiveCamera = nullptr;
+}
+
+void GSRender::draw(float deltaTime)
+{
+    // FUN_00994fc0
+    shaderUniforms[5].y() = -1.0f / hmapFadeLength;
+    shaderUniforms[5].z() = (hmapBeginFadeDist + hmapFadeLength) * (1.0f / hmapFadeLength);
+
+    pRenderDevice->setFloatConstants(eShaderType::ST_Vertex, (float*)shaderUniforms, kNumShaderConstants);
+    pRenderDevice->setFloatConstants(eShaderType::ST_Pixel, (float*)shaderUniforms, kNumShaderConstants);
 }
 
 void GSRender::terminate()
 {
-    mainRTwM.destroy();
-    scnDown4.destroy();
-    mainRT.destroy();
-    noiseComposite.destroy();
-    noiseAssembleF.destroy();
-    noiseAssembleS.destroy();
-    oceanNMap.destroy();
-
-    pMainRTwM->destroy(pRenderDevice);
-    pMainRT->destroy(pRenderDevice);
-    pScnDown4RT->destroy(pRenderDevice);
-    pUnknownRT->destroy(pRenderDevice);
-    pUnknownRT2->destroy(pRenderDevice);
-
-    for (uint32_t i = 0; i < kNumSunRT; i++) {
-        sun2DBs[i].destroy();
-    }
-    
-    for (uint32_t i = 0; i < kNumSunRT; i++) {
-        pSunRTs[i]->destroy(pRenderDevice);
-    }
-    
-    pNoiseCompositeRT->destroy(pRenderDevice);
-    pNoiseAssembleFRT->destroy(pRenderDevice);
-    pNoiseAssembleSRT->destroy(pRenderDevice);
-
-    pOceanNMapRT->destroy(pRenderDevice);
-
-    delete pMainRTFramebuffer;
-    delete pMainRTwMFramebuffer;
-    delete pBackbufferFramebuffer;
-    delete pUnknownRTFramebuffer;
-    delete pUnknownRT2Framebuffer;
-
-    delete pSunFramebuffer;
-    delete pSunRealLumFramebuffer;
-    delete pSunEyeLumFramebuffer;
-    delete pSunDazzleCoeffFramebuffer;
-
-    delete pNoiseCompositeFramebuffer;
-    delete pNoiseAssembleFFramebuffer;
-    delete pNoiseAssembleSFramebuffer;
-    
-    delete pOceanNMapFramebuffer;
-
-    TestDrive::Free( pPostFXMainHDR );
-    TestDrive::Free( pPostFXMainHDRDownscale );
-    
-    TestDrive::Free( pSunAvgLum );
-    TestDrive::Free( pSunAvgLumCopy );
-    TestDrive::Free( pSunDazzleLUT );
-    TestDrive::Free( pSunDazzleLUTCopy );
-    TestDrive::Free( pSunBillboard );
-
-    for (uint32_t i = 0; i < kNumSunRT; i++) {
-        TestDrive::Free(pSunDownscaleChain);
-    }
+    // FUN_00994bc0
+    gpWeather->unregisterListener(this);
+    destroyDeviceResources();
 
     delete frameGraph;
+    delete pRenderDevice;
+    pRenderDevice = nullptr;
 }
 
 void GSRender::beginFrame()
@@ -769,23 +897,15 @@ bool GSRender::allocateRenderTargets()
                                 peVar3->bind2DB(&mainRT);
                                 pScnDown4RT->bind2DB(&scnDown4);
 
-                                pMainRTFramebuffer = new FramebufferAttachments();
-                                pMainRTFramebuffer->pAttachments[0] = pMainRTwM;
-
-                                pMainRTwMFramebuffer = new FramebufferAttachments();
-                                pMainRTwMFramebuffer->pAttachments[0] = pMainRT;
-
-                                pBackbufferFramebuffer = new FramebufferAttachments();
-                                pBackbufferFramebuffer->pAttachments[0] = RenderTarget::GetBackBuffer();
-
-                                pUnknownRTFramebuffer = new FramebufferAttachments();
-                                pUnknownRTFramebuffer->pAttachments[0] = pUnknownRT;
+                                mainRTFramebuffer.pAttachments[0] = pMainRTwM;
+                                mainRTwMFramebuffer.pAttachments[0] = pMainRT;
                                 
-                                pUnknownRT2Framebuffer = new FramebufferAttachments();
-                                pUnknownRT2Framebuffer->pAttachments[0] = pUnknownRT2;
+                                backbufferFramebuffer.pAttachments[0] = RenderTarget::GetBackBuffer();
+                                
+                                unknownRTFramebuffer.pAttachments[0] = pUnknownRT;
+                                unknownRT2Framebuffer.pAttachments[0] = pUnknownRT2;
 
-                                pSunFramebuffer = new FramebufferAttachments();
-                                pSunFramebuffer->pAttachments[0] = pUnknownRT;
+                                sunFramebuffer.pAttachments[0] = pUnknownRT;
                                 
                                 return true;
                             }
@@ -836,22 +956,16 @@ bool GSRender::allocateAtmosphereResources()
         }
     }
 
-    pSunRealLumFramebuffer = new FramebufferAttachments();
-    pSunRealLumFramebuffer->pAttachments[0] = pSunRTs[0];
-    
-    pSunEyeLumFramebuffer = new FramebufferAttachments();
-    pSunRealLumFramebuffer->pAttachments[0] = pSunRTs[4];
-    
-    pSunDazzleCoeffFramebuffer = new FramebufferAttachments();
-    pSunRealLumFramebuffer->pAttachments[0] = pSunRTs[6];
+    sunRealLumFramebuffer.pAttachments[0] = pSunRTs[0];
+    sunEyeLumFramebuffer.pAttachments[0] = pSunRTs[4];
+    sunDazzleCoeffFramebuffer.pAttachments[0] = pSunRTs[6];
     
     bool bVar2 = noiseComposite.allocateAndCreate(0x20,0x20,1,1,VF_X8R8G8B8,0x200,"NOISE_COMPOSITE");
     if (bVar2) {
         pNoiseCompositeRT = CreateRenderTargetFrom2DB(&noiseComposite, 2);
 
         if (pNoiseCompositeRT != nullptr) {
-            pNoiseCompositeFramebuffer = new FramebufferAttachments();
-            pNoiseCompositeFramebuffer->pAttachments[0] = pNoiseCompositeRT;
+            noiseCompositeFramebuffer.pAttachments[0] = pNoiseCompositeRT;
 
             bVar2 = noiseAssembleF.allocateAndCreate(0x100,0x100,1,1,VF_X8R8G8B8,0x200,"NOISE_ASSEMBLE_F");
             if (bVar2) {
@@ -861,19 +975,15 @@ bool GSRender::allocateAtmosphereResources()
                     pNoiseAssembleSRT = CreateRenderTargetFrom2DB(&noiseAssembleS, 2);
 
                     if (pNoiseAssembleFRT != nullptr && pNoiseAssembleSRT != nullptr) {
-                        pNoiseAssembleFFramebuffer = new FramebufferAttachments();
-                        pNoiseAssembleFFramebuffer->pAttachments[0] = pNoiseAssembleFRT;
-                        
-                        pNoiseAssembleSFramebuffer = new FramebufferAttachments();
-                        pNoiseAssembleSFramebuffer->pAttachments[0] = pNoiseAssembleSRT;
+                        noiseAssembleFFramebuffer.pAttachments[0] = pNoiseAssembleFRT;
+                        noiseAssembleSFramebuffer.pAttachments[0] = pNoiseAssembleSRT;
 
                         bVar2 = oceanNMap.allocateAndCreate(0x80,0x80,1,1,VF_X8R8G8B8,0xc200,"OceanNMap");
                         if (bVar2) {
                             pOceanNMapRT = CreateRenderTargetFrom2DB(&oceanNMap, 2);
 
                             if (pOceanNMapRT != nullptr) {
-                                pOceanNMapFramebuffer = new FramebufferAttachments();
-                                pOceanNMapFramebuffer->pAttachments[0] = pOceanNMapRT;
+                                oceanNMapFramebuffer.pAttachments[0] = pOceanNMapRT;
                                 return true;
                             }
                         }
@@ -898,81 +1008,187 @@ void GSRender::setupRenderPasses()
     // FUN_00990370
     renderPasses = {
         /*          pScene | pCamera | pViewport | pFramebufferAttachments | pLights | Flags | ShaderID | Name | pCopy | bIs3DScene | bEnabled */
-        RenderPass{ &sceneNoiseComposeSlow, &camera2D, &viewportNoise, pNoiseCompositeFramebuffer, nullptr, 0, 0, "NOISE_COMP_S", nullptr, false, true }, // DAT_00f08500
-        RenderPass{ &sceneNoiseAssembleSlow, &camera2D, &viewportNoise, pNoiseAssembleSFramebuffer, nullptr, 0, 0, "NOISE_ASS_S", nullptr, false, true }, // DAT_00f084f4
-        RenderPass{ &sceneNoiseComposeFast, &camera2D, &viewportNoise, pNoiseCompositeFramebuffer, nullptr, 0, 0, "NOISE_COMP_F", nullptr, false, true }, // DAT_00f084e4
-        RenderPass{ &sceneNoiseAssembleFast, &camera2D, &viewportNoise, pNoiseAssembleFFramebuffer, nullptr, 0, 0, "NOISE_ASS_F", nullptr, false, true }, // DAT_00f084d8
-        RenderPass{ &sceneOceanNmap, &camera2D, &viewportNoise, pOceanNMapFramebuffer, nullptr, 0, 0, "OCEAN_NMAP", nullptr, false, true }, // DAT_00f084cc
-        RenderPass{ &sceneAVTLRFront[0], &cameraLRFront, &viewportLRFront, pRTArrayAVTLRFront[0], &lightsLRFront, 0, 0, "AVT LR FRONT 0", nullptr, false, false }, // DAT_00f084bc
-        RenderPass{ &sceneAVTLRFront[1], &cameraLRFront, &viewportLRFront, pRTArrayAVTLRFront[1], &lightsLRFront, 0, 0, "AVT LR FRONT 1", nullptr, false, false },
-        RenderPass{ &sceneAVTLRFront[2], &cameraLRFront, &viewportLRFront, pRTArrayAVTLRFront[2], &lightsLRFront, 0, 0, "AVT LR FRONT 2", nullptr, false, false },
-        RenderPass{ &sceneAVTLRFront[3], &cameraLRFront, &viewportLRFront, pRTArrayAVTLRFront[3], &lightsLRFront, 0, 0, "AVT LR FRONT 3", nullptr, false, false },
-        RenderPass{ &sceneAVTLRFront[4], &cameraLRFront, &viewportLRFront, pRTArrayAVTLRFront[4], &lightsLRFront, 0, 0, "AVT LR FRONT 4", nullptr, false, false },
-        RenderPass{ &sceneAVTLRFront[5], &cameraLRFront, &viewportLRFront, pRTArrayAVTLRFront[5], &lightsLRFront, 0, 0, "AVT LR FRONT 5", nullptr, false, false },
-        RenderPass{ &sceneAVTLRFront[6], &cameraLRFront, &viewportLRFront, pRTArrayAVTLRFront[6], &lightsLRFront, 0, 0, "AVT LR FRONT 6", nullptr, false, false },
-        RenderPass{ &sceneAVTLRFront[7], &cameraLRFront, &viewportLRFront, pRTArrayAVTLRFront[7], &lightsLRFront, 0, 0, "AVT LR FRONT 7", nullptr, false, false },
-        RenderPass{ &sceneAVTLRFront[8], &cameraLRFront, &viewportLRFront, pRTArrayAVTLRFront[8], &lightsLRFront, 0, 0, "AVT LR FRONT 8", nullptr, false, false },
-        RenderPass{ &sceneAVTLRBack[0], &cameraLRBack, &viewportLRBack, pRTArrayAVTLRBack[0], &lightsLRBack, 0, 0, "AVT LR BACK 0", nullptr, false, false }, // DAT_00f0842c
-        RenderPass{ &sceneAVTLRBack[1], &cameraLRBack, &viewportLRBack, pRTArrayAVTLRBack[1], &lightsLRBack, 0, 0, "AVT LR BACK 1", nullptr, false, false },
-        RenderPass{ &sceneAVTLRBack[2], &cameraLRBack, &viewportLRBack, pRTArrayAVTLRBack[2], &lightsLRBack, 0, 0, "AVT LR BACK 2", nullptr, false, false },
-        RenderPass{ &sceneAVTLRBack[3], &cameraLRBack, &viewportLRBack, pRTArrayAVTLRBack[3], &lightsLRBack, 0, 0, "AVT LR BACK 3", nullptr, false, false },
-        RenderPass{ &sceneAVTLRBack[4], &cameraLRBack, &viewportLRBack, pRTArrayAVTLRBack[4], &lightsLRBack, 0, 0, "AVT LR BACK 4", nullptr, false, false },
-        RenderPass{ &sceneAVTLRBack[5], &cameraLRBack, &viewportLRBack, pRTArrayAVTLRBack[5], &lightsLRBack, 0, 0, "AVT LR BACK 5", nullptr, false, false },
-        RenderPass{ &sceneAVTLRBack[6], &cameraLRBack, &viewportLRBack, pRTArrayAVTLRBack[6], &lightsLRBack, 0, 0, "AVT LR BACK 6", nullptr, false, false },
-        RenderPass{ &sceneAVTLRBack[7], &cameraLRBack, &viewportLRBack, pRTArrayAVTLRBack[7], &lightsLRBack, 0, 0, "AVT LR BACK 7", nullptr, false, false },
-        RenderPass{ &sceneAVTLRBack[8], &cameraLRBack, &viewportLRBack, pRTArrayAVTLRBack[8], &lightsLRBack, 0, 0, "AVT LR BACK 8", nullptr, false, false },
-        RenderPass{ &sceneHUDMap, &camera2D, &viewportHUDMap, pHUDMapFramebuffer, nullptr, 0, 0, "RT HUD MAP", nullptr, false, false },
-        RenderPass{ &sceneShadowClear, &cameraShadow, &viewportShadowClear, pShadowFramebuffer, nullptr, 0x20, 0, "RT SHADOW CLR", nullptr, false, false },
-        RenderPass{ &sceneShadow, &cameraShadow, &viewportShadow, pShadowFramebuffer, nullptr, 0x0, 0, "RT SHADOW", nullptr, false, false },
-        RenderPass{ &sceneShadowCockpitClear, &cameraShadowCockpit, &viewportShadowClear, pShadowCockpitFramebuffer, nullptr, 0x20, 0, "RT SHADOW COCKPIT CLR", nullptr, false, false },
-        RenderPass{ &sceneShadowCockpit, &cameraShadowCockpit, &viewportShadow, pShadowCockpitFramebuffer, nullptr, 0x0, 0, "RT SHADOW COCKPIT", nullptr, false, false },
-        RenderPass{ &sceneEnvMapBack, &cameraEnvMapBack, &viewportEnvmapBack, pEnvmapBackFramebuffer, &lightsBack, 0x20, 0, "ENVMAP BACK", &sceneBack, true, false },
-        RenderPass{ &sceneEnvMap, &cameraEnvMap, &viewportEnvmapNear, pEnvmapBackFramebuffer, &lightsEnvmap, 0x0, 0, "ENVMAP", nullptr, true, false },
-        RenderPass{ &sceneEnvMapMini, &camera2D, &viewportEnvmapNear, pEnvmapMiniFramebuffer, nullptr, 0x0, 0, "ENVMAP MINI", nullptr, false, false },
-        RenderPass{ &sceneSunComputeEyeLum, &camera2D, &viewportSun, pSunEyeLumFramebuffer, nullptr, 0x0, 0, "SUN_COMPUTE_EYE_LUM", nullptr, false, true },
-        RenderPass{ &sceneSunComputeDazzleCoeff, &camera2D, &viewportSun, pSunDazzleCoeffFramebuffer, nullptr, 0x0, 0, "SUN_COMPUTE_DAZZLE_COEFF", nullptr, false, true },
-        RenderPass{ &sceneOcclusion, &cameraMain, &viewportBack, pMainRTwMFramebuffer, nullptr, 0x60, 0, "OCCLUSION", nullptr, true, true },
-        RenderPass{ &sceneBack, &cameraMain, &viewportBack, pMainRTwMFramebuffer, &lightsBack, 0x20, 0, "BACK", nullptr, true, true },
-        RenderPass{ &sceneBack2D, &camera2D, &viewportNear, pMainRTwMFramebuffer, &lightsBack, 0x20, 0, "BACK2D", nullptr, false, true },
-        RenderPass{ &scenePreNear, &camera2D, &clearColorStencilViewport, pMainRTwMFramebuffer, &lightsDefault, 0x20, 0, "PRE_NEAR", &sceneNear, true, false },
-        RenderPass{ &sceneClearDepth, &cameraMain, &clearDepthViewport, pMainRTwMFramebuffer, nullptr, 0x20, 0, "CLEAR_ZSTENCIL", nullptr, true, true },
-        RenderPass{ &sceneReflectPrepass, &cameraReflection, &viewportNear, pMainRTwMFramebuffer, &lightsDefault, 0x29, 0, "REFLECT PRE PASS", &sceneReflect, true, false },
-        RenderPass{ &sceneReflect, &cameraReflection, &viewportNear, pMainRTwMFramebuffer, &lightsDefault, 0x21, 0, "REFLECT", nullptr, true, false },
-        RenderPass{ &sceneNearOpaque, &cameraMain, &viewportNear, pMainRTwMFramebuffer, &lightsDefault, 0x20, 0, "NEAR_OPAQUE", &sceneNear, true, true },
-        RenderPass{ &sceneNearNoFog, &cameraMain, &viewportNear, pMainRTwMFramebuffer, &lightsDefault, 0x20, 0, "NEAR_NO_FOG", nullptr, true, true },
-        RenderPass{ &sceneNearPrePassVegetation, &cameraMain, &viewportNear, pMainRTwMFramebuffer, &lightsDefault, 0x28, 0, "VEGET PRE PASS", &sceneNear, true, true },
-        RenderPass{ &sceneNear, &cameraMain, &viewportNear, pMainRTwMFramebuffer, &lightsDefault, 0x20, 0, "NEAR", nullptr, true, true },
-        RenderPass{ &sceneNearOpaqueCarAlpha, &cameraMain, &clearColorViewport, pCarFramebuffer, &lightsDefault, 0x20, 0, "NEAR_OPAQ_CA", &sceneNearCarAlpha, true, false },
-        RenderPass{ &sceneNearCarAlpha, &cameraMain, &defaultViewport, pCarFramebuffer, &lightsDefault, 0, 0, "NEAR_CA", nullptr, true, false },
-        RenderPass{ &sceneNearCompositing, &cameraMain, &defaultViewport, pMainRTwMFramebuffer, nullptr, 0x30, 0, "NEAR_COMPO", nullptr, false, false },
-        RenderPass{ &sceneNearAfterCarAlpha, &cameraMain, &defaultViewport, pMainRTwMFramebuffer, &lightsDefault, 0x20, 0, "NEAR_AFTER_CA", nullptr, true, true },
-        RenderPass{ &sceneSunCore, &camera2D, &defaultViewport, pMainRTwMFramebuffer, nullptr, 0x20, 0, "SUN", nullptr, false, true },
-        RenderPass{ &sceneOcclusionDOFPrepass, &cameraMain, &defaultViewport, pMainRTFramebuffer, &lightsDefault, 0x28, 0, "FAKEDOF PP", &sceneOcclusionDOF, true, false },
-        RenderPass{ &sceneOcclusionDOF, &cameraMain, &defaultViewport, pMainRTFramebuffer, &lightsDefault, 0x20, 0, "FAKEDOF", nullptr, true, false },
-        RenderPass{ &sceneCarPlayerPrepass, &cameraMain, &defaultViewport, pMainRTFramebuffer, &lightsDefault, 0x28, 0, "CARPLAYER PP", &sceneCarPlayer, true, true },
-        RenderPass{ &sceneCarPlayer, &cameraMain, &defaultViewport, pMainRTFramebuffer, &lightsDefault, 0, 0, "CARPLAYER", nullptr, true, true },
-        RenderPass{ &sceneCarPlayerPPCarAlpha, &cameraMain, &clearColorViewport, pCarFramebuffer, &lightsDefault, 0x28, 0, "CARPLAYER PP_CA", &sceneCarPlayerCarAlpha, true, false },
-        RenderPass{ &sceneCarPlayerCarAlpha, &cameraMain, &defaultViewport, pCarFramebuffer, &lightsDefault, 0, 0, "CARPLAYER_CA", nullptr, true, false },
-        RenderPass{ &sceneCarPlayerCompositing, &camera2D, &defaultViewport, pMainRTFramebuffer, nullptr, 0x10, 0, "CARCOMPO", nullptr, false, false },
-        RenderPass{ &sceneOcclusionCockpit, &cameraMain, &defaultViewport, pSunFramebuffer, nullptr, 0x60, 0, "OCCLUSION_COCKPIT", &sceneCockpit, true, true },
-        RenderPass{ &sceneSunMarker, &camera2D, &clearColorViewport, pSunFramebuffer, nullptr, 0, 0, "SUNMARKER", nullptr, false, true },
-        RenderPass{ &sceneSunExtractMarker, &camera2D, &viewportSun, pSunRealLumFramebuffer, nullptr, 0, 0, "SUN_COMPUTE_REAL_LUM", nullptr, false, true },
-        RenderPass{ &sceneParticles, &cameraMain, &defaultViewport, pMainRTFramebuffer, &lightsDefault, 0x30, 0, "PARTICLES", nullptr, true, true },
-        RenderPass{ &sceneCockpit, &cameraMain, &viewportInterior, pMainRTFramebuffer, &lightsDefault, 0x20, 0, "COCKPIT", nullptr, true, true },
-        RenderPass{ &sceneCockpitAvatarPrepass, &cameraMain, &viewportCockpitAvatar, pMainRTFramebuffer, &lightsDefault, 0x28, 0, "COCKPIT AVT PP", &sceneCockpit, true, true },
-        RenderPass{ &sceneCockpitAvatar, &cameraMain, &viewportCockpitAvatar, pMainRTFramebuffer, &lightsDefault, 0x20, 0, "COCKPIT AVATAR", &sceneCockpit, true, true },
-        RenderPass{ &scenePostCockpit, &cameraMain, &viewportCockpitAvatar, pMainRTFramebuffer, &lightsDefault, 0x20, 0, "POST COCKPIT", nullptr, true, false },
-        RenderPass{ &sceneHelmet, &cameraHelmet, &viewportHelmet, pMainRTFramebuffer, &lightsDefault, 0, 0, "HELMET", nullptr, true, true },
-        RenderPass{ &sceneCockpitCarAlpha, &cameraMain, &clearColorDepthViewport, pCarFramebuffer, &lightsDefault, 0x20, 0, "COCKPIT CA", nullptr, true, false },
-        RenderPass{ &sceneCockpitAvatarPrepassCarAlpha, &cameraMain, &defaultViewport, pCarFramebuffer, &lightsDefault, 0x28, 0, "COCKPIT AVT PP CA", &sceneCockpitCarAlpha, true, false },
-        RenderPass{ &sceneCockpitAvatarCarAlpha, &cameraMain, &defaultViewport, pCarFramebuffer, &lightsDefault, 0x20, 0, "COCKPIT AVATAR CA", &sceneCockpitCarAlpha, true, false },
-        RenderPass{ &sceneHelmetCarAlpha, &cameraHelmet, &defaultViewport, pCarFramebuffer, &lightsDefault, 0, 0, "HELMET CA", nullptr, true, false },
-        RenderPass{ &sceneCockpitCompositing, &camera2D, &defaultViewport, pMainRTFramebuffer, nullptr, 0x10, 0, "COCKPIT COMPO ", nullptr, false, false },
-        RenderPass{ &sceneSunHalo, &camera2D, &defaultViewport, pBackbufferFramebuffer, nullptr, 0x20, 0, "SUN_HALO", nullptr, false, true },
-        RenderPass{ &sceneSunDazzle, &camera2D, &viewport2D, pBackbufferFramebuffer, nullptr, 0x20, 0, "SUN_DAZZLE", nullptr, false, true },
-        RenderPass{ &sceneSpotMap2D, &camera2D, &viewport2D, pBackbufferFramebuffer, &lights2DDefault, 0x20, 0, "SpotMap2D", nullptr, false, true },
-        RenderPass{ &sceneBefore2D, &camera2D, &viewport2D, pBackbufferFramebuffer, &lights2DDefault, 0x20, 0, "Before2D", nullptr, false, true },
-        RenderPass{ &scene2D, &camera2D, &viewport2D, pBackbufferFramebuffer, &lights2DDefault, 0x20, 0, "2D", nullptr, false, true },
-        RenderPass{ &sceneAfter2D, &camera2D, &viewport2D, pBackbufferFramebuffer, &lights2DDefault, 0x20, 0, "After2D", nullptr, false, true }
+        RenderPass{ &sceneNoiseComposeSlow, &camera2D, &viewportNoise, &noiseCompositeFramebuffer, nullptr, 0, 0, "NOISE_COMP_S", nullptr, false, true }, // DAT_00f08500
+        RenderPass{ &sceneNoiseAssembleSlow, &camera2D, &viewportNoise, &noiseAssembleSFramebuffer, nullptr, 0, 0, "NOISE_ASS_S", nullptr, false, true }, // DAT_00f084f4
+        RenderPass{ &sceneNoiseComposeFast, &camera2D, &viewportNoise, &noiseCompositeFramebuffer, nullptr, 0, 0, "NOISE_COMP_F", nullptr, false, true }, // DAT_00f084e4
+        RenderPass{ &sceneNoiseAssembleFast, &camera2D, &viewportNoise, &noiseAssembleFFramebuffer, nullptr, 0, 0, "NOISE_ASS_F", nullptr, false, true }, // DAT_00f084d8
+        RenderPass{ &sceneOceanNmap, &camera2D, &viewportNoise, &oceanNMapFramebuffer, nullptr, 0, 0, "OCEAN_NMAP", nullptr, false, true }, // DAT_00f084cc
+        RenderPass{ &sceneAVTLRFront[0], &cameraLRFront, &viewportLRFront, &rtArrayAVTLRFront[0], &lightsLRFront, 0, 0, "AVT LR FRONT 0", nullptr, false, false }, // DAT_00f084bc
+        RenderPass{ &sceneAVTLRFront[1], &cameraLRFront, &viewportLRFront, &rtArrayAVTLRFront[1], &lightsLRFront, 0, 0, "AVT LR FRONT 1", nullptr, false, false },
+        RenderPass{ &sceneAVTLRFront[2], &cameraLRFront, &viewportLRFront, &rtArrayAVTLRFront[2], &lightsLRFront, 0, 0, "AVT LR FRONT 2", nullptr, false, false },
+        RenderPass{ &sceneAVTLRFront[3], &cameraLRFront, &viewportLRFront, &rtArrayAVTLRFront[3], &lightsLRFront, 0, 0, "AVT LR FRONT 3", nullptr, false, false },
+        RenderPass{ &sceneAVTLRFront[4], &cameraLRFront, &viewportLRFront, &rtArrayAVTLRFront[4], &lightsLRFront, 0, 0, "AVT LR FRONT 4", nullptr, false, false },
+        RenderPass{ &sceneAVTLRFront[5], &cameraLRFront, &viewportLRFront, &rtArrayAVTLRFront[5], &lightsLRFront, 0, 0, "AVT LR FRONT 5", nullptr, false, false },
+        RenderPass{ &sceneAVTLRFront[6], &cameraLRFront, &viewportLRFront, &rtArrayAVTLRFront[6], &lightsLRFront, 0, 0, "AVT LR FRONT 6", nullptr, false, false },
+        RenderPass{ &sceneAVTLRFront[7], &cameraLRFront, &viewportLRFront, &rtArrayAVTLRFront[7], &lightsLRFront, 0, 0, "AVT LR FRONT 7", nullptr, false, false },
+        RenderPass{ &sceneAVTLRFront[8], &cameraLRFront, &viewportLRFront, &rtArrayAVTLRFront[8], &lightsLRFront, 0, 0, "AVT LR FRONT 8", nullptr, false, false },
+        RenderPass{ &sceneAVTLRBack[0], &cameraLRBack, &viewportLRBack, &rtArrayAVTLRBack[0], &lightsLRBack, 0, 0, "AVT LR BACK 0", nullptr, false, false }, // DAT_00f0842c
+        RenderPass{ &sceneAVTLRBack[1], &cameraLRBack, &viewportLRBack, &rtArrayAVTLRBack[1], &lightsLRBack, 0, 0, "AVT LR BACK 1", nullptr, false, false },
+        RenderPass{ &sceneAVTLRBack[2], &cameraLRBack, &viewportLRBack, &rtArrayAVTLRBack[2], &lightsLRBack, 0, 0, "AVT LR BACK 2", nullptr, false, false },
+        RenderPass{ &sceneAVTLRBack[3], &cameraLRBack, &viewportLRBack, &rtArrayAVTLRBack[3], &lightsLRBack, 0, 0, "AVT LR BACK 3", nullptr, false, false },
+        RenderPass{ &sceneAVTLRBack[4], &cameraLRBack, &viewportLRBack, &rtArrayAVTLRBack[4], &lightsLRBack, 0, 0, "AVT LR BACK 4", nullptr, false, false },
+        RenderPass{ &sceneAVTLRBack[5], &cameraLRBack, &viewportLRBack, &rtArrayAVTLRBack[5], &lightsLRBack, 0, 0, "AVT LR BACK 5", nullptr, false, false },
+        RenderPass{ &sceneAVTLRBack[6], &cameraLRBack, &viewportLRBack, &rtArrayAVTLRBack[6], &lightsLRBack, 0, 0, "AVT LR BACK 6", nullptr, false, false },
+        RenderPass{ &sceneAVTLRBack[7], &cameraLRBack, &viewportLRBack, &rtArrayAVTLRBack[7], &lightsLRBack, 0, 0, "AVT LR BACK 7", nullptr, false, false },
+        RenderPass{ &sceneAVTLRBack[8], &cameraLRBack, &viewportLRBack, &rtArrayAVTLRBack[8], &lightsLRBack, 0, 0, "AVT LR BACK 8", nullptr, false, false },
+        RenderPass{ &sceneHUDMap, &camera2D, &viewportHUDMap, &hudMapFramebuffer, nullptr, 0, 0, "RT HUD MAP", nullptr, false, false },
+        RenderPass{ &sceneShadowClear, &cameraShadow, &viewportShadowClear, &shadowFramebuffer, nullptr, 0x20, 0, "RT SHADOW CLR", nullptr, false, false },
+        RenderPass{ &sceneShadow, &cameraShadow, &viewportShadow, &shadowFramebuffer, nullptr, 0x0, 0, "RT SHADOW", nullptr, false, false },
+        RenderPass{ &sceneShadowCockpitClear, &cameraShadowCockpit, &viewportShadowClear, &shadowCockpitFramebuffer, nullptr, 0x20, 0, "RT SHADOW COCKPIT CLR", nullptr, false, false },
+        RenderPass{ &sceneShadowCockpit, &cameraShadowCockpit, &viewportShadow, &shadowCockpitFramebuffer, nullptr, 0x0, 0, "RT SHADOW COCKPIT", nullptr, false, false },
+        RenderPass{ &sceneEnvMapBack, &cameraEnvMapBack, &viewportEnvmapBack, &envmapBackFramebuffer, &lightsBack, 0x20, 0, "ENVMAP BACK", &sceneBack, true, false },
+        RenderPass{ &sceneEnvMap, &cameraEnvMap, &viewportEnvmapNear, &envmapBackFramebuffer, &lightsEnvmap, 0x0, 0, "ENVMAP", nullptr, true, false },
+        RenderPass{ &sceneEnvMapMini, &camera2D, &viewportEnvmapNear, &envmapMiniFramebuffer, nullptr, 0x0, 0, "ENVMAP MINI", nullptr, false, false },
+        RenderPass{ &sceneSunComputeEyeLum, &camera2D, &viewportSun, &sunEyeLumFramebuffer, nullptr, 0x0, 0, "SUN_COMPUTE_EYE_LUM", nullptr, false, true },
+        RenderPass{ &sceneSunComputeDazzleCoeff, &camera2D, &viewportSun, &sunDazzleCoeffFramebuffer, nullptr, 0x0, 0, "SUN_COMPUTE_DAZZLE_COEFF", nullptr, false, true },
+        RenderPass{ &sceneOcclusion, &cameraMain, &viewportBack, &mainRTwMFramebuffer, nullptr, 0x60, 0, "OCCLUSION", nullptr, true, true },
+        RenderPass{ &sceneBack, &cameraMain, &viewportBack, &mainRTwMFramebuffer, &lightsBack, 0x20, 0, "BACK", nullptr, true, true },
+        RenderPass{ &sceneBack2D, &camera2D, &viewportNear, &mainRTwMFramebuffer, &lightsBack, 0x20, 0, "BACK2D", nullptr, false, true },
+        RenderPass{ &scenePreNear, &camera2D, &clearColorStencilViewport, &mainRTwMFramebuffer, &lightsDefault, 0x20, 0, "PRE_NEAR", &sceneNear, true, false },
+        RenderPass{ &sceneClearDepth, &cameraMain, &clearDepthViewport, &mainRTwMFramebuffer, nullptr, 0x20, 0, "CLEAR_ZSTENCIL", nullptr, true, true },
+        RenderPass{ &sceneReflectPrepass, &cameraReflection, &viewportNear, &mainRTwMFramebuffer, &lightsDefault, 0x29, 0, "REFLECT PRE PASS", &sceneReflect, true, false },
+        RenderPass{ &sceneReflect, &cameraReflection, &viewportNear, &mainRTwMFramebuffer, &lightsDefault, 0x21, 0, "REFLECT", nullptr, true, false },
+        RenderPass{ &sceneNearOpaque, &cameraMain, &viewportNear, &mainRTwMFramebuffer, &lightsDefault, 0x20, 0, "NEAR_OPAQUE", &sceneNear, true, true },
+        RenderPass{ &sceneNearNoFog, &cameraMain, &viewportNear, &mainRTwMFramebuffer, &lightsDefault, 0x20, 0, "NEAR_NO_FOG", nullptr, true, true },
+        RenderPass{ &sceneNearPrePassVegetation, &cameraMain, &viewportNear, &mainRTwMFramebuffer, &lightsDefault, 0x28, 0, "VEGET PRE PASS", &sceneNear, true, true },
+        RenderPass{ &sceneNear, &cameraMain, &viewportNear, &mainRTwMFramebuffer, &lightsDefault, 0x20, 0, "NEAR", nullptr, true, true },
+        RenderPass{ &sceneNearOpaqueCarAlpha, &cameraMain, &clearColorViewport, &carFramebuffer, &lightsDefault, 0x20, 0, "NEAR_OPAQ_CA", &sceneNearCarAlpha, true, false },
+        RenderPass{ &sceneNearCarAlpha, &cameraMain, &defaultViewport, &carFramebuffer, &lightsDefault, 0, 0, "NEAR_CA", nullptr, true, false },
+        RenderPass{ &sceneNearCompositing, &cameraMain, &defaultViewport, &mainRTwMFramebuffer, nullptr, 0x30, 0, "NEAR_COMPO", nullptr, false, false },
+        RenderPass{ &sceneNearAfterCarAlpha, &cameraMain, &defaultViewport, &mainRTwMFramebuffer, &lightsDefault, 0x20, 0, "NEAR_AFTER_CA", nullptr, true, true },
+        RenderPass{ &sceneSunCore, &camera2D, &defaultViewport, &mainRTwMFramebuffer, nullptr, 0x20, 0, "SUN", nullptr, false, true },
+        RenderPass{ &sceneOcclusionDOFPrepass, &cameraMain, &defaultViewport, &mainRTFramebuffer, &lightsDefault, 0x28, 0, "FAKEDOF PP", &sceneOcclusionDOF, true, false },
+        RenderPass{ &sceneOcclusionDOF, &cameraMain, &defaultViewport, &mainRTFramebuffer, &lightsDefault, 0x20, 0, "FAKEDOF", nullptr, true, false },
+        RenderPass{ &sceneCarPlayerPrepass, &cameraMain, &defaultViewport, &mainRTFramebuffer, &lightsDefault, 0x28, 0, "CARPLAYER PP", &sceneCarPlayer, true, true },
+        RenderPass{ &sceneCarPlayer, &cameraMain, &defaultViewport, &mainRTFramebuffer, &lightsDefault, 0, 0, "CARPLAYER", nullptr, true, true },
+        RenderPass{ &sceneCarPlayerPPCarAlpha, &cameraMain, &clearColorViewport, &carFramebuffer, &lightsDefault, 0x28, 0, "CARPLAYER PP_CA", &sceneCarPlayerCarAlpha, true, false },
+        RenderPass{ &sceneCarPlayerCarAlpha, &cameraMain, &defaultViewport, &carFramebuffer, &lightsDefault, 0, 0, "CARPLAYER_CA", nullptr, true, false },
+        RenderPass{ &sceneCarPlayerCompositing, &camera2D, &defaultViewport, &mainRTFramebuffer, nullptr, 0x10, 0, "CARCOMPO", nullptr, false, false },
+        RenderPass{ &sceneOcclusionCockpit, &cameraMain, &defaultViewport, &sunFramebuffer, nullptr, 0x60, 0, "OCCLUSION_COCKPIT", &sceneCockpit, true, true },
+        RenderPass{ &sceneSunMarker, &camera2D, &clearColorViewport, &sunFramebuffer, nullptr, 0, 0, "SUNMARKER", nullptr, false, true },
+        RenderPass{ &sceneSunExtractMarker, &camera2D, &viewportSun, &sunRealLumFramebuffer, nullptr, 0, 0, "SUN_COMPUTE_REAL_LUM", nullptr, false, true },
+        RenderPass{ &sceneParticles, &cameraMain, &defaultViewport, &mainRTFramebuffer, &lightsDefault, 0x30, 0, "PARTICLES", nullptr, true, true },
+        RenderPass{ &sceneCockpit, &cameraMain, &viewportInterior, &mainRTFramebuffer, &lightsDefault, 0x20, 0, "COCKPIT", nullptr, true, true },
+        RenderPass{ &sceneCockpitAvatarPrepass, &cameraMain, &viewportCockpitAvatar, &mainRTFramebuffer, &lightsDefault, 0x28, 0, "COCKPIT AVT PP", &sceneCockpit, true, true },
+        RenderPass{ &sceneCockpitAvatar, &cameraMain, &viewportCockpitAvatar, &mainRTFramebuffer, &lightsDefault, 0x20, 0, "COCKPIT AVATAR", &sceneCockpit, true, true },
+        RenderPass{ &scenePostCockpit, &cameraMain, &viewportCockpitAvatar, &mainRTFramebuffer, &lightsDefault, 0x20, 0, "POST COCKPIT", nullptr, true, false },
+        RenderPass{ &sceneHelmet, &cameraHelmet, &viewportHelmet, &mainRTFramebuffer, &lightsDefault, 0, 0, "HELMET", nullptr, true, true },
+        RenderPass{ &sceneCockpitCarAlpha, &cameraMain, &clearColorDepthViewport, &carFramebuffer, &lightsDefault, 0x20, 0, "COCKPIT CA", nullptr, true, false },
+        RenderPass{ &sceneCockpitAvatarPrepassCarAlpha, &cameraMain, &defaultViewport, &carFramebuffer, &lightsDefault, 0x28, 0, "COCKPIT AVT PP CA", &sceneCockpitCarAlpha, true, false },
+        RenderPass{ &sceneCockpitAvatarCarAlpha, &cameraMain, &defaultViewport, &carFramebuffer, &lightsDefault, 0x20, 0, "COCKPIT AVATAR CA", &sceneCockpitCarAlpha, true, false },
+        RenderPass{ &sceneHelmetCarAlpha, &cameraHelmet, &defaultViewport, &carFramebuffer, &lightsDefault, 0, 0, "HELMET CA", nullptr, true, false },
+        RenderPass{ &sceneCockpitCompositing, &camera2D, &defaultViewport, &mainRTFramebuffer, nullptr, 0x10, 0, "COCKPIT COMPO ", nullptr, false, false },
+        RenderPass{ &sceneSunHalo, &camera2D, &defaultViewport, &backbufferFramebuffer, nullptr, 0x20, 0, "SUN_HALO", nullptr, false, true },
+        RenderPass{ &sceneSunDazzle, &camera2D, &viewport2D, &backbufferFramebuffer, nullptr, 0x20, 0, "SUN_DAZZLE", nullptr, false, true },
+        RenderPass{ &sceneSpotMap2D, &camera2D, &viewport2D, &backbufferFramebuffer, &lights2DDefault, 0x20, 0, "SpotMap2D", nullptr, false, true },
+        RenderPass{ &sceneBefore2D, &camera2D, &viewport2D, &backbufferFramebuffer, &lights2DDefault, 0x20, 0, "Before2D", nullptr, false, true },
+        RenderPass{ &scene2D, &camera2D, &viewport2D, &backbufferFramebuffer, &lights2DDefault, 0x20, 0, "2D", nullptr, false, true },
+        RenderPass{ &sceneAfter2D, &camera2D, &viewport2D, &backbufferFramebuffer, &lights2DDefault, 0x20, 0, "After2D", nullptr, false, true }
     };
+}
+
+void GSRender::updateWind()
+{
+    if (gpWeather->isConfigDirty()) {
+        gpWeather->updateActiveConfig();
+    }
+
+    float fVar2 = gpWeather->getActiveWeatherConfig().getTreeWindSpeed(vegetationPeriod, DAT_00fac360);
+    float fVar3 = (treeWindSpeedLimit <= fVar2) ? treeWindSpeedLimit : fVar2;
+    
+    Eigen::Vector3f local_30 = gpWeather->getActiveWeatherConfig().getRandomizedWindDirection(vegetationPeriod, DAT_00fac360);
+    local_30.x() = local_30.x() * fVar3 * vegetationFactor;
+    
+    Eigen::Vector3f local_20 = gpWeather->getActiveWeatherConfig().getRandomizedWindDirection(vegetationPeriod, DAT_00fac360);
+    local_30.y() = local_20.z() * fVar3 * vegetationFactor;
+    local_30.z() = gGSTimer.GameTotalTime;
+
+    fVar2 = gpWeather->getActiveWeatherConfig().getRandomizedLeafWindSpeed(DAT_00fac360);
+    
+    shaderUniforms[0].x() = local_30.x();
+    shaderUniforms[0].y() = local_30.y();
+    shaderUniforms[0].z() = local_30.z();
+    shaderUniforms[0].w() = fVar2;
+}
+
+#define OTDU_SAFE_RELEASE( x ) if (x != nullptr) { delete x; x = nullptr; }
+
+void GSRender::destroyDeviceResources()
+{
+    FUN_00990290();
+    FUN_00993df0();
+    FUN_00994330();
+
+    if (!lightsLRBack.isEmpty()) {
+        lightsLRBack.removeLight(&lightLRBack);
+    }
+
+    if (!lightsLRFront.isEmpty()) {
+        lightsLRFront.removeLight(&lightLRFront);
+    }
+
+    if (!lights2DDefault.isEmpty()) {
+        lights2DDefault.removeLight(&default2DAmbientLight);
+        lights2DDefault.removeLight(&default2DDirectionalLight);
+    }
+
+    if (!lightsBack.isEmpty()) {
+        lightsBack.removeLight(&ambientLightBack);
+        lightsBack.removeLight(&directionalLightBack);
+    }
+
+    if (!lightsDefault.isEmpty()) {
+        lightsDefault.removeLight(&defaultAmbientLight);
+        lightsDefault.removeLight(&defaultDirectionalLight);
+    }
+
+    for (RenderPass& pgVar1 : renderPasses) {
+        if (pgVar1.pScene != nullptr) {
+            pgVar1.pScene->destroy();
+        }
+    }
+}
+
+void GSRender::FUN_00990290()
+{
+    OTDU_SAFE_RELEASE( pPostFXMainHDR );
+    OTDU_SAFE_RELEASE( pPostFXMainHDRDownscale );
+    
+    OTDU_SAFE_RELEASE( pSunAvgLum );
+    OTDU_SAFE_RELEASE( pSunAvgLumCopy );
+    OTDU_SAFE_RELEASE( pSunDazzleLUT );
+    OTDU_SAFE_RELEASE( pSunDazzleLUTCopy );
+    OTDU_SAFE_RELEASE( pSunBillboard );
+
+    for (uint32_t i = 0; i < kNumSunRT; i++) {
+        OTDU_SAFE_RELEASE(pSunDownscaleChain[i]);
+    }
+}
+
+void GSRender::FUN_00993df0()
+{
+    ReleasePooledRenderTarget(pOceanNMapRT);
+    oceanNMap.destroy();
+    ReleasePooledRenderTarget(pNoiseCompositeRT);
+    ReleasePooledRenderTarget(pNoiseAssembleFRT);
+    ReleasePooledRenderTarget(pNoiseAssembleSRT);
+    noiseComposite.destroy();
+    noiseAssembleF.destroy();
+    noiseAssembleS.destroy();
+    for (uint32_t i = 0; i < kNumSunRT; i++) {
+        sun2DBs[i].destroy();
+        ReleasePooledRenderTarget(pSunRTs[i]);
+    }
+}
+
+void GSRender::FUN_00994330()
+{
+    mainRTwM.destroy();
+    scnDown4.destroy();
+    mainRT.destroy();
+    ReleasePooledRenderTarget(pMainRTwM);
+    ReleasePooledRenderTarget(pMainRT);
+    ReleasePooledRenderTarget(pUnknownRT);
+    ReleasePooledRenderTarget(pUnknownRT2);
+    ReleasePooledRenderTarget(pScnDown4RT);
 }

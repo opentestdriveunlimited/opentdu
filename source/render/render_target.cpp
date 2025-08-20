@@ -494,3 +494,19 @@ RenderTarget* CreateRenderTargetFrom2DB(Render2DB* param_1, uint32_t param_2)
 
     return nullptr;
 }
+
+void ReleasePooledRenderTarget(RenderTarget* param_1)
+{
+    if (param_1 == nullptr || !param_1->isPooled()) {
+        return;
+    }
+
+    // FUN_005f5960 (inlined)
+    param_1->destroy(gpRender->getRenderDevice());
+    gRenderTargetPool.removeFromPool(param_1);
+    (param_1);
+    param_1->~RenderTarget();
+    TestDrive::Free(param_1);
+    param_1 = nullptr;
+}
+
