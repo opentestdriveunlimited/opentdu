@@ -23,6 +23,7 @@ eViewFormat gDepthStencilFormat = eViewFormat::VF_D24S8F; // DAT_00fac8e4
 GPUTexture* gpMainDepthBuffer = nullptr; // DAT_00f47920
 RenderScene* gpActiveRenderScene = nullptr;
 static float gUVATime = 0.0f; // DAT_016a2c14
+Eigen::Matrix4f gActiveCamToWorld = Eigen::Matrix4f::Identity();
 
 // Used to calculate weather stuff (but appears to never be modified at runtime; could be some debug leftover)
 static Eigen::Vector4f DAT_00fac360 = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -87,6 +88,8 @@ static RenderBucket gRenderBuckets[45] = {
 GSRender::GSRender()
     : GameSystem()
     , pRenderDevice( nullptr )
+    , pCallbackBeforePresent( nullptr )
+    , pCallbackAfterPresent( nullptr )
     , activeAA( eAntiAliasingMethod::AAM_Disabled )
     , activeLODQuality( 2u )
     , defaultViewport()
@@ -112,6 +115,8 @@ GSRender::GSRender()
     , viewportLRFront()
     , viewportLRBack()
     , viewportCockpitAvatar()
+    , layerBits( 0 )
+    , state( 0 )
     , renderWidth( 0 )
     , renderHeight( 0 )
     , frameIndex( 0 )
@@ -260,6 +265,9 @@ GSRender::GSRender()
     , frameGraph( new FrameGraph() )
     , pActiveScene( nullptr )
     , pActiveCamera( nullptr )
+    , pActiveFrustum( nullptr )
+    , pActiveFramebuffer( nullptr )
+    , pActiveViewport( nullptr )
 {
     sunDirection.normalize();
 
@@ -362,15 +370,33 @@ void GSRender::terminate()
     pRenderDevice = nullptr;
 }
 
-void GSRender::beginFrame()
+int32_t GSRender::beginFrame()
 {
+    // FUN_005142e0
+    // NOTE: Original function handled device reset error codes (from D3D9).
+    if (!pRenderDevice->isInitialized()) {
+        return 2;
+    }
+
+    bool bIsDeviceLost = pRenderDevice->isDeviceLost();
+    if (bIsDeviceLost) {
+        return 1;
+    }
+
     bFrameRecordingInProgress = true;
+    return 0;
 }
 
 void GSRender::endFrame()
 {
+    // FUN_00513860
     bFrameRecordingInProgress = false;
     frameIndex++;
+}
+
+void GSRender::present()
+{
+    OTDU_UNIMPLEMENTED;
 }
 
 void GSRender::setLODQuality(const uint32_t qualityIndex)
@@ -429,10 +455,80 @@ void GSRender::onWeatherConfigChange(WeatherConfig* param_1)
     shaderUniforms[2] = param_1->getTerrainUniformParams();
 }
 
-void GSRender::flushDrawCommands(bool param_1)
+int32_t GSRender::flushDrawCommands(bool param_1)
 {
     // FUN_005066e0
-    OTDU_IMPLEMENTATION_SKIPPED("FUN_005066e0");
+    int32_t iVar1 = beginFrame();
+    if (iVar1 == 0) {   
+        frameGraph->submitDrawCommands(param_1);
+        if (pCallbackBeforePresent != nullptr) {
+            pCallbackBeforePresent();
+        }
+        endFrame();
+        if (param_1) {
+            present();
+        }
+        pRenderDevice->resetCachedStates();
+        if (pCallbackAfterPresent != nullptr) {
+            pCallbackAfterPresent();
+        }
+    } else {
+        if (iVar1 == 1) {
+            frameGraph->submitDrawCommands(false);
+            return state;
+        }
+        state = 4;
+    }
+    return state;
+}
+
+uint32_t GSRender::getFreeStencilMask()
+{
+    // FUN_00993940
+    uint8_t iVar1 = 0;
+    do {
+        if ((layerBits & 1 << (iVar1 & 0x1f)) == 0) {
+            layerBits = 1 << (iVar1 & 0x1f) | layerBits;
+            return iVar1;
+        }
+        iVar1 = iVar1 + 1;
+    } while (iVar1 < 8);
+
+    return 0xffffffff;
+}
+
+void GSRender::beginRenderScene(RenderScene* param_2)
+{
+    // FUN_00515780
+    bindSceneResources( param_2 );
+    bindActiveFramebufferToDevice();
+    beginRenderPass();
+    setupProjection(
+        param_2->getCamera(),
+        &param_2->getFrustumWrite(),
+        !param_2->isOrthoProjection(),
+        true
+    );
+    FUN_00513b50(param_2->getCamera());
+    FUN_00515000();
+}
+
+void GSRender::FUN_00512420()
+{
+    // FUN_00512420
+    OTDU_UNIMPLEMENTED;
+}
+
+void GSRender::registerMngCallback(MngRegisterCallback_t &callback)
+{
+    for (MngRegisterCallback_t& entry : registerCallbacks) {
+        if (entry == nullptr) {
+            entry = callback;
+            return;
+        }
+    }
+
+    registerCallbacks.push_back(callback);
 }
 
 bool GSRender::initializeShaderCache()
@@ -1191,4 +1287,64 @@ void GSRender::FUN_00994330()
     ReleasePooledRenderTarget(pUnknownRT);
     ReleasePooledRenderTarget(pUnknownRT2);
     ReleasePooledRenderTarget(pScnDown4RT);
+}
+
+void GSRender::bindSceneResources(RenderScene *param_2)
+{
+    // FUN_00512430
+    pActiveScene = param_2;
+    pActiveCamera = param_2->getCamera();
+    pActiveFrustum = &param_2->getFrustumWrite();
+    pActiveFramebuffer = param_2->getFramebuffer();
+    pActiveViewport = param_2->getViewport();
+
+    gActiveCamToWorld = pActiveCamera->getCamToWorld();
+}
+
+void GSRender::bindActiveFramebufferToDevice()
+{
+    // FUN_00514420
+    for (uint32_t i = 0; i < 0x10; i++) {
+        pRenderDevice->bindTexture(nullptr, i);
+    }
+
+    if (pActiveFramebuffer != nullptr) {
+        for (uint32_t uVar1 = 0; uVar1 < kMaxSimultaneousRT; uVar1++) {
+            RenderTarget* pRenderTarget = pActiveFramebuffer->pAttachments[uVar1];
+            if (pRenderTarget == nullptr && uVar1 == 0) {
+                pRenderTarget = RenderTarget::GetBackBuffer();
+            }
+            pRenderDevice->bindRenderTarget(pRenderTarget, uVar1, (gpActiveRenderScene->getFlags() >> 4 & 1) != 0);
+        }
+    } else {
+        pRenderDevice->bindRenderTarget(RenderTarget::GetBackBuffer(), 0, false);
+        
+        for (uint32_t uVar1 = 1; uVar1 < kMaxSimultaneousRT; uVar1++) {
+            pRenderDevice->bindRenderTarget(nullptr, uVar1, false);
+        }
+    }
+}
+
+void GSRender::beginRenderPass()
+{
+    // FUN_005144e0
+    OTDU_UNIMPLEMENTED;
+}
+
+void GSRender::setupProjection(Camera *param_1, Frustum *param_2, bool bPerspectiveProj, bool param_4)
+{
+    // FUN_00515620
+    OTDU_UNIMPLEMENTED;
+}
+
+void GSRender::FUN_00513b50(Camera *param_1)
+{
+    // FUN_00513b50
+    OTDU_UNIMPLEMENTED;
+}
+
+void GSRender::FUN_00515000()
+{
+    // FUN_00515000
+    OTDU_UNIMPLEMENTED;
 }

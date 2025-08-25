@@ -18,6 +18,9 @@ class PostFXNodeDownscale;
 class PostFXNodeBlit;
 class FrameGraph;
 
+// TODO: Not sure what's this callback really is...
+using MngRegisterCallback_t = std::function<bool(void)>;
+
 struct RenderPass {
     RenderScene* pScene;
     Camera* pCamera;
@@ -125,6 +128,11 @@ public:
     inline RenderPass& getRenderPass() { return renderPasses.at(TPass); }
     inline FrameGraph* getFrameGraph() { return frameGraph; }
 
+    inline float getLODFactor() const { return lodFactor; }
+    inline const Viewport& getViewport2D() const { return viewport2D; }
+
+    inline Camera* getActiveCamera() const { return pActiveCamera; }
+
 public:
     GSRender();
     ~GSRender();
@@ -134,22 +142,35 @@ public:
     void draw( float deltaTime ) override;
     void terminate() override;
 
-    void beginFrame();
+    int32_t beginFrame();
     void endFrame();
+    void present(); // FUN_00513900
 
     void setLODQuality( const uint32_t qualityIndex );
 
     virtual void onWeatherConfigChange(WeatherConfig* param_1 ) override;
 
-    void flushDrawCommands(bool param_1);
+    int32_t flushDrawCommands(bool param_1);
+    uint32_t getFreeStencilMask();
+
+    void beginRenderScene(RenderScene* param_2);
+
+    void FUN_00512420();
+
+    void registerMngCallback(MngRegisterCallback_t& callback);
 
 private:
     static constexpr int32_t kNumSunRT = 8;
     static constexpr int32_t kNumSunDownscaleRT = 3;
     static constexpr int32_t kNumAvtScenes = 9;
 
+    using PresentCallback_t = std::function<void( void )>;
+
 private:
     class RenderDevice* pRenderDevice;
+
+    PresentCallback_t pCallbackBeforePresent;
+    PresentCallback_t pCallbackAfterPresent;
 
     std::vector<RenderPass> renderPasses;
 
@@ -180,6 +201,8 @@ private:
     Viewport viewportLRBack;
     Viewport viewportCockpitAvatar;
 
+    uint32_t layerBits;
+    uint32_t state;
     uint32_t renderWidth;
     uint32_t renderHeight;
     uint32_t frameIndex;
@@ -387,6 +410,11 @@ private:
 
     RenderScene* pActiveScene;
     Camera* pActiveCamera;
+    Frustum* pActiveFrustum;
+    FramebufferAttachments* pActiveFramebuffer;
+    Viewport* pActiveViewport;
+
+    std::list<MngRegisterCallback_t> registerCallbacks;
 
 private:
     bool initializeShaderCache();
@@ -407,6 +435,13 @@ private:
     void FUN_00990290();
     void FUN_00993df0();
     void FUN_00994330();
+
+    void bindSceneResources(RenderScene* param_2);
+    void bindActiveFramebufferToDevice();
+    void beginRenderPass();
+    void setupProjection(Camera* param_1, Frustum* param_2, bool bPerspectiveProj, bool param_4);
+    void FUN_00513b50(Camera* param_1);
+    void FUN_00515000();
 };
 
 extern GSRender* gpRender;
