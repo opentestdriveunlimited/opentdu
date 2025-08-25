@@ -4,6 +4,11 @@
 #include "render_file.h"
 #include "core/color.h"
 
+class Camera;
+struct Material;
+
+static constexpr uint32_t kMaxNumLOD = 4;
+
 struct InstanceDef {
     Eigen::Matrix4f Matrix;
     uint32_t Flags;
@@ -13,23 +18,38 @@ struct InstanceDef {
     std::array<LODDef, 4> LODs;
 };
 
-struct Instance {
-    uint64_t Hashcode;
-    uint32_t Flags;
+class Instance {
+public:
+    inline uint32_t& getFlagsWrite() { return flags; }
+    inline uint32_t getFlags() const { return flags; }
+    inline uint32_t getNumLODs() const { return numLODs; }
+    inline uint32_t getActiveLODIndex() const { return currentLODIndex; }
+    inline LOD& getLOD(const uint32_t param_1) { return lods[param_1]; }
+    inline RenderFile::Section* getMaterialBank() const { return pBankMat; }
+
+public:
+    Instance();
+    ~Instance();
+
+    void calculateLOD(Camera* param_2);
+
+private:
+    uint64_t hashcode;
+    uint32_t flags;
     RenderFile::Section* pBankMat;
-    Eigen::Matrix4f Matrix;
-    float BiggestScale;
-    float Determinant;
-    float DistanceToCurrentLOD;
-    uint32_t NumLODs;
-    uint32_t CurrentLODIndex;
+    Eigen::Matrix4f matrix;
+    float biggestScale;
+    float determinant;
+    float distanceToCurrentLOD;
+    uint32_t numLODs;
+    uint32_t currentLODIndex;
     Eigen::Matrix4f* pBoneArray;
-    ColorRGBA Color;
-    float UVTime;
-    uint16_t UVAFlags;
-    std::array<LOD, 4> LODs;
+    ColorRGBA color;
+    float uvTime;
+    uint16_t uvaFlags;
+    std::array<LOD, kMaxNumLOD> lods;
     uint32_t* pSetupFlags;
-    uint32_t SetupMask;
+    uint32_t setupMask;
     InstanceDef* pInstanceDef;
 };
 
