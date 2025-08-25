@@ -4,7 +4,7 @@ class Camera;
 struct Viewport;
 class RenderTarget;
 class DrawList;
-struct Instance;
+class Instance;
 struct HiearchyNode;
 struct InstanceWithCustomMaterial;
 struct FramebufferAttachments;
@@ -52,6 +52,11 @@ public:
     inline Frustum& getFrustumWrite() { return frustum; }
     inline uint32_t getFlags() const { return flags; }
     inline void setFlags(uint32_t newFlags) { flags = newFlags; }
+    inline Camera* getCamera() { return pActiveCamera; }
+    inline FramebufferAttachments* getFramebuffer() { return framebufferAttachments; }
+    inline Viewport* getViewport() { return pActiveViewport; }
+    inline bool isOrthoProjection() const { return bOrthoProjection; }
+    inline SetupGraph& getSetup() { return sceneSetup; }
 
 public:
     RenderScene();
@@ -68,6 +73,10 @@ public:
 
     void addLightSetup(LightSetupNode* param_2);
     void copyDrawCommands(RenderScene *param_2);
+
+    void removeDynamicDrawCommands();
+
+    void submitDrawCommands( uint32_t param_2 );
 
 private:
     Frustum     frustum;

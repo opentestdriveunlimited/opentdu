@@ -4,6 +4,12 @@
 #include "render/light.h"
 #include "render/gs_render.h"
 #include "render/frame_graph.h"
+#include "render/instance.h"
+#include "render/3dd.h"
+
+#include "core/mutex.h"
+
+static TestDriveMutex gDynamicDLMutex;
 
 RenderScene::RenderScene()
     : RenderObjectBase()
@@ -66,6 +72,7 @@ void RenderScene::create(Camera * param_2, Viewport * param_3, FramebufferAttach
 
 void RenderScene::enqueueDynamicDrawList(DrawList *pDrawList)
 {
+    ScopedMutexLock lock(&gDynamicDLMutex);
     pDrawCommands->DynamicDrawLists.push_back(pDrawList);
 }
 
@@ -146,4 +153,69 @@ void RenderScene::freeDrawCommands()
     }
 
     pDrawCommands = nullptr;
+}
+
+void RenderScene::removeDynamicDrawCommands()
+{
+    // FUN_00508f10
+    pDrawCommands->DynamicDrawLists.clear();
+    pDrawCommands->DynamicHiearchies.clear();
+    pDrawCommands->DynamicInstances.clear();
+    pDrawCommands->DynamicInstancesArrays.clear();
+    pDrawCommands->DynamicInstancesWithCustomMat.clear();
+}
+
+void RenderScene::submitDrawCommands(uint32_t param_2)
+{
+    // FUN_00508c10
+    gpRender->beginRenderScene(this);
+
+    for (DrawList* peVar2 : pDrawCommands->StaticDrawLists) {
+        OTDU_UNIMPLEMENTED;
+    }
+
+    for (Instance* peVar2 : pDrawCommands->StaticInstances) {
+        OTDU_UNIMPLEMENTED;
+    }
+
+    for (HiearchyNode* peVar2 : pDrawCommands->StaticHiearchies) {
+        OTDU_UNIMPLEMENTED;
+    }
+
+    for (DrawList* peVar2 : pDrawCommands->DynamicDrawLists) {
+        OTDU_UNIMPLEMENTED;
+    }
+    
+    for (Instance* peVar2 : pDrawCommands->DynamicInstances) {
+        OTDU_UNIMPLEMENTED;
+    }
+    
+    for (InstanceWithCustomMaterial* peVar6 : pDrawCommands->DynamicInstancesWithCustomMat) {
+        Instance* peVar7 = peVar6->pInstance;
+        if (((peVar7->getFlags() >> 2 & 1) == 0) && (peVar7->getNumLODs() != 0)) {
+            if ((peVar7->getFlags() >> 1 & 1) != 0) {
+                peVar7->calculateLOD(gpRender->getActiveCamera());
+            }
+
+            if (peVar7->getActiveLODIndex() < kMaxNumLOD) {
+                void* piVar8 = peVar7->getLOD(peVar7->getActiveLODIndex()).pUnknown;
+
+                uint32_t pMagic = *(uint32_t*)piVar8;
+                if (pMagic == kObjectMagic) {
+                    RenderObject* pObj = (RenderObject*)((uint8_t*)piVar8 + 4);
+                    OTDU_UNIMPLEMENTED;
+                }
+            }
+        }
+    }
+    
+    for (auto& peVar10 : pDrawCommands->DynamicInstancesArrays) {
+        for (Instance* peVar2 : *peVar10) {
+            OTDU_UNIMPLEMENTED;
+        }
+    }
+    
+    for (HiearchyNode* peVar2 : pDrawCommands->DynamicHiearchies) {
+        OTDU_UNIMPLEMENTED;
+    }
 }
