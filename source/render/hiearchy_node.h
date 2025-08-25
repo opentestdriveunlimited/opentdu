@@ -1,6 +1,6 @@
 #pragma once
 
-struct Instance;
+class Instance;
 
 struct HiearchyNode {
     uint32_t        Flags;
