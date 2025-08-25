@@ -10,6 +10,8 @@ public:
     virtual void execute() = 0;
     virtual uint32_t getType() const = 0;
 
+    uint32_t getFlags() const;
+
 protected:
     uint32_t flags;
 };
@@ -40,6 +42,8 @@ public:
     void removeFrustumNodes();
 
     bool addNode(SetupNode* node);
+    void bind(uint32_t param_1);
+    void unbind(uint32_t param_1);
 
 private:
     uint32_t flags;

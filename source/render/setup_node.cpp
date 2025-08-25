@@ -4,10 +4,25 @@
 static uint32_t gNumLights = 0; // DAT_00facb20
 static Light* DAT_00facb18 = nullptr; // DAT_00facb18
 
+// DAT_00fe7028
+struct NodeCacheEntry
+{
+    int32_t NumNodes = -1;
+    std::list<std::tuple<SetupNode*, uint32_t>> Nodes;
+};
+
+static NodeCacheEntry gNodeCache[4];
+static int32_t gRenderSetupCacheFlags = 0; // DAT_00fe7008
+
 SetupNode::SetupNode()
     : flags( 0 )
 {
 
+}
+
+uint32_t SetupNode::getFlags() const
+{
+    return flags;
 }
 
 LightSetupNode::LightSetupNode()
@@ -112,4 +127,47 @@ bool SetupGraph::addNode(SetupNode *node)
     flags |= 1 << (nodeType & 0x1f);
 
     return true;
+}
+
+void SetupGraph::bind(uint32_t param_1)
+{
+    for (SetupNode* peVar1 : nodes) {
+        if ((peVar1->getFlags() >> 8 & 1) != 0) {
+            uint32_t iVar2 = peVar1->getType();
+            gNodeCache[iVar2].NumNodes++;
+            gNodeCache[iVar2].Nodes.push_back(std::make_tuple(peVar1, param_1));
+            gRenderSetupCacheFlags | 1 << (iVar2 & 0x1f);
+        }
+    }
+}
+
+void SetupGraph::unbind(uint32_t param_1)
+{
+    // FUN_0050e640
+    if (gNodeCache[0].NumNodes != -1 
+        && std::get<1>(gNodeCache[0].Nodes.back()) == param_1) {
+        gNodeCache[0].NumNodes--;
+        gNodeCache[0].Nodes.pop_back();
+        if (gNodeCache[0].NumNodes == -1) {
+            gRenderSetupCacheFlags = gRenderSetupCacheFlags & 0xfffffffe;
+        }
+    }
+
+    if (gNodeCache[1].NumNodes != -1 
+        && std::get<1>(gNodeCache[1].Nodes.back()) == param_1) {
+        gNodeCache[1].NumNodes--;
+        gNodeCache[1].Nodes.pop_back();
+        if (gNodeCache[1].NumNodes == -1) {
+            gRenderSetupCacheFlags = gRenderSetupCacheFlags & 0xfffffffd;
+        }
+    }
+    
+    if (gNodeCache[2].NumNodes != -1 
+        && std::get<1>(gNodeCache[2].Nodes.back()) == param_1) {
+        gNodeCache[2].NumNodes--;
+        gNodeCache[2].Nodes.pop_back();
+        if (gNodeCache[2].NumNodes == -1) {
+            gRenderSetupCacheFlags = gRenderSetupCacheFlags & 0xfffffffb;
+        }
+    }
 }
