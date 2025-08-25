@@ -8,6 +8,7 @@
 
 #include "core/mutex.h"
 #include "core/locale.h"
+#include "core/ed_store.h"
 
 #include "tdu_instance.h"
 
@@ -20,6 +21,7 @@ GSPlayerData::GSPlayerData()
     , bForceUpdate( false )
     , bUseImperialUnits( true )
     , bTutorialCompleted( false )
+    , bIsOnline( false )
     , padSensitivity( -7.0f * 0.06666667f )
     , barSensitivity( 0.5f )
     , mouseSensitivity( 0.5f )
@@ -143,4 +145,22 @@ void GSPlayerData::setUnitSystem( const bool bUseImperial )
             pFlashPlayer->setVariableValue( "/:state_Metric", flashUnitsFlash );
         }
     }
+}
+
+bool GSPlayerData::isOnline() const
+{
+    return bIsOnline;
+}
+
+void GSPlayerData::FUN_008985d0(void *pExternalBuffer, int bufferLength)
+{
+    // FUN_008985d0
+    ScopedMutexLock lock(pMutex);
+    
+    edStore local_30;
+    local_30.bindExternalBuffer(pExternalBuffer, bufferLength);
+    local_30.clear();
+    local_30.writeInteger(0x34);
+
+    OTDU_UNIMPLEMENTED;
 }

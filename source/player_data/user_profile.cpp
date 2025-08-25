@@ -15,6 +15,8 @@ UserProfileRegister::UserProfileRegister()
     , activeProfileHashcode( 0 )
     , pathToProfile( "" )
     , listHashcode( 0ull )
+    , unknownDword( 0 )
+    , unknownDword2( 0 )
 {
 
 }
@@ -116,4 +118,16 @@ int32_t UserProfileRegister::getProfileIndex(uint64_t hashcode) const
     }
 
     return -1;
+}
+
+void UserProfileRegister::FUN_0060a160()
+{
+    // FUN_0060a160
+    unknownDword = 5;
+}
+
+uint32_t UserProfileRegister::FUN_00419de0() const
+{
+    // FUN_00419de0
+    return unknownDword2;
 }

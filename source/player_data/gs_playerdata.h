@@ -29,6 +29,9 @@ public:
     bool isHDREnabled() const;
 
     void setUnitSystem( const bool bUseImperial );
+    bool isOnline() const;
+
+    void FUN_008985d0(void *pExternalBuffer,int bufferLength);
 
 private:
     uint8_t bInitialized : 1;
@@ -37,6 +40,7 @@ private:
     uint8_t bTutorialCompleted : 1;
     bool bOnlineOps[9];
     uint8_t bUnusedFlag : 1;
+    uint8_t bIsOnline : 1;
 
     float padSensitivity;
     float barSensitivity;
