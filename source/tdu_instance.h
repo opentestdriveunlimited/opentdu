@@ -90,6 +90,16 @@ public:
 
     void flushPendingFileInstanciation(bool param_2);
 
+    void tickServices(float param_2,float param_3,int32_t param_4,bool param_5);
+    void drawServices(float deltaTime);
+
+    void tickGameMode(float param_1, float param_2, float deltaTime, float totalTime);
+
+    void FUN_0097c8b0();
+    void FUN_009b4650();
+
+    void updateFileInstanciation();
+
 private:
     std::vector< GameSystem* > registeredServices;
     uint32_t numRegisteredServices;
@@ -130,11 +140,9 @@ private:
 
     template<typename TGS>
     bool registerService();
-
-    void updateFileInstanciation();
 };
 
 extern TestDriveGameInstance* gpTestDriveInstance;
 
-static bool gbLoadingInProgress = false; // TODO: Where does it belong?
-
+extern bool gbLoadingInProgress; // DAT_010e72ec
+extern bool gbRequestedExit; // DAT_010e72f7

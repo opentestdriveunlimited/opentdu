@@ -60,6 +60,7 @@
 #include "player_data/gs_radio.h"
 
 #include "render/shaders/shader_register.h"
+#include "player_data/save_game_manager.h"
 
 #include "game/car_showcase/gm_car_showcase.h"
 #include "game/gm_video_bumper.h"
@@ -67,6 +68,15 @@
 const char** gpCmdLineArgs = nullptr;
 int32_t gCmdLineArgCount = 0;
 TestDriveGameInstance* gpTestDriveInstance = nullptr;
+
+ // TODO: Where does it belong?
+bool gbLoadingInProgress = false;
+bool gbRequestedExit = false;
+ // TODO: Where does it belong?
+
+bool DAT_010e723c = false;
+bool DAT_010e723d = false;
+bool DAT_010e7245 = false;
 
 // TODO: Move those to the right cpp/h
 static bool gWindowed = false;
@@ -183,147 +193,6 @@ static void InstanciationWorker(TestDriveGameInstance::FileInstanciationWorkerIn
     } while( true );
 }
 
-static bool BOOL_010e7364 = false;
-static bool gProfileChange = false;
-static bool BOOL_0143f6b5 = false;
-static bool BOOL_0143f6bc = false;
-static bool BOOL_0143f6bd = false;
-static bool BOOL_0143f6a8 = false;
-static uint32_t UINT_0143f6b8 = 0;
-static uint32_t UINT_0143f6b0 = 0;
-static uint32_t gPendingSavegameCount = 0;
-static TestDriveThread gSaveThread = {};
-static TestDriveEvent TDUEvent_0143f670 = {};
-
-static void* PTR_00fea2a0 = nullptr;
-
-static void SaveWorker(TestDriveEvent* param_1)
-{
-    OTDU_IMPLEMENTATION_SKIPPED( __FUNCTION__ );
-
-    do {
-        do {
-            param_1->waitForEvent();
-        } while (gpTestDriveInstance->hasRequestedExit());
-    } while( true );
-
-//     HANDLE pvVar1;
-//   int iVar2;
-//   undefined4 uVar3;
-//   char cVar4;
-//   TDUProfileList *pTVar5;
-//   int iVar6;
-//   char *pcVar7;
-//   char *pcVar8;
-//   bool bVar9;
-//   _SYSTEMTIME _Stack_120;
-//   _SYSTEMTIME _Stack_110;
-//   wchar_t awStack_100 [128];
-  
-//     do {
-//         do {
-//             param_1->waitForEvent();
-//         } while (gpTestDriveInstance->hasRequestedExit());
-
-//     TestDrive::LockMutex((TDUMutex *)((int)&TDUMutex_0143f6be.lpVtbl.Free + 2));
-//     param_1[1].Name[8] = '\0';
-//     param_1[1].Name[9] = '\0';
-//     param_1[1].Name[10] = '\0';
-//     param_1[1].Name[0xb] = '\0';
-//     pvVar1 = param_1[1].Semaphore;
-//     iVar2 = *(int *)param_1[1].Name;
-//     pTVar5 = TestDrive::GetProfileList();
-//     (*(code *)pTVar5->lpvtbl->field8_0x20)(1);
-//     if (param_1[1].Name[5] == '\0') {
-//       GetLocalTime(&_Stack_120);
-//       swprintf(awStack_100,0xf0b3c8,L"Player Save",(uint)_Stack_120.wMonth,(uint)_Stack_120.wDay,
-//                (uint)_Stack_120.wYear,(uint)_Stack_120.wHour,(uint)_Stack_120.wMinute,
-//                (uint)_Stack_120.wSecond);
-//       cVar4 = FUN_0097c0d0(s_playersave_00f7a038,awStack_100);
-// LAB_0097c689:
-//       if (cVar4 == '\0') goto LAB_0097c696;
-//       param_1[1].Name[8] = '\x01';
-//       param_1[1].Name[9] = '\0';
-//       param_1[1].Name[10] = '\0';
-//       param_1[1].Name[0xb] = '\0';
-//     }
-//     else {
-//       iVar6 = 0xb;
-//       bVar9 = true;
-//       pcVar7 = s_playersave_00f7a038;
-//       pcVar8 = "playersave";
-//       do {
-//         if (iVar6 == 0) break;
-//         iVar6 = iVar6 + -1;
-//         bVar9 = *pcVar7 == *pcVar8;
-//         pcVar7 = pcVar7 + 1;
-//         pcVar8 = pcVar8 + 1;
-//       } while (bVar9);
-//       if (bVar9) {
-//         GetLocalTime(&_Stack_110);
-//         swprintf(awStack_100,0xf0b3c8,L"Player Save",(uint)_Stack_110.wMonth,(uint)_Stack_110.wDay,
-//                  (uint)_Stack_110.wYear,(uint)_Stack_110.wHour,(uint)_Stack_110.wMinute,
-//                  (uint)_Stack_110.wSecond);
-//         cVar4 = FUN_0097c0d0("playersave2",awStack_100);
-//         if (cVar4 != '\0') {
-//           builtin_strncpy(s_playersave_00f7a038,"playersave2",0xc);
-//           goto LAB_0097c689;
-//         }
-//       }
-//       else {
-//         iVar6 = 0xc;
-//         bVar9 = true;
-//         pcVar7 = s_playersave_00f7a038;
-//         pcVar8 = "playersave2";
-//         do {
-//           if (iVar6 == 0) break;
-//           iVar6 = iVar6 + -1;
-//           bVar9 = *pcVar7 == *pcVar8;
-//           pcVar7 = pcVar7 + 1;
-//           pcVar8 = pcVar8 + 1;
-//         } while (bVar9);
-//         if (bVar9) {
-//           FormatStringWithDateAndTime(awStack_100,L"Player Save");
-//           cVar4 = FUN_0097c0d0("playersave",awStack_100);
-//           uVar3 = s_playersave_00f7a038._8_4_;
-//           if (cVar4 != '\0') {
-//             builtin_strncpy(s_playersave_00f7a038,"playersave",0xb);
-//             s_playersave_00f7a038[0xb] = SUB41(uVar3,3);
-//             goto LAB_0097c689;
-//           }
-//         }
-//       }
-// LAB_0097c696:
-//       DAT_010e7530 = gGameCFG.bCDFinal._4_4_;
-//     }
-//     if (param_1[1].Name[4] != '\0') {
-//       param_1[1].Name[4] = '\0';
-//       param_1[1].Semaphore = (HANDLE)((int)param_1[1].Semaphore + 1);
-//       TestDrive::ReleaseEvent(param_1);
-//     }
-//     *(int *)param_1[1].Name = (int)pvVar1 + (*(int *)param_1[1].Name - iVar2);
-//     TestDrive::UnlockMutex((TDUMutex *)((int)&TDUMutex_0143f6be.lpVtbl.Free + 2));
-//   } while( true );
-}
-
-static void CreateSaveThread(void)
-{
-    if (BOOL_010e7364) 
-    {
-        gSaveThread.initialize( (TestDriveThread::StartRoutine_t)SaveWorker, &TDUEvent_0143f670,0x3c00,0);
-        gSaveThread.setPriority(TP_Normal);
-    }
-
-    gPendingSavegameCount = 0;
-    UINT_0143f6b0 = 0;
-    gProfileChange = false;
-    BOOL_0143f6b5 = true;
-    UINT_0143f6b8 = 0;
-    BOOL_0143f6bc = false;
-    BOOL_0143f6bd = false;
-    BOOL_0143f6a8 = false;
-}
-
 int32_t TestDrive::InitAndRun( const char** pCmdLineArgs, const int32_t argCount )
 {
     strncpy( gORBAddress, kDefaultORBAddress, sizeof( char ) * 26 );
@@ -334,7 +203,7 @@ int32_t TestDrive::InitAndRun( const char** pCmdLineArgs, const int32_t argCount
     gArgParserRegister.parseCmdLineArgs( gpCmdLineArgs, gCmdLineArgCount );
 
     TestDriveGameInstance gameInstance( pCmdLineArgs, argCount );
-    CreateSaveThread();
+    gSavegameManager.create();
 
     if ( !IsAlreadyRunning() ) {
         bool bCheckSuccessful = HasEnoughSysMemAvail();
@@ -502,10 +371,6 @@ void TestDriveGameInstance::mainLoop()
         //   (*((GMBase_vtable *)(pGameMode->super).super.super.lpVtbl)->~GameMode)(pGameMode,true);
         // }
         // goto switchD_0097ce90_caseD_3;
-
-        for ( GameSystem* service : registeredServices ) {
-            service->tick( deltaTime );
-        }
     }
 
     OTDU_LOG_DEBUG( "Exit requested\n" );
@@ -558,11 +423,10 @@ bool TestDriveGameInstance::initialize()
         setNextGameMode( GM_Login );
     } else {
         switchToWishedGameMode();
-        OTDU_UNIMPLEMENTED;
-        // int32_t iVar4 = gpRender->getRenderDevice()->present(true);
-        // if (iVar4 == 4) {
-        //     return false;
-        // }
+        int32_t iVar4 = gpRender->flushDrawCommands(true);
+        if (iVar4 == 4) {
+            return false;
+        }
     }
     gameInitStep = 0;
 
@@ -731,8 +595,104 @@ void TestDriveGameInstance::flushPendingFileInstanciation(bool param_2)
     }
 }
 
+void TestDriveGameInstance::tickServices(float param_2, float param_3, int32_t param_4, bool param_5)
+{
+    // FUN_009b4830
+    if (param_5) {
+        // Never called.
+        // Branch looks identical to other block, so this is most likely a debug leftover...
+        OTDU_UNIMPLEMENTED;
+    } else {
+        if (numRegisteredServices != 0) {
+            for (GameSystem* pService : registeredServices) {
+                if (pService->getIndex() == param_4 && !pService->isPaused()) {
+                    pService->tick(param_3, param_2);
+                    // FUN_009b4000() // TODO: Some weird memory check (most likely debug leftover)
+                }
+            }
+        }
+    }
+}
+
+void TestDriveGameInstance::drawServices(float deltaTime)
+{
+    // FUN_009b4780
+    if (DAT_010e7245) {
+        OTDU_UNIMPLEMENTED;
+    } else {
+        if (numRegisteredServices != 0) {
+            for (GameSystem* pService : registeredServices) {
+                if (!pService->isPaused()) {
+                    pService->draw(deltaTime);
+                    // FUN_009b4000() // TODO: Some weird memory check (most likely debug leftover)
+                }
+            }
+        }
+    }
+}
+
+void TestDriveGameInstance::tickGameMode(float param_1, float param_2, float deltaTime, float totalTime)
+{
+    // FUN_009b4ac0
+    FUN_0097c8b0();
+    tickServices(deltaTime, totalTime, 0xffffffff, DAT_010e723c);
+
+    mainLoopInfos.DeltaTime = deltaTime;
+    mainLoopInfos.bDone = false;
+    mainLoopInfos.bDirtyManagers = false;
+    mainLoopInfos.bDirtyServices = true;
+    mainLoopInfos.Time = totalTime;
+
+    tickServices(deltaTime, totalTime, mainLoopInfos.CoreIndex, DAT_010e723d);
+    mainLoopInfos.bDone = true;
+
+    FUN_009b4650();
+    gpActiveGameMode->tick(deltaTime, totalTime);
+
+    mainLoopInfos.DeltaTime = deltaTime;
+    mainLoopInfos.bDone = false;
+    mainLoopInfos.bDirtyManagers = true;
+    mainLoopInfos.bDirtyServices = false;
+    mainLoopInfos.Time = totalTime;
+
+    gpActiveGameMode->tickManagers(deltaTime, totalTime, mainLoopInfos.CoreIndex, DAT_010e723d);
+    mainLoopInfos.bDone = true;
+    FUN_009b4650();
+}
+
+void TestDriveGameInstance::FUN_0097c8b0()
+{
+    // FUN_0097c6e0 (inlined)
+    OTDU_UNIMPLEMENTED;
+}
+
+void TestDriveGameInstance::FUN_009b4650()
+{
+    // FUN_009b4650
+    bool bVar1;
+    int local_8;
+    int local_4;
+
+    bVar1 = true;
+    do {
+        local_4 = 0;
+        local_8 = 0;
+        do {
+            if (mainLoopInfos.bDone == true) {
+                local_4 = local_4 + 1;
+            }
+            local_8 = local_8 + 1;
+        } while (local_8 < 1);
+
+        if (local_4 == 1) {
+            bVar1 = false;
+        }
+    } while (bVar1);
+}
+
 void TestDriveGameInstance::updateFileInstanciation()
 {
+    // FUN_009b4710
     bool bVar1 = fileInstanciation.bDone;
     if (pendingStreamedResources.size() < 1) {
         if (bVar1) {

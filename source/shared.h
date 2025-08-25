@@ -15,6 +15,7 @@
 #include <locale>
 #include <codecvt>
 #include <stdio.h>
+#include <time.h>
 
 #include <Eigen/Dense>
 
