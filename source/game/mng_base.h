@@ -16,7 +16,10 @@ public:
     virtual void pause() {}
     virtual void terminate() {}
 
+    uint32_t getIndex() const;
+
 protected:
     Manager* pPreviousManager;
     Manager* pNextManager;
+    uint32_t index;
 };

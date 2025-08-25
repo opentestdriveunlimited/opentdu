@@ -12,3 +12,13 @@ void GameSystem::reset()
 {
     OTDU_UNIMPLEMENTED;
 }
+
+bool GameSystem::isPaused() const
+{
+    return bPaused;
+}
+
+uint32_t GameSystem::getIndex() const
+{
+    return index;
+}

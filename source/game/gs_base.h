@@ -15,6 +15,9 @@ public:
     virtual void pause() {};
     virtual void reset();
 
+    bool isPaused() const;
+    uint32_t getIndex() const;
+
 protected:
     TestDriveGameInstance*  pGameInstance;
     uint32_t                index;
