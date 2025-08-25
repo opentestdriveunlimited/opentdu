@@ -32,3 +32,33 @@ bool CarState::isIndoor() const
 {
     return bIsIndoor;
 }
+
+bool CarState::isReversing() const
+{
+    return body.bIsReversing;
+}
+
+bool CarState::isBraking() const
+{
+    return body.bIsBraking;
+}
+
+bool CarState::isIndicatingLeft() const
+{
+    return body.bIndicatingLeft;
+}
+
+bool CarState::isIndicatingRight() const
+{
+    return body.bIndicatingRight;
+}
+
+bool CarState::headlightsOn() const
+{
+    return body.bHeadlightsOn;
+}
+
+bool CarState::hazardLightsOn() const
+{
+    return body.bHazardLightsOn;
+}

@@ -201,14 +201,14 @@ private:
 
     std::array<Instance*, 4> exhaustsDummies;
 
-    std::vector<HiearchyNode*> flaresRL;
-    std::vector<HiearchyNode*> flaresRR;
-    std::vector<HiearchyNode*> flaresFL;
-    std::vector<HiearchyNode*> flaresFR;
-    std::vector<Instance*> flares;
+    std::array<HiearchyNode*, 15> flaresRL;
+    std::array<HiearchyNode*, 15> flaresRR;
+    std::array<HiearchyNode*, 15> flaresFL;
+    std::array<HiearchyNode*, 15> flaresFR;
+    std::array<Instance*, 60> flares;
 
     std::vector<VehicleSceneNode> childrenNodes;
-    std::stack<Instance*> alphaInstances;
+    std::list<Instance*> alphaInstances;
 
     VehicleParticles particles;
 
@@ -219,4 +219,8 @@ private:
 
 private:
     void updateLights();
+    void updateCarAlpha();
+
+    void registerCarAlphaInstances(uint32_t param_2, bool param_3);
+    void buildCarAlphaInstances();
 };

@@ -157,6 +157,13 @@ public:
     Eigen::Vector3f getWorldPosition() const;
     bool isIndoor() const;
 
+    bool isReversing() const;
+    bool isBraking() const;
+    bool isIndicatingLeft() const;
+    bool isIndicatingRight() const;
+    bool headlightsOn() const;
+    bool hazardLightsOn() const;
+    
 private:
     static constexpr const uint32_t kMaxNumWheels = 4;
 
