@@ -22,6 +22,9 @@ public:
 class GSFlash : public GameSystem {
 public:
     const char* getName() const override { return "Service : Flash"; }
+    inline void lockMutex() { mutex.lock(); }
+    inline void unlockMutex() { mutex.unlock(); }
+    inline ScopedMutexLock scopedLock() { return ScopedMutexLock(&mutex); }
 
 public:
     GSFlash();
