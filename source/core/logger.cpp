@@ -35,7 +35,7 @@ void GlobalLogger::Write( const char* pFormat, ... )
     va_end( argList );
 
     // Bad format/buffer overrun; early exit to avoid hard crash.
-    if ( bufferOutputSize == -1 ) {
+    if ( bufferOutputSize == -1ull ) {
         OTDU_TRIGGER_BREAKPOINT;
         return;
     }
