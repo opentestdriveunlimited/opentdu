@@ -8,6 +8,13 @@ struct TestDriveString8
         uint64_t    AsInteger64;
     };
 
+    TestDriveString8& operator = (const char* pString)
+    {
+        OTDU_ASSERT(strlen(pString) <= 8);
+        strncpy(AsChar, pString, strlen(pString));
+        return *this;
+    }
+
     inline char& operator [] ( const uint32_t idx )
     {
         return AsChar[idx];
