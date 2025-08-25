@@ -31,6 +31,11 @@ public:
         return name.c_str();
     }
 
+    inline uint32_t getObjectType() const
+    {
+        return objectType;
+    }
+
 protected:
     uint32_t objectType;
     std::string name;
