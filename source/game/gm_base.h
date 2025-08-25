@@ -84,12 +84,16 @@ public:
 
     virtual void initialize() {}
     virtual void reset() {}
+    virtual void tick(float deltaTime, float totalTime) {}
+    virtual void draw(float deltaTime, float totalTime) {}
 
     bool initializeAsync();
     void mainLoop(TestDriveGameInstance* param_1);
-    void stepLogic(float deltaTime, float totalTime);
+    void stepLogic(float param_1, float deltaTime, float totalTime);
+    void submitDrawCommands(float deltaTime, float totalTime);
 
     void setTransitionFlags( const uint32_t flags );
+    void tickManagers(float param_2,float param_3,int32_t param_4,bool param_5);
 
 protected:
     uint32_t    transitionFlags;
@@ -108,6 +112,7 @@ protected:
 
 protected:
     void registerManager(Manager* pManager);
+    void drawLoadingScreen();
 };
 
 extern GameMode* gpActiveGameMode;
