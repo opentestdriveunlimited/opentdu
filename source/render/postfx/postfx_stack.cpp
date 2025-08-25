@@ -1,6 +1,7 @@
 #include "shared.h"
 #include "postfx_stack.h"
 
+#include "render/gs_render.h"
 #include "postfx_instance.h"
 
 PostFXStack gPostFXStack = {};
@@ -9,8 +10,9 @@ PostFXStack gPostFXStack = {};
 static constexpr uint32_t kMaxNumEffect = 64;
 
 PostFXStack::PostFXStack()
+    : isMSAAEnabled( 0 )
 {
-
+    renderTargets.fill( nullptr );
 }
 
 PostFXStack::~PostFXStack()
@@ -32,4 +34,22 @@ bool PostFXStack::releaseResources()
     }
 
     return true;
+}
+
+void PostFXStack::beginPass()
+{
+    // FUN_005f5cc0
+    for (uint32_t i = 0; i < kMaxSimultaneousRT; i++) {
+        renderTargets[i] = gpRender->getRenderDevice()->getBoundRenderTargetAtIndex(i);
+    }
+
+    isMSAAEnabled = gpRender->getRenderDevice()->isFramebufferUsingMSAA();
+}
+
+void PostFXStack::endPass()
+{
+    // FUN_005f5b70
+    if (gpRender->getRenderDevice()->isFramebufferUsingMSAA() != isMSAAEnabled) {
+        gpRender->getRenderDevice()->setMSAAState(isMSAAEnabled);
+    }
 }

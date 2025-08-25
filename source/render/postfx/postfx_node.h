@@ -34,6 +34,8 @@ public:
     bool connect(PostFXNode* pInput, uint32_t outputSlotID, uint32_t inputSlotID);
 
     void setOutput(RenderTarget* param_2, uint32_t param_3);
+    bool prepare();
+    bool execute();
 
 protected:
     PostFX* pPostFX;
@@ -48,7 +50,7 @@ protected:
     uint32_t flags;
     uint32_t unknownMask;
 
-    uint8_t bInitialized : 1;
+    uint8_t state : 2;
 
     std::string name;
 };

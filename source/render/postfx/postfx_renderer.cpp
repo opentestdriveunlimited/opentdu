@@ -63,7 +63,7 @@ void PostFXRenderer::createResources(RenderDevice *pRenderDevice)
         uVar3 = uVar3 + 0xf & 0xfffffff0;
         p2DMBuffer = TestDrive::Alloc( uVar3 );
     }
-    pMaterial = render2DM.create( p2DMBuffer, 0xfffffffffffff000, 0, 2, 0x20, 0 );
+    pMaterial = Render2DM::Create( p2DMBuffer, 0xfffffffffffff000, 0, 2, 0x20, 0 );
     
     MaterialShaderParameterArray* peVar5 = ( MaterialShaderParameterArray* )pMaterial->getParameterByIndex( 0 );
     if ( peVar5->NumParameters != 0 ) {

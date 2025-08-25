@@ -6,11 +6,12 @@
 #include "render/shaders/shader_register.h"
 
 #include "postfx_stack.h"
+#include "postfx_instance.h"
 
 PostFXNode::PostFXNode(uint32_t param_2, uint32_t param_3)
     : RenderObjectBase()
     , pPostFX( nullptr )
-    , bInitialized(false )
+    , state( 0 )
     , numOutput(param_3)
     , numInput(param_2)
     , flags(1)
@@ -74,4 +75,46 @@ void PostFXNode::setOutput(RenderTarget *param_2, uint32_t param_3)
 {
     OTDU_ASSERT( param_3 < kMaxNumLink );
     pRenderTargets[param_3] = param_2;
+}
+
+bool PostFXNode::prepare()
+{
+    // FUN_0050c030
+    state = 0;
+    for (uint32_t uVar2 = 0; uVar2 < numInput; uVar2++) {
+        if (inputs[uVar2].pPostFX == nullptr) {
+            return false;
+        }
+        inputs[uVar2].pPostFX->prepare();
+    }
+
+    return true;
+}
+
+bool PostFXNode::execute()
+{
+    // FUN_0050c070
+    if (pPostFX == nullptr) {
+        return false;
+    }
+
+    if (state != 0) {
+        return state == 1;
+    }
+
+    for (uint32_t uVar4 = 0; uVar4 < numInput; uVar4++) {
+        if (inputs[uVar4].pPostFX == nullptr) {
+            return false;
+        }
+
+        bool bVar1 = inputs[uVar4].pPostFX->execute();
+        if (!bVar1) {
+            return false;
+        }
+    }
+
+    bool bVar2 = pPostFX->execute();
+    state = 2 - ((bVar2) ? 1 : 0);
+
+    return state == 1;
 }
