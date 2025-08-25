@@ -525,6 +525,17 @@ void* MaterialShaderParameterArray::getParameterDataByIndex( uint32_t param_2 )
     return iVar3;
 }
 
+MaterialShaderParameter *MaterialShaderParameterArray::getLastParameter()
+{
+    return getParameterByIndex(NumParameters - 1);
+}
+
+MaterialShaderParameter* MaterialShaderParameterArray::getParameterByIndex( const uint32_t index )
+{
+    MaterialShaderParameter* pParameterIt = ( MaterialShaderParameter* )pParameters;
+    return pParameterIt + index;
+}
+
 MaterialLayer* MaterialParameter::getLayer( const uint32_t index )
 {
     // TODO: This is a direct translation from ASM (and is quite frankly horrible to read). Refactor.

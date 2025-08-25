@@ -105,6 +105,8 @@ struct MaterialShaderParameterArray : public MaterialParameter
     MaterialShaderParameter* getParameter( const uint32_t type, uint32_t* pOutParamIndex = nullptr );
     void* getParameterData( const uint32_t type );
     void* getParameterDataByIndex( uint32_t index );
+    MaterialShaderParameter* getLastParameter();
+    MaterialShaderParameter* getParameterByIndex( const uint32_t index );
 };
 
 struct MaterialTerrainParameter : public MaterialParameter {
