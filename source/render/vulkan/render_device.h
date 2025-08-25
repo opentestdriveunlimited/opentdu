@@ -61,6 +61,9 @@ public:
     inline uint32_t getInternalFrameIndex() const { return frameIndex % PendingFrameCount; }
     inline void setTime(float param_2) { time = param_2; }
 
+    inline bool isInitialized() const { return device != VK_NULL_HANDLE; }
+    inline bool isDeviceLost() const { return bDeviceLost; }
+
 public:
     RenderDevice();
     ~RenderDevice();
@@ -113,6 +116,14 @@ public:
 
     void blit(Render2DB* pSrc, RenderTarget* pDst, const bool bLinearFiltering);
 
+    void resetCachedStates();
+
+    void present();
+
+    RenderTarget* getBoundRenderTargetAtIndex( uint32_t param_1 );
+    bool isFramebufferUsingMSAA() const;
+    void setMSAAState(bool param_1);
+
 private:
     VkInstance          instance;
     std::vector<const char*> instanceExtensions;
@@ -153,6 +164,9 @@ private:
     float shaderConstants[2][kNumShaderConstants];
 
     float time;
+
+    uint8_t bDeviceLost : 1;
+    uint8_t bIsMainRTUsingMSAA : 1;
 
 private:
     QueueInfo getQueue( VkQueueFlagBits flags ) const;

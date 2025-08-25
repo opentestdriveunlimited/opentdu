@@ -182,6 +182,8 @@ RenderDevice::RenderDevice()
     , activeCmdBuffer( VK_NULL_HANDLE )
     , framebufferInfos{}
     , time(0.0f)
+    , bDeviceLost( false )
+    , bIsMainRTUsingMSAA( false )
 {
     deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     instanceExtensions.push_back(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
@@ -596,6 +598,32 @@ void RenderDevice::blit(Render2DB *pBound2DB, RenderTarget *pDst, const bool bLi
                     &region,
                     VK_FILTER_NEAREST
     );
+}
+
+void RenderDevice::resetCachedStates()
+{
+    // FUN_00513cd0
+}
+    
+void RenderDevice::present()
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+RenderTarget *RenderDevice::getBoundRenderTargetAtIndex(uint32_t param_1)
+{
+    // FUN_005f16d0
+    return pBoundRenderTargets[param_1];
+}
+
+bool RenderDevice::isFramebufferUsingMSAA() const
+{
+    return bIsMainRTUsingMSAA;
+}
+
+void RenderDevice::setMSAAState(bool param_1)
+{
+    bIsMainRTUsingMSAA = param_1;
 }
 
 GPUShader* RenderDevice::createShader( eShaderType type, const void* pBytecode, const size_t bytecodeSize )
