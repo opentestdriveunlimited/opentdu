@@ -2,8 +2,18 @@
 #include "frame_graph.h"
 
 #include "render/render_scene.h"
+#include "render/gs_render.h"
+#include "render/gs_render_helper.h"
+
+#include "render/postfx/postfx_stack.h"
+#include "render/postfx/postfx_node.h"
+
+uint32_t    DAT_00fe77c4 = 0;
+uint32_t    DAT_00fe77c8 = 0;
+uint32_t    DAT_00fe77cc = 0;
 
 FrameGraph::FrameGraph()
+    : bRemoveDynamicDrawCmds( false )
 {
 }
 
@@ -41,8 +51,68 @@ void FrameGraph::removeObject(RenderObjectBase *pObject)
     std::remove_if(renderNodes.begin(), renderNodes.end(), [=](RenderObjectBase* x) { return x == pObject; });
 }
 
+void FrameGraph::submitDrawCommands(bool param_2)
+{
+    // FUN_0050ea50
+    if (param_2) {
+        uint32_t uVar5 = 0;
+        while (!clearCommands.empty()) {
+            ClearCommand& cmd = clearCommands.front();
+            processClearCommand(cmd);
+            clearCommands.pop();
+        }
+    }
+
+    gpActiveRenderScene = nullptr;
+    DAT_00fe77c4 = 0;
+    DAT_00fe77c8 = 0;
+    DAT_00fe77cc = 0;
+
+    if (param_2) {
+        uint32_t uVar5 = 0;
+        for (RenderObjectBase* pNode : renderNodes) {
+            uint32_t puVar2 = pNode->getObjectType();
+            if (puVar2 == 0) {
+                RenderScene* peVar1 = (RenderScene*)pNode;
+                gpActiveRenderScene = peVar1;
+                peVar1->getSetup().bind(0);
+                peVar1->submitDrawCommands(uVar5);
+                gpRender->FUN_00512420();
+                peVar1->getSetup().unbind(0);
+            } else if (puVar2 == 1) {
+                PostFXNode* peVar1 = (PostFXNode*)pNode;
+
+                gPostFXStack.beginPass();
+                bool bVar3 = peVar1->prepare();
+                if (bVar3) {
+                    peVar1->execute();
+                }
+                gPostFXStack.endPass();
+            }
+            uVar5++;
+        }
+    }
+
+    if (bRemoveDynamicDrawCmds) {
+        for (RenderObjectBase* pNode : renderNodes) {
+            uint32_t puVar2 = pNode->getObjectType();
+            if (puVar2 == 0) {
+                RenderScene* peVar1 = (RenderScene*)pNode;
+                peVar1->removeDynamicDrawCommands();
+            }
+        }
+    }
+}
+
 void FrameGraph::pushBackObject(RenderObjectBase *param_2)
 {
     // FUN_004047a0
     renderNodes.push_back(param_2);
+}
+
+void FrameGraph::processClearCommand(ClearCommand &cmd)
+{
+    // FUN_005fcfc0
+    RenderDevice* renderDevice = gpRender->getRenderDevice();
+    OTDU_UNIMPLEMENTED;
 }
