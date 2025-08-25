@@ -4,6 +4,9 @@ class Camera {
 public:
     inline float getFOV() const { return fov; }
     inline float getAspectRatio() const { return aspectRatio; }
+    inline const Eigen::Matrix4f& getWorldToCam() const { return worldToCam; }
+    inline const Eigen::Matrix4f& getCamToWorld() const { return invWorldToCam; }
+    inline float getTanHalfFov() const { return tanHalfFov; }
 
 public:
     Camera();
