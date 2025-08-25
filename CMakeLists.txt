@@ -227,7 +227,12 @@ file( GLOB OTDU_SRC "${OTDU_SRC_FOLDER}/tdu_instance.cpp"
                     "${OTDU_SRC_FOLDER}/world/weather/weather_desc.cpp"
                     "${OTDU_SRC_FOLDER}/world/weather/weather_config.cpp"
                     "${OTDU_SRC_FOLDER}/world/weather/gs_weather.cpp"
-                    "${OTDU_SRC_FOLDER}/gs_cd_key.cpp" )
+                    "${OTDU_SRC_FOLDER}/gs_cd_key.cpp"
+                    "${OTDU_SRC_FOLDER}/audio/audio_device.cpp"
+                    "${OTDU_SRC_FOLDER}/core/ed_store.cpp"
+                    "${OTDU_SRC_FOLDER}/game/vehicle/mng_car_alpha.cpp"
+                    "${OTDU_SRC_FOLDER}/player_data/save_game_manager.cpp"
+                    "${OTDU_SRC_FOLDER}/render/instance.cpp"  )
 
 file( GLOB OTDU_INC "${OTDU_SRC_FOLDER}/tdu_instance.h"
                     "${OTDU_SRC_FOLDER}/gs_pub.h"
@@ -418,7 +423,11 @@ file( GLOB OTDU_INC "${OTDU_SRC_FOLDER}/tdu_instance.h"
                     "${OTDU_SRC_FOLDER}/world/weather/hdri_config.h"
                     "${OTDU_SRC_FOLDER}/world/weather/gs_weather.h"
                     "${OTDU_SRC_FOLDER}/gs_timer.h"
-                    "${OTDU_SRC_FOLDER}/gs_cd_key.h"  )
+                    "${OTDU_SRC_FOLDER}/gs_cd_key.h"
+                    "${OTDU_SRC_FOLDER}/audio/audio_device.h"
+                    "${OTDU_SRC_FOLDER}/core/ed_store.h"
+                    "${OTDU_SRC_FOLDER}/game/vehicle/mng_car_alpha.h"
+                    "${OTDU_SRC_FOLDER}/player_data/save_game_manager.h" )
 
 file( GLOB OTDU_THIRDPARTY_SRC "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/city.cc"
                                "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/city.h"
