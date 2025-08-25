@@ -58,7 +58,7 @@ bool GSFlash::initialize( TestDriveGameInstance* )
     // Null Material Fallback
     p2DMMemory[0] = TestDrive::Alloc(nullMaterialSize);
 
-    pNullMaterial = render2DM[0].create(p2DMMemory[0], 0x230588678a67836d, 0, 0, 0, 0);
+    pNullMaterial = Render2DM::Create(p2DMMemory[0], 0x230588678a67836d, 0, 0, 0, 0);
     pNullMaterial->DepthTest = '\x01';
     pNullMaterial->DepthWrite = '\x02';
     pNullMaterial->AlphaTest = '\0';
@@ -83,7 +83,7 @@ bool GSFlash::initialize( TestDriveGameInstance* )
     // Masked Material Fallback
     p2DMMemory[1] = TestDrive::Alloc(nullMaterialSize);
 
-    pMaskMaterial = render2DM[1].create(p2DMMemory[0], 0x230588678a67836d, 0, 0, 0, 0);
+    pMaskMaterial = Render2DM::Create(p2DMMemory[0], 0x230588678a67836d, 0, 0, 0, 0);
     pMaskMaterial->DepthTest = '\x02';
     pMaskMaterial->DepthWrite = '\x01';
     pMaskMaterial->AlphaTest = '\x01';

@@ -107,7 +107,7 @@ void Render2DM::bindUVAnimationReference( const RenderUVA* param_2 )
     OTDU_UNIMPLEMENTED;
 }
 
-Material* Render2DM::create( void* param_1, uint64_t param_2, int32_t param_3, uint32_t param_4, uint32_t param_5, uint32_t param_6 )
+Material* Render2DM::Create( void* param_1, uint64_t param_2, int32_t param_3, uint32_t param_4, uint32_t param_5, uint32_t param_6 )
 {
     int32_t iVar3 = param_4 * 0x10 + param_5;
     memset(param_1, 0, iVar3 + 0x2d3U & 0xfffffff0);
