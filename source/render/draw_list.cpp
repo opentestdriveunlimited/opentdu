@@ -330,6 +330,16 @@ void DrawList::setActiveMaterial(Material *pMaterial)
     activeCommand.pMaterial = pMaterial;
 }
 
+void DrawList::setActiveTransformMatrix(Eigen::Matrix4f &matrix)
+{
+    activeCommand.TransformMat = matrix;
+}
+
+void DrawList::setIdentityTransform()
+{
+    activeCommand.TransformMat = Eigen::Matrix4f::Identity();
+}
+
 void DrawList::initializePrimitiveList()
 {
     PrimtiveVertexAttributes listVertexAttributes = generateListVertexAttributes();

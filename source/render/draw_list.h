@@ -143,6 +143,8 @@ public:
     void setDiffuse( const uint32_t index, const ColorRGBA& color );
     void setTexCoords( const uint32_t index, const Eigen::Vector2f& coords );
     void setActiveMaterial( Material* pMaterial );
+    void setActiveTransformMatrix( Eigen::Matrix4f& matrix );
+    void setIdentityTransform();
 
 private:
     struct Pool {
