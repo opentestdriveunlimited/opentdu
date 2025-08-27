@@ -12,4 +12,8 @@ public:
 
     bool initialize( TestDriveGameInstance* ) override;
     void terminate() override;
+
+    void FUN_0080d330();
 };
+
+extern GSParticles* gpParticles;
