@@ -4,7 +4,7 @@
 
 enum eLocale : uint32_t 
 {
-    L_Japenese = 0,
+    L_Japanese = 0,
     L_English = 1,
     L_French = 2,
     L_Spanish = 3,
@@ -12,7 +12,7 @@ enum eLocale : uint32_t
     L_Italian = 5,
     L_Dutch = 6,
     L_Portuguese = 7,
-    L_Chinese = 7,
+    L_Chinese = 8,
     L_Korean = 9,
     L_Russian = 10,
     L_Polish = 11,
@@ -88,7 +88,7 @@ static eLocale GetLocaleFromSystem()
 {
     LCID LVar1 = GetUserDefaultLCID();
     switch ( PRIMARYLANGID( LVar1 ) ) {
-    case 4: // Chinese
+    case LANG_CHINESE: // Chinese
         if ( SUBLANGID( LVar1 ) == 0x400 ) { // SUBLANGID
             return L_Chinese;
         }

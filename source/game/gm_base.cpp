@@ -438,28 +438,28 @@ bool GameMode::FUN_0097ed60()
 
                 eLocale eVar13 = GetLocaleFromSystem();
                 switch (eVar13) {
-                case eLocale::L_English:
+                case L_Japanese:
                     iVar15 = 5;
                     break;
                 default:
                     iVar15 = 0;
                     break;
-                case eLocale::L_Italian:
+                case L_French:
                     iVar15 = 1;
                     break;
-                case eLocale::L_German:
+                case L_Spanish:
                     iVar15 = 4;
                     break;
-                case eLocale::L_Spanish:
+                case L_German:
                     iVar15 = 3;
                     break;
-                case eLocale::L_Japenese:
+                case L_Italian:
                     iVar15 = 2;
                     break;
-                case eLocale::L_Russian|L_Italian:
+                case L_Russian:
                     iVar15 = 8;
                     break;
-                case eLocale::L_Russian|L_German:
+                case L_Polish:
                     iVar15 = 9;
                     break;
                 };
