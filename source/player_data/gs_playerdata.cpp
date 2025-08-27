@@ -10,6 +10,8 @@
 #include "core/locale.h"
 #include "core/ed_store.h"
 
+#include "game/scenaric/gs_scenaric.h"
+
 #include "tdu_instance.h"
 
 GSPlayerData* gpPlayerData = nullptr;
@@ -22,6 +24,9 @@ GSPlayerData::GSPlayerData()
     , bUseImperialUnits( true )
     , bTutorialCompleted( false )
     , bIsOnline( false )
+    , field526850_0x967d4( false )
+    , field526864_0x967e5( false )
+    , field526854_0x967d8( 0 )
     , padSensitivity( -7.0f * 0.06666667f )
     , barSensitivity( 0.5f )
     , mouseSensitivity( 0.5f )
@@ -163,4 +168,20 @@ void GSPlayerData::FUN_008985d0(void *pExternalBuffer, int bufferLength)
     local_30.writeInteger(0x34);
 
     OTDU_UNIMPLEMENTED;
+}
+
+bool GSPlayerData::FUN_00897990()
+{
+    // FUN_00897990
+    eGameMode eVar1 = gpTestDriveInstance->getActiveGameMode();
+
+    if (!field526850_0x967d4 || eVar1 == GM_Login || eVar1 == GM_VideoBumper) {
+        return false;
+    }
+
+    if ((eVar1 == GM_Living && !field526864_0x967e5) && !gpScenaric->getIntroTutorial().isActive()) {
+        return false;
+    }
+
+    return field526854_0x967d8 == 2;
 }

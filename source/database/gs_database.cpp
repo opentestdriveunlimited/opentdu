@@ -1042,9 +1042,13 @@ int32_t GSDatabase::setFlashLocalization(int32_t param_2, uint32_t param_3, Flas
         if ((uVar3 & pDVar5.Flags) != 0) {
             if (pDVar5.Flags < 0) {
                 if (gpMngFlashLocalize != nullptr) {
-                    iVar4 = gpMngFlashLocalize->FUN_00716f60(pDVar5.Name);
+                    TestDriveString8 str;
+                    str = pDVar5.Name;
+                    iVar4 = gpMngFlashLocalize->FUN_00716f60(str.AsChar);
                     if (iVar4 == 0) {
-                        gpMngFlashLocalize->FUN_00717ff0(param_4, pDVar5.Name, pDVar5.FrontEndResourceName, i);
+                        TestDriveString8 str2;
+                        str2 = pDVar5.FrontEndResourceName;
+                        gpMngFlashLocalize->FUN_00717ff0(param_4, str.AsChar, str2.AsChar, &i);
                     }
                 }
             } else if ( pDVar5.Name != 0ull && pDVar5.FrontEndResourceName != 0ull ) {
@@ -1085,4 +1089,9 @@ bool GSDatabase::setLanguage(FlashPlayer* param_1)
     const char* pcVar1 = getStringByHashcode( 0u, hashcode );
     param_1->setVariableValue("/:WhatLanguage", pcVar1);
     return true;
+}
+
+bool GSDatabase::isInitialized() const
+{
+    return bInitialized;
 }

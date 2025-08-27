@@ -12,6 +12,13 @@
 #include "audio/audio_device.h"
 
 #include "player_data/save_game_manager.h"
+#include "player_data/gs_playerdata.h"
+#include "filesystem/gs_file.h"
+#include "render/particles/gs_particles.h"
+#include "flash/modal_message_box.h"
+#include "database/gs_database.h"
+#include "core/locale.h"
+#include "flash/mng_flash_localize.h"
 
 GameMode* gpActiveGameMode = nullptr;
 
@@ -28,6 +35,21 @@ uint32_t DAT_01691498[2] = { 0, 0 };
 uint32_t DAT_016914a0 = 0;
 uint32_t DAT_016914a4 = 0;
 
+// DAT_00f77dac
+static constexpr const char* kLoadingPleaseMessages[10] = {
+    "Loading... Please wait...",
+    "Chargement en cours, veuillez patienter...",
+    "Caricamento in corso... Attendere...",
+    "Es wird geladen ... Bitte warten ...",
+    "Cargando... Un momento, por favor...",
+    "_no trad", // TODO:
+    "_no trad", // TODO:
+    "_no trad", // TODO:
+    "_no trad",
+    "_no trad",
+};
+
+
 GameMode::GameMode()
     : transitionFlags( 0x39 )
     , transitionTime( 1000.0f )
@@ -39,6 +61,7 @@ GameMode::GameMode()
     , bAsync( false )
     , bLoadedAsync( false )
     , bDraw( true )
+    , field7_0x1c( false )
 {
     if (gpTestDriveInstance != nullptr) {
         currentGameMode = gpTestDriveInstance->getActiveGameMode();
@@ -61,6 +84,7 @@ GameMode::GameMode()
 
 GameMode::~GameMode()
 {
+    // FUN_0097e5e0
     pTransitionDrawList->destroy();
     delete pTransitionDrawList;
 
@@ -166,7 +190,35 @@ void GameMode::mainLoop(TestDriveGameInstance* param_1)
         }
     }
 
-    OTDU_UNIMPLEMENTED;
+    // gGSFlash.field77_0xf8c[0x30] = 1; // TODO: No clue what's this?
+    FUN_0097ed60();
+
+    bool bNeedToExit = gpRender->getRenderDevice()->isDeviceLost() ||  gpRender->flushDrawCommands(false) == 4;
+    if (bNeedToExit) {
+        bExitRequested = true;
+        gpTestDriveInstance->requestExit(); 
+    }
+    gbRequestedExit = true;
+    
+    do {
+        gpSystem->tick(gGSTimer.GameTotalTime, gGSTimer.GameDeltaTime);
+        gpRender->flushDrawCommands(false);
+    } while (!gpSystem->isWindowActivated());
+    gpRender->flushDrawCommands(false);
+    
+    gpFile->flushPendingAsync();
+    gpParticles->FUN_0080d330();
+    gpTestDriveInstance->flushPendingFileInstanciation(false);
+
+    for (Manager* pMVar4 : registeredManagers) {
+        pMVar4->pause();
+    }
+    this->pause();
+
+    for (Manager* pMVar4 : registeredManagers) {
+        pMVar4->terminate();
+    }
+    this->destroy();
 }
 
 void GameMode::stepLogic(float param_1, float deltaTime, float totalTime)
@@ -301,6 +353,169 @@ void GameMode::drawLoadingScreen()
     }
 
     gAudioDevice.setGlobalVolume(1.0f);
+}
+
+bool GameMode::FUN_0097ed60()
+{
+    // FUN_0097ed60
+    float local_18 = transitionTime;
+    bool bVar8 = true;
+    bool bVar11 = false;
+    while (true) {      
+        if (bDraw == false && gpPlayerData->FUN_00897990() && !gpFile->hasTaskPending()) {
+            bDraw = gpFlashMessageBox->display(0x37ba8e2, 3.0f, 0, nullptr, nullptr, false);
+        }
+
+        uint32_t uVar3 = transitionFlags;
+        if (((uVar3 >> 4 & 1) == 0) && ((uVar3 >> 2 & 1) == 0)) {
+            gAudioDevice.setGlobalVolume(0.0f);
+            return bVar11;
+        }
+
+        float local_c = -1.0f;
+        float peVar6 = -1.0f;
+        if (((uVar3 >> 4 & 1) == 0) && (peVar6 = local_c, (uVar3 >> 2 & 1) != 0)) {
+            peVar6 = 0.0f;
+        }
+        local_c = peVar6;
+        float fVar17 = 1.0f / transitionTime;
+        int32_t local_14 = (int32_t)(255.0 - fVar17 * local_18 * 255.0);
+        if (local_14 < 0x100) {
+            if (local_14 < 0) {
+                local_14 = 0;
+            }
+        } else {
+            local_14 = 0xff;
+        }
+        
+        float fVar18 = gGSTimer.GameDeltaTime;
+        if (isnan(gGSTimer.GameDeltaTime) != (gGSTimer.GameDeltaTime == 0.0f)) {
+            fVar18 = 0.033333335f;
+        }
+            
+        if (!field7_0x1c) {
+            local_14 = 0;
+        } else {
+            local_18 = local_18 - fVar18 * 1000.0;
+        }
+
+        if ((0.0f <= local_18) || (local_14 != 0xff)) {
+            fVar17 = fVar17 * local_18;
+        } else {
+            local_18 = transitionTime;
+            transitionFlags = uVar3 & 0xffffffeb;
+            bVar8 = false;
+            fVar17 = 0.0;
+        }
+
+        gAudioDevice.setGlobalVolume(fVar17);
+
+        uint32_t local_4 = 0;
+        uint32_t local_8 = 0;
+        bVar11 = gpFlash->getFlashMovieIndex(&local_8,&local_4,"GENERAL");
+
+        FlashPlayer* pMVar14 = nullptr;
+        if (bVar11) {
+            MoviePlayer* pMVar12 = gpFlash->getMoviePlayer(local_8,local_4);
+            if ((pMVar12 == nullptr) || (!pMVar12->MovieBank.isLoaded())) {
+                pMVar14 = nullptr;
+            } else {
+                pMVar14 = pMVar12->MovieBank.getFlashPlayer();
+            }
+        }
+
+        const char* pcVar19 = nullptr;
+        if ((((transitionFlags >> 5 & 1) != 0) && (local_18 - fVar18 * 1000.0 <= 0.0))
+        && (pMVar14 != (nullptr)) && (field7_0x1c != false)) {
+            bVar11 = (bDraw != false || gpPlayerData->FUN_00897990());
+            
+            if (gpFlashMessageBox->getInputState() == ModalMessageBox::eInputState::MMBIS_None) {
+                bVar11 = false;
+            }
+            
+            if (!gpDatabase->isInitialized()) {
+                int32_t iVar15 = 0;
+
+                eLocale eVar13 = GetLocaleFromSystem();
+                switch (eVar13) {
+                case eLocale::L_English:
+                    iVar15 = 5;
+                    break;
+                default:
+                    iVar15 = 0;
+                    break;
+                case eLocale::L_Italian:
+                    iVar15 = 1;
+                    break;
+                case eLocale::L_German:
+                    iVar15 = 4;
+                    break;
+                case eLocale::L_Spanish:
+                    iVar15 = 3;
+                    break;
+                case eLocale::L_Japenese:
+                    iVar15 = 2;
+                    break;
+                case eLocale::L_Russian|L_Italian:
+                    iVar15 = 8;
+                    break;
+                case eLocale::L_Russian|L_German:
+                    iVar15 = 9;
+                    break;
+                };
+
+                const char* pcVar19 =  (!bVar11) ? kLoadingPleaseMessages[iVar15] : " ";
+                FlashPlayer* peVar14 = gpFlash->getFlashPlayer("GENERAL");
+                peVar14->setVariableValue("/:msg_loading", pcVar19);
+                pcVar19 = "loading_start";
+            } else {
+                if (gpMngFlashLocalize != nullptr) {
+                    pcVar19 = "loading";
+                    if (bVar11) {
+                        gpMngFlashLocalize->FUN_00717ff0(pMVar14, " ", "/:msg_loading");
+                    } else {
+                        gpMngFlashLocalize->FUN_00718120(pMVar14, "/:msg_loading", 0x36c66a2);
+                    }
+                }
+            }
+            
+            pMVar14->showFrame(pcVar19, "/", false);
+            gbLoadingInProgress = true;
+        }
+
+        pTransitionDrawList->reset();
+        pTransitionDrawList->beginPrimitive(ePrimitiveType::PT_TriangleStrip, 4);
+        pTransitionDrawList->setDiffuse(0, ColorRGBA(DAT_010e72f4, DAT_010e72f5, DAT_010e72f6, local_14));
+
+        const Viewport& viewport2D = gpRender->getViewport2D();
+        pTransitionDrawList->pushVertex(0.0f,               0.0f,               local_c);
+        pTransitionDrawList->pushVertex(viewport2D.Width,   0.0f,               local_c);
+        pTransitionDrawList->pushVertex(0.0f,               viewport2D.Height,  local_c);
+        pTransitionDrawList->pushVertex(viewport2D.Width,   viewport2D.Height,  local_c);
+        pTransitionDrawList->commitPrimitive();
+        
+        RenderScene* peVar16 = gpRender->getRenderPass<eRenderPass::RP_After2D>().pScene;
+        if (((transitionFlags >> 4 & 1) != 0) || (peVar16 = gpRender->getRenderPass<eRenderPass::RP_Before2D>().pScene, (transitionFlags >> 2 & 1) != 0)) {
+            peVar16->enqueueDynamicDrawList(pTransitionDrawList);
+        }
+        bVar11 = true;
+        if (!bVar8) {
+            return true;
+        }
+        stepLogic(1.4013e-45f,gGSTimer.GameDeltaTime,gGSTimer.GameTotalTime);
+        submitDrawCommands(gGSTimer.GameDeltaTime,gGSTimer.GameTotalTime);
+
+        int32_t iVar15 = gpRender->flushDrawCommands(true);
+        if (iVar15 == 4) {
+            bExitRequested = true;
+            gbRequestedExit = true;
+            gpTestDriveInstance->requestExit();
+            return true;
+        }
+    }
+
+    // Unreachable
+    return false;
 }
 
 void GameMode::setTransitionFlags( const uint32_t flags )

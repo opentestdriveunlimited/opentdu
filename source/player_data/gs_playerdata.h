@@ -32,6 +32,7 @@ public:
     bool isOnline() const;
 
     void FUN_008985d0(void *pExternalBuffer,int bufferLength);
+    bool FUN_00897990();
 
 private:
     uint8_t bInitialized : 1;
@@ -41,6 +42,9 @@ private:
     bool bOnlineOps[9];
     uint8_t bUnusedFlag : 1;
     uint8_t bIsOnline : 1;
+    uint8_t field526850_0x967d4 : 1;
+    uint8_t field526864_0x967e5 : 1;
+    int32_t field526854_0x967d8;
 
     float padSensitivity;
     float barSensitivity;

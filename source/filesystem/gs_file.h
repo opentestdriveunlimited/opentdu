@@ -179,6 +179,8 @@ public:
         return savegameFolder; 
     }
 
+    inline bool hasTaskPending() const { return bTaskInProgress; }
+
 public:
     GSFile();
     ~GSFile();

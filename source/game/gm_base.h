@@ -86,6 +86,8 @@ public:
     virtual void reset() {}
     virtual void tick(float deltaTime, float totalTime) {}
     virtual void draw(float deltaTime, float totalTime) {}
+    virtual void pause() {}
+    virtual void destroy() {}
 
     bool initializeAsync();
     void mainLoop(TestDriveGameInstance* param_1);
@@ -109,10 +111,12 @@ protected:
     uint8_t     bAsync : 1;
     uint8_t     bLoadedAsync : 1;
     uint8_t     bDraw : 1;
+    uint8_t     field7_0x1c : 1;
 
 protected:
     void registerManager(Manager* pManager);
     void drawLoadingScreen();
+    bool FUN_0097ed60();
 };
 
 extern GameMode* gpActiveGameMode;

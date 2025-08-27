@@ -131,6 +131,8 @@ public:
     int32_t setFlashLocalization(int32_t param_2, uint32_t param_3, FlashPlayer* param_4);
     bool setLanguage(FlashPlayer* param_1);
 
+    bool isInitialized() const;
+
 private:
     CommonDB engineDatabase;
     GameDatabase gameDatabase;
