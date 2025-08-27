@@ -23,14 +23,21 @@ ModalMessageBox::~ModalMessageBox()
 
 }
 
-bool ModalMessageBox::display(uint64_t hashcode, float param_2, int32_t param_5, UserCallback_t& pCallback, void *pCallbackData, bool param_7)
+bool ModalMessageBox::display(uint64_t hashcode, float param_2, int32_t param_5, UserCallback_t* pCallback, void *pCallbackData, bool param_7)
 {
     if (inputState != eInputState::MMBIS_None) {
         return false;
     }
 
     displayTime = 0.0f;
-    pUserCallback = std::bind(pCallback, pCallbackData);
+    if (pCallback != nullptr)
+    {
+        pUserCallback = std::bind(*pCallback, pCallbackData);
+    }
+    else
+    {
+        pUserCallback = nullptr;
+    }
     bUnknownFlag = param_7;
     if (param_7) {
         int32_t iVar1 = gpFlash->getNumMovies(1);
@@ -40,6 +47,7 @@ bool ModalMessageBox::display(uint64_t hashcode, float param_2, int32_t param_5,
                 pMVar2->bEnabled = true;
             }
         }
+        OTDU_UNIMPLEMENTED;
         // FUN_0099b3f0("CONFIGPC",&gGSFlash,0,false,4); TODO: Not sure
     }
 
@@ -54,6 +62,16 @@ bool ModalMessageBox::display(uint64_t hashcode, float param_2, int32_t param_5,
 
     updateInputState(param_2);
     return true;
+}
+
+ModalMessageBox::eDisplayState ModalMessageBox::getDisplayState() const
+{
+    return displayState;
+}
+
+ModalMessageBox::eInputState ModalMessageBox::getInputState() const
+{
+    return inputState;
 }
 
 const char *ModalMessageBox::getFrameToDisplay(const float param_1) const
