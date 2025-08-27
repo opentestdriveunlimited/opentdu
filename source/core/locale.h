@@ -52,7 +52,7 @@ struct PlayerDataLanguage
     {
         switch(ID)
         {
-            case 0x6a61:                return eLocale::L_Japenese;
+            case 0x6a61:                return eLocale::L_Japanese;
             case 0x6762: case 0x7573:   return eLocale::L_English;
             case 0x6672:                return eLocale::L_French;
             case 0x7370:                return eLocale::L_Spanish;
@@ -102,7 +102,7 @@ static eLocale GetLocaleFromSystem()
     case LANG_ITALIAN:
         return L_Italian;
     case LANG_JAPANESE:
-        return L_Japenese;
+        return L_Japanese;
     case LANG_KOREAN:
         return L_Korean;
     case LANG_DUTCH:
@@ -137,7 +137,7 @@ static eLocale GetLocaleFromSystem()
     } else if (strstr(pLocale, "it_")) {
         return L_Italian;
     } else if (strstr(pLocale, "ja_")) {
-        return L_Japenese;
+        return L_Japanese;
     } else if (strstr(pLocale, "ko_")) {
         return L_Korean;
     } else if (strstr(pLocale, "nl_")) {

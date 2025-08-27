@@ -1062,7 +1062,7 @@ int32_t GSDatabase::setFlashLocalization(int32_t param_2, uint32_t param_3, Flas
     const char* pLanguage = gpPlayerData->getLanguage();
     const PlayerDataLanguage langID(pLanguage);
     eLocale locale = langID;
-    if (locale == eLocale::L_Spanish || locale == eLocale::L_Japenese || locale == eLocale::L_Korean || locale != eLocale::L_English) {
+    if (locale == eLocale::L_Spanish || locale == eLocale::L_Japanese || locale == eLocale::L_Korean || locale != eLocale::L_English) {
         uVar3 = 0;
     } else {
         uVar3 = 1;
