@@ -29,3 +29,8 @@ void GSScenaric::terminate()
 {
 
 }
+
+const GameIntroTutorial &GSScenaric::getIntroTutorial() const
+{
+    return introTutorial;
+}

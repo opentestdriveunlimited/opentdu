@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game/gs_base.h"
+#include "game_intro_tutorial.h"
 
 class GSScenaric : public GameSystem {
 public:
@@ -17,6 +18,11 @@ public:
     bool initialize( TestDriveGameInstance* ) override;
     void tick(float totalTime, float deltaTime) override;
     void terminate() override;
+
+    const GameIntroTutorial& getIntroTutorial() const;
+
+private:
+    GameIntroTutorial introTutorial;
 };
 
 extern GSScenaric* gpScenaric;
