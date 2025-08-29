@@ -38,3 +38,18 @@ private:
     RenderFile::Section* pParameters;
     RenderFile::Section* pLayers;
 };
+
+// Helper for statically allocated 2DMs (created at runtime)
+struct StaticRender2DM
+{
+    char pBuffer[0x2a4];
+    Material* pMaterial;
+
+    StaticRender2DM(bool param_2, uint64_t param_3);
+};
+
+extern StaticRender2DM DAT_00fe6d50;
+extern StaticRender2DM DAT_00fe67dc;
+extern StaticRender2DM DAT_00fe6aa0;
+
+static Material* DAT_00f4751c = DAT_00fe6d50.pMaterial; // DAT_00f4751c

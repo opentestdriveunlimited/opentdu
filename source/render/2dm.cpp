@@ -18,6 +18,8 @@ static constexpr uint32_t k2DMVersionMinor      = 0;
 
 static constexpr uint32_t kMaxNumLayers         = 8;
 
+static uint32_t DAT_005f52b0 = 2; // DAT_005f52b0
+
 Render2DM::Render2DM()
     : RenderFile()
     , pMatArray( nullptr )
@@ -244,3 +246,38 @@ RenderFile::Section* Render2DM::getMaterial( uint64_t param_2 )
     OTDU_LOG_WARN( "Failed to find material %p in 2DM hashtable (nullptr will be returned)\n", param_2 );
     return nullptr;
 }
+
+StaticRender2DM::StaticRender2DM(bool param_2, uint64_t param_3)
+{
+    // FUN_005f52b0
+    pMaterial = Render2DM::Create( pBuffer, param_3, 0, 0, 0, 0);
+    pMaterial->OT = DAT_005f52b0;
+    DAT_005f52b0++;
+    pMaterial->NumParams = 1;
+    pMaterial->FXFlags = 0;
+    pMaterial->FXFlags2 = 0;
+    pMaterial->UsageFlags = 0;
+    pMaterial->pOTNode = nullptr;
+    pMaterial->AlphaSource = '\0';
+    pMaterial->DepthWrite = '\x01';
+    pMaterial->DepthTest = '\x01';
+    if (param_2) {
+        pMaterial->SrcBlend = '\x05';
+        pMaterial->DstBlend = '\x06';
+        pMaterial->BlendOP = '\x01';
+    } else {
+        pMaterial->SrcBlend = '\x02';
+        pMaterial->DstBlend = '\x01';
+        pMaterial->BlendOP = '\x06';
+    }
+    pMaterial->BackfaceCullingMode = '\x03';
+    pMaterial->FillMode = '\0';
+    pMaterial->AlphaTest = '\x01';
+    pMaterial->AmbientColor = Eigen::Vector4f(1.0f, 1.0f, 1.0f, 0.0f);
+    pMaterial->DiffuseColor = Eigen::Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+    pMaterial->SpecularColor = Eigen::Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
+StaticRender2DM DAT_00fe6d50(true,  0x230588678a67836d); // DAT_00fe6d50
+StaticRender2DM DAT_00fe67dc(false, 0xb9bae7f43dafe4f6); // DAT_00fe67dc
+StaticRender2DM DAT_00fe6aa0(true,  0xb9bae7f43dafe4f6); // DAT_00fe6aa0
