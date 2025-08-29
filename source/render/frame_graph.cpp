@@ -48,7 +48,7 @@ void FrameGraph::insertAfterObject(RenderObjectBase *param_2, RenderObjectBase *
 
 void FrameGraph::removeObject(RenderObjectBase *pObject)
 {
-    std::remove_if(renderNodes.begin(), renderNodes.end(), [=](RenderObjectBase* x) { return x == pObject; });
+    renderNodes.remove( pObject );
 }
 
 void FrameGraph::submitDrawCommands(bool param_2)

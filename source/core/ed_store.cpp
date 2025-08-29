@@ -86,7 +86,7 @@ int32_t edStore::reserve_buffer(int32_t sizeToReserve)
         return -1;
     }
 
-    int32_t iVar2 = bufferSize + sizeToReserve;
+    uint32_t iVar2 = bufferSize + sizeToReserve;
     if (bufferSizeWithPadding < iVar2) {
         void* puVar1 = realloc(pBuffer,bufferSizeWithPadding + 0x200 + sizeToReserve);
         pBuffer = puVar1;

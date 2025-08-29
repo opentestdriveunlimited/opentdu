@@ -47,7 +47,7 @@ void LightSetupNode::execute()
         gBoundLights[i] = lights[i];
     }
 
-    for (uint32_t j = lights.size(); j < kMaxNumLightPerScene; j++) {
+    for (size_t j = lights.size(); j < kMaxNumLightPerScene; j++) {
         gBoundLights[j] = nullptr;
     }
 }
@@ -104,7 +104,7 @@ void SetupGraph::removeLightNodes()
     }
 
     // This is basically FUN_0050dda0 (without the custom container the game uses)
-    std::remove_if(nodes.begin(), nodes.end(), [](SetupNode* x) { return x->getType() == 0x0; });
+    nodes.erase( std::remove_if( nodes.begin(), nodes.end(), []( SetupNode* x ) { return x->getType() == 0x0; } ), nodes.end() );
 }
 
 void SetupGraph::removeFrustumNodes()
@@ -115,7 +115,7 @@ void SetupGraph::removeFrustumNodes()
     }
 
     // This is basically FUN_0050dda0 (without the custom container the game uses)
-    std::remove_if(nodes.begin(), nodes.end(), [](SetupNode* x) { return x->getType() == 0x02; });
+    nodes.erase( std::remove_if( nodes.begin(), nodes.end(), []( SetupNode* x ) { return x->getType() == 0x02; } ), nodes.end() );
 }
 
 bool SetupGraph::addNode(SetupNode *node)
@@ -136,7 +136,7 @@ void SetupGraph::bind(uint32_t param_1)
             uint32_t iVar2 = peVar1->getType();
             gNodeCache[iVar2].NumNodes++;
             gNodeCache[iVar2].Nodes.push_back(std::make_tuple(peVar1, param_1));
-            gRenderSetupCacheFlags | 1 << (iVar2 & 0x1f);
+            gRenderSetupCacheFlags |= 1 << (iVar2 & 0x1f);
         }
     }
 }

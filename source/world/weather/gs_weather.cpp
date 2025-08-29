@@ -43,7 +43,7 @@ void GSWeather::registerListener(WorldListener *pListener)
 
 void GSWeather::unregisterListener(WorldListener *pListener)
 {
-    std::find_if(registeredListeners.begin(), registeredListeners.end(), [=](WorldListener* x) { return x == pListener; });
+    registeredListeners.erase( std::remove( registeredListeners.begin(), registeredListeners.end(), pListener ), registeredListeners.end() );
 }
 
 void GSWeather::updateActiveConfig()

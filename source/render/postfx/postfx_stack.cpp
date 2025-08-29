@@ -10,7 +10,7 @@ PostFXStack gPostFXStack = {};
 static constexpr uint32_t kMaxNumEffect = 64;
 
 PostFXStack::PostFXStack()
-    : isMSAAEnabled( 0 )
+    : bIsMSAAEnabled( false )
 {
     renderTargets.fill( nullptr );
 }
@@ -43,13 +43,13 @@ void PostFXStack::beginPass()
         renderTargets[i] = gpRender->getRenderDevice()->getBoundRenderTargetAtIndex(i);
     }
 
-    isMSAAEnabled = gpRender->getRenderDevice()->isFramebufferUsingMSAA();
+    bIsMSAAEnabled = gpRender->getRenderDevice()->isFramebufferUsingMSAA();
 }
 
 void PostFXStack::endPass()
 {
     // FUN_005f5b70
-    if (gpRender->getRenderDevice()->isFramebufferUsingMSAA() != isMSAAEnabled) {
-        gpRender->getRenderDevice()->setMSAAState(isMSAAEnabled);
+    if (gpRender->getRenderDevice()->isFramebufferUsingMSAA() != bIsMSAAEnabled ) {
+        gpRender->getRenderDevice()->setMSAAState( bIsMSAAEnabled );
     }
 }

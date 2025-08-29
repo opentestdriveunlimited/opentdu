@@ -471,8 +471,8 @@ void RenderDevice::bindRenderTargetAndSetViewport(RenderTarget *pRenderTarget, c
     VkViewport viewport = { 0.0f };
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = pRenderTarget->getWidth();
-    viewport.height = pRenderTarget->getHeight();
+    viewport.width = static_cast<float>( pRenderTarget->getWidth() );
+    viewport.height = static_cast< float >( pRenderTarget->getHeight() );
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 

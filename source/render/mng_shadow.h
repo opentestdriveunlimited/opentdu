@@ -3,7 +3,7 @@
 #include "game/mng_base.h"
 #include "render/file_collection_2d.h"
 
-struct RenderTarget;
+class RenderTarget;
 
 class MngShadow : public Manager {
 public:

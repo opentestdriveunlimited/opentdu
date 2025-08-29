@@ -272,24 +272,24 @@ void FUN_005f7060(uint32_t width, uint32_t height, float *pOutput)
 
     fVar1 = (float)width;
     if (width < 0) {
-        fVar1 = fVar1 + 4.2949673e+09;
+        fVar1 = fVar1 + 4.2949673e+09f;
     }
-    fVar1 = 1.0 / fVar1;
+    fVar1 = 1.0f / fVar1;
     fVar2 = (float)height;
     if (height < 0) {
-        fVar2 = fVar2 + 4.2949673e+09;
+        fVar2 = fVar2 + 4.2949673e+09f;
     }
 
     iVar3 = 0;
     do {
-        *pOutput = fVar1 * -1.5;
-        fVar4 = ((float)iVar3 - 1.5) * (1.0 / fVar2);
+        *pOutput = fVar1 * -1.5f;
+        fVar4 = ((float)iVar3 - 1.5f) * (1.0f / fVar2);
         pOutput[1] = fVar4;
-        pOutput[4] = fVar1 * -0.5;
+        pOutput[4] = fVar1 * -0.5f;
         pOutput[5] = fVar4;
-        pOutput[8] = fVar1 * 0.5;
+        pOutput[8] = fVar1 * 0.5f;
         pOutput[9] = fVar4;
-        pOutput[0xc] = fVar1 * 1.5;
+        pOutput[0xc] = fVar1 * 1.5f;
         pOutput[0xd] = fVar4;
         iVar3 = iVar3 + 1;
         pOutput = pOutput + 0x10;

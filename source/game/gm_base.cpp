@@ -305,12 +305,12 @@ void GameMode::drawLoadingScreen()
         }
         local_20 = local_20 - fVar17 * 1000.0f;
         if (0.0f <= local_20) {
-            fVar17 = 1.0 - local_20 / transitionTime;
+            fVar17 = 1.0f - local_20 / transitionTime;
         } else {
             local_20 = transitionTime;
             transitionFlags = uVar4 & 0xfffffff5;
             bVar9 = false;
-            fVar17 = 1.0;
+            fVar17 = 1.0f;
         }
 
         gAudioDevice.setGlobalVolume(fVar17);
@@ -396,7 +396,7 @@ bool GameMode::FUN_0097ed60()
         if (!field7_0x1c) {
             local_14 = 0;
         } else {
-            local_18 = local_18 - fVar18 * 1000.0;
+            local_18 = local_18 - fVar18 * 1000.0f;
         }
 
         if ((0.0f <= local_18) || (local_14 != 0xff)) {

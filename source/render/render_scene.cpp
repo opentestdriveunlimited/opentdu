@@ -233,8 +233,8 @@ void RenderScene::submitDrawListToBucket(DrawList * param_2)
         }
 
         uint32_t* peVar4 = param_2->getFlagsAtIndex( iVar6 );
-        if ((peVar7->FXFlags >> 3) & 1 != 0 
-        && ((1ull << peVar7->OT) & gpRender->getActiveScene()->getUnknownMask())) { // TODO: Can we simplify and use 'this' instead?
+        if ( ( ( ( peVar7->FXFlags >> 3 ) & 1 ) != 0 )
+        && ( gpRender->getActiveScene()->getUnknownMask() & ( 1ull << peVar7->OT ) ) ) { // TODO: Can we simplify and use 'this' instead?
             OTDU_UNIMPLEMENTED;
             // AddPrimToBucket(peVar7,pRVar5,(float *)((int)pTVar3->Scalars[0] + local_14),
             //                 &(param_2->Streams).Normals + (int)&(peVar2->Chunk).Type,peVar4,0);

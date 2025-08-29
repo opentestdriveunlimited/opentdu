@@ -19,7 +19,7 @@ private:
     std::vector<PostFX*> effects;
 
     std::array<RenderTarget*, kMaxSimultaneousRT> renderTargets;
-    uint32_t isMSAAEnabled;
+    uint8_t bIsMSAAEnabled: 1;
 };
 
 extern PostFXStack gPostFXStack;

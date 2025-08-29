@@ -35,7 +35,7 @@ void Frustum::updateProjectionMatrices()
     float fVar1 = zProjection.x();
     float fVar7 = zProjection.y();
     float fVar9 = fVar1 - fVar7;
-    float fVar8 = 1.0 / fVar9;
+    float fVar8 = 1.0f / fVar9;
     fVar7 = fVar8 * fVar7;
 
     projectionMatrix.row(2)[2] = fVar7;

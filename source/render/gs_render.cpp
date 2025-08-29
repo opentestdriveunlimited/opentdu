@@ -566,11 +566,11 @@ bool GSRender::allocateDeviceResources()
 
     float width = (float)renderWidth;
     if (width < 0) {
-        width = width + 4.2949673e+09;
+        width = width + 4.2949673e+09f;
     }
     float height = (float)renderHeight;
     if (height < 0) {
-        height = height + 4.2949673e+09;
+        height = height + 4.2949673e+09f;
     }
 
     // 2D Camera

@@ -85,7 +85,7 @@ bool MngCarAlpha::initializeElement(uint32_t param_1)
 {
     // FUN_006b9140
     AlphaElement& pCVar2 = elements[param_1];
-    pCVar2.Mask = param_1 + 1 << (stencilMask & 0x1f);
+    pCVar2.Mask = param_1 + (1 << (stencilMask & 0x1f));
 
     uint32_t uVar5 = Render2DM::CalcSize(3,0x30);
     pCVar2.pAlpha2DMBuffer = TestDrive::Alloc(uVar5);
@@ -228,4 +228,6 @@ bool MngCarAlpha::bindBitmapsToScene()
 
         peVar2->pLayerTextures[0].pTextureSection = peVar3->getBitmapSection();
     }
+
+    return true;
 }
