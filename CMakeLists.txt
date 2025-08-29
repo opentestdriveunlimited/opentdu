@@ -233,7 +233,8 @@ file( GLOB OTDU_SRC "${OTDU_SRC_FOLDER}/tdu_instance.cpp"
                     "${OTDU_SRC_FOLDER}/game/vehicle/mng_car_alpha.cpp"
                     "${OTDU_SRC_FOLDER}/player_data/save_game_manager.cpp"
                     "${OTDU_SRC_FOLDER}/render/instance.cpp"
-                    "${OTDU_SRC_FOLDER}/game/scenaric/game_intro_tutorial.cpp"  )
+                    "${OTDU_SRC_FOLDER}/game/scenaric/game_intro_tutorial.cpp"
+                    "${OTDU_SRC_FOLDER}/x86_pointer_emulation.cpp"  )
 
 file( GLOB OTDU_INC "${OTDU_SRC_FOLDER}/tdu_instance.h"
                     "${OTDU_SRC_FOLDER}/gs_pub.h"
@@ -429,7 +430,8 @@ file( GLOB OTDU_INC "${OTDU_SRC_FOLDER}/tdu_instance.h"
                     "${OTDU_SRC_FOLDER}/core/ed_store.h"
                     "${OTDU_SRC_FOLDER}/game/vehicle/mng_car_alpha.h"
                     "${OTDU_SRC_FOLDER}/player_data/save_game_manager.h"
-                    "${OTDU_SRC_FOLDER}/game/scenaric/game_intro_tutorial.h" )
+                    "${OTDU_SRC_FOLDER}/game/scenaric/game_intro_tutorial.h"
+                    "${OTDU_SRC_FOLDER}/x86_pointer_emulation.h" )
 
 file( GLOB OTDU_THIRDPARTY_SRC "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/city.cc"
                                "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/city.h"
