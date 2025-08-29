@@ -29,19 +29,17 @@ jobs:
         os:  [windows-latest]
         build_type: [Release]
         c_compiler: [clang, cl]
+        platform_name: [Win32, x64, none]
         include:
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
-          # - os: ubuntu-latest
-          #   c_compiler: clang
-          #   cpp_compiler: clang++
-          # - os: macos-latest
-          #   c_compiler: clang
-          #   cpp_compiler: clang++
-        exclude:
+            platform_name: Win32
           - os: windows-latest
-            c_compiler: gcc
+            c_compiler: cl
+            cpp_compiler: cl
+            platform_name: x64
+        exclude:
           - os: windows-latest
             c_compiler: clang
           - os: ubuntu-latest
@@ -49,7 +47,13 @@ jobs:
           - os: macos-latest
             c_compiler: cl
           - os: macos-latest
-            c_compiler: gcc
+            c_compiler: clang
+            platform_name: x64
+          - os: macos-latest
+            c_compiler: clang
+            platform_name: Win32
+          - os: windows-latest
+            platform_name: none
 
     steps:
     - uses: actions/checkout@v4
@@ -113,7 +117,20 @@ jobs:
     #   # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
     #   run: cmake --build "${{ github.workspace }}/third_party/glfw/" --config ${{ matrix.build_type }}
 
-    - name: Configure CMake (opentdu)
+    - name: Configure CMake (opentdu) (Windows)
+      if: ${{ not matrix.platform_name == 'none' }}
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
+        -A ${{ matrix.platform_name }}
+
+    - name: Configure CMake (opentdu) (Unix)
+      if: ${{ matrix.platform_name == 'none' }}
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
@@ -129,32 +146,11 @@ jobs:
     - name: Build Save Decryptor
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target opentdu_savedecryptor
 
-    # - name: Upload Asset Extractor
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #       name: opentdu_assetExtractor.exe
-    #       path: "${{ github.workspace }}/build/bin/opentdu_assetExtractor.exe"
-       
-    # - name: Download Asset Extractor
-    #   uses: actions/download-artifact@v4
-    # - name: Log Artifacts
-    #   run: ls -R
     - name: Release (Win32)
       uses: softprops/action-gh-release@v2
+      if: ${{ not matrix.platform_name == 'none' }}
       with:
         files: |
-            ${{ github.workspace }}/build/bin/opentdu_assetExtractor.exe
-            ${{ github.workspace }}/build/bin/opentdu_savedecryptor.exe
-          
-    # - name: Deploy Save Decryptor
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #       name: opentdu_savedecryptor.exe
-    #       path: "${{ github.workspace }}/build/bin/opentdu_savedecryptor.exe"
-
-    # - name: Deploy OpenTDU
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #       name: opentdu.exe
-    #       path: "${{ github.workspace }}/build/bin/opentdu.exe"
+            ${{ github.workspace }}/build/bin/opentdu_assetExtractor_${{ matrix.platform_name }}.exe
+            ${{ github.workspace }}/build/bin/opentdu_savedecryptor_${{ matrix.platform_name }}.exe
     
