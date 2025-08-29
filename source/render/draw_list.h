@@ -146,6 +146,10 @@ public:
     void setActiveTransformMatrix( Eigen::Matrix4f& matrix );
     void setIdentityTransform();
 
+    uint32_t getNumPrimitives() const;
+    Material* getMaterialAtIndex( const uint32_t index ) const { return ppMaterials[index]; }
+    uint32_t* getFlagsAtIndex( const uint32_t index ) const { return ppFlags[index]; }
+
 private:
     struct Pool {
         Pool();

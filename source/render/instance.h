@@ -26,6 +26,8 @@ public:
     inline uint32_t getActiveLODIndex() const { return currentLODIndex; }
     inline LOD& getLOD(const uint32_t param_1) { return lods[param_1]; }
     inline RenderFile::Section* getMaterialBank() const { return pBankMat; }
+    inline const Eigen::Matrix4f& getModelMatrix() const { return matrix; }
+    inline float getBoundingScale() const { return biggestScale; }
 
 public:
     Instance();

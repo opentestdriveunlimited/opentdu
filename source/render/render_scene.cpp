@@ -6,6 +6,9 @@
 #include "render/frame_graph.h"
 #include "render/instance.h"
 #include "render/3dd.h"
+#include "render/draw_list.h"
+#include "render/2dm.h"
+#include "render/material.h"
 
 #include "core/mutex.h"
 
@@ -171,7 +174,7 @@ void RenderScene::submitDrawCommands(uint32_t param_2)
     gpRender->beginRenderScene(this);
 
     for (DrawList* peVar2 : pDrawCommands->StaticDrawLists) {
-        OTDU_UNIMPLEMENTED;
+        submitDrawListToBucket(peVar2);
     }
 
     for (Instance* peVar2 : pDrawCommands->StaticInstances) {
@@ -183,7 +186,7 @@ void RenderScene::submitDrawCommands(uint32_t param_2)
     }
 
     for (DrawList* peVar2 : pDrawCommands->DynamicDrawLists) {
-        OTDU_UNIMPLEMENTED;
+        submitDrawListToBucket(peVar2);
     }
     
     for (Instance* peVar2 : pDrawCommands->DynamicInstances) {
@@ -218,4 +221,77 @@ void RenderScene::submitDrawCommands(uint32_t param_2)
     for (HiearchyNode* peVar2 : pDrawCommands->DynamicHiearchies) {
         OTDU_UNIMPLEMENTED;
     }
+}
+
+void RenderScene::submitDrawListToBucket(DrawList * param_2)
+{
+    // FUN_00508960
+    for (uint32_t iVar6 = 0; iVar6 < param_2->getNumPrimitives(); iVar6++) {
+        Material* peVar7 = param_2->getMaterialAtIndex( iVar6 );
+        if (peVar7 == nullptr) {
+            peVar7 = DAT_00f4751c; // TODO: I guess this is the fallback/pink material?
+        }
+
+        uint32_t* peVar4 = param_2->getFlagsAtIndex( iVar6 );
+        if ((peVar7->FXFlags >> 3) & 1 != 0 
+        && ((1ull << peVar7->OT) & gpRender->getActiveScene()->getUnknownMask())) { // TODO: Can we simplify and use 'this' instead?
+            OTDU_UNIMPLEMENTED;
+            // AddPrimToBucket(peVar7,pRVar5,(float *)((int)pTVar3->Scalars[0] + local_14),
+            //                 &(param_2->Streams).Normals + (int)&(peVar2->Chunk).Type,peVar4,0);
+        }
+    }
+}
+
+void RenderScene::submitInstance(Instance * param_2)
+{
+    // FUN_00509390
+    const uint32_t flags = param_2->getFlags();
+    if (((flags >> 2 & 1) == 0) && (param_2->getNumLODs() != 0)) {
+        if ((flags >> 1 & 1) != 0) {
+            param_2->calculateLOD(gpRender->getActiveCamera());
+        }
+
+        if (param_2->getActiveLODIndex() < 4) {
+            uint32_t* piVar1 = (uint32_t*)param_2->getLOD(param_2->getActiveLODIndex()).pUnknown;
+            if (*piVar1 == kHeightmapMagic) {
+                Heightmap* pHmap = (Heightmap*)(piVar1 + 4); // + 0x10
+                submitHeightmap(pHmap, param_2);
+            } else {
+                RenderObject* pObject = (RenderObject*)(piVar1 + 4); // + 0x10
+                submitObject(pObject, param_2);
+            }
+        }
+    }
+}
+
+void RenderScene::submitHeightmap(Heightmap * param_1, Instance * param_2)
+{
+    // FUN_005092f0
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderScene::submitObject(RenderObject * param_1, Instance * param_2)
+{
+    // FUN_00509160
+    OTDU_UNIMPLEMENTED;
+}
+
+bool RenderScene::isInstanceVisible(RenderObject * param_1, Instance * param_2)
+{
+    // FUN_005090b0
+    Eigen::Vector4f local_40 = { 
+        param_1->BoundingSphereOrigin[0], 
+        param_1->BoundingSphereOrigin[1], 
+        param_1->BoundingSphereOrigin[2],
+        0.0f
+    };
+
+    Eigen::Vector4f local_30 = param_2->getModelMatrix() * local_40;
+    local_30.w() = param_1->BoundingSphereRadius;
+
+    const Eigen::Matrix4f& worldToCam = gpRender->getActiveCamera()->getWorldToCam();
+    Eigen::Vector4f local_20 = worldToCam * local_30;
+
+    int32_t iVar2 = gpRender->getActiveFrustum()->testBoundingSphere(local_20, param_1->BoundingSphereRadius * param_2->getBoundingScale() );
+    return iVar2 != 0;
 }

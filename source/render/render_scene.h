@@ -8,6 +8,8 @@ class Instance;
 struct HiearchyNode;
 struct InstanceWithCustomMaterial;
 struct FramebufferAttachments;
+struct RenderObject;
+struct Heightmap;
 class LightSetupNode;
 
 #include "frustum.h"
@@ -48,6 +50,7 @@ struct RenderSceneCommands {
 class RenderScene : public RenderObjectBase {
 public:
     inline void setUnknownMask(const uint64_t value) { unknownMask = value; }
+    inline uint64_t getUnknownMask() const { return unknownMask; }
     inline FogDesc& getFogDescWrite() { return fogDesc; }
     inline Frustum& getFrustumWrite() { return frustum; }
     inline uint32_t getFlags() const { return flags; }
@@ -103,4 +106,12 @@ private:
 private:
     void initialize(Camera *param_2, Viewport *param_3,FramebufferAttachments *param_4,uint32_t param_5,const char *param_6);
     void freeDrawCommands();
+
+    void submitDrawListToBucket(DrawList* param_2);
+    void submitInstance(Instance* param_2);
+
+    void submitHeightmap(Heightmap* param_1, Instance* param_2);
+    void submitObject(RenderObject* param_1, Instance* param_2);
+
+    bool isInstanceVisible(RenderObject* param_1, Instance* param_2);
 };

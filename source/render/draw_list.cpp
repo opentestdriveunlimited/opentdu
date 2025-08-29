@@ -340,6 +340,11 @@ void DrawList::setIdentityTransform()
     activeCommand.TransformMat = Eigen::Matrix4f::Identity();
 }
 
+uint32_t DrawList::getNumPrimitives() const
+{
+    return numPrimitives;
+}
+
 void DrawList::initializePrimitiveList()
 {
     PrimtiveVertexAttributes listVertexAttributes = generateListVertexAttributes();

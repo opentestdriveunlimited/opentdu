@@ -132,7 +132,8 @@ public:
     inline const Viewport& getViewport2D() const { return viewport2D; }
 
     inline Camera* getActiveCamera() const { return pActiveCamera; }
-
+    inline RenderScene* getActiveScene() const { return pActiveScene; }
+    inline Frustum* getActiveFrustum() const { return pActiveFrustum; }
 public:
     GSRender();
     ~GSRender();

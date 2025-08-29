@@ -6,7 +6,7 @@
 class Camera;
 class RenderScene;
 struct HiearchyNode;
-struct Instance;
+class Instance;
 
 class MngReflection : public Manager {
 public:
