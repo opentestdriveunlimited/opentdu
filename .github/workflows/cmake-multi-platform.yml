@@ -67,58 +67,8 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    # # Turns out the make script won't run for Win32 builds so let's emit an hardcoded pregenerated config instead...
-    # - name: Configure cityhash
-    #   run: > 
-    #    echo "#pragma once\
-    #     #if WIN32 || WIN64\
-    #     #	define HAVE_BUILTIN_EXPECT 0\
-    #             #else\
-    #             #	define HAVE_BUILTIN_EXPECT 1\
-    #             #endif\
-    #             #define HAVE_DLFCN_H 1\
-    #             #define HAVE_INTTYPES_H 1\
-    #             #define HAVE_MEMORY_H 1\
-    #             #define HAVE_STDINT_H 1\
-    #             #define HAVE_STDLIB_H 1\
-    #             #define HAVE_STRINGS_H 1\
-    #             #define HAVE_STRING_H 1\
-    #             #define HAVE_SYS_STAT_H 1\
-    #             #define HAVE_SYS_TYPES_H 1\
-    #             #define HAVE_UNISTD_H 1\
-    #             #define LT_OBJDIR ".libs/"\
-    #             #define PACKAGE_BUGREPORT "cityhash-discuss@googlegroups.com"\
-    #             #define PACKAGE_NAME "CityHash"\
-    #             #define PACKAGE_STRING "CityHash 1.1.1"\
-    #             #define PACKAGE_TARNAME "cityhash"\
-    #             #define PACKAGE_URL ""\
-    #             #define PACKAGE_VERSION "1.1.1"\
-    #             #define STDC_HEADERS 1\
-    #             #if defined AC_APPLE_UNIVERSAL_BUILD\
-    #             # if defined __BIG_ENDIAN__\
-    #             #  define WORDS_BIGENDIAN 1\
-    #             # endif\
-    #             #else\
-    #             # ifndef WORDS_BIGENDIAN\
-    #             # endif\
-    #             #endif" > "${{ github.workspace }}/third_party/cityhash/src/config.h"
-    
-    # - name: Configure CMake (GLFW3)
-    #   # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-    #   # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-    #   run: >
-    #     cmake -B "${{ github.workspace }}/third_party/glfw/"
-    #     -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-    #     -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-    #     -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-    #     -S "${{ github.workspace }}/third_party/glfw/"
-
-    # - name: Build GLFW3
-    #   # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-    #   run: cmake --build "${{ github.workspace }}/third_party/glfw/" --config ${{ matrix.build_type }}
-
     - name: Configure CMake (opentdu) (Windows)
-      if: ${{ not matrix.platform_name == 'none' }}
+      if: matrix.platform_name == 'Win32' || matrix.platform_name == 'x64'
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
@@ -129,16 +79,16 @@ jobs:
         -S ${{ github.workspace }}
         -A ${{ matrix.platform_name }}
 
-    - name: Configure CMake (opentdu) (Unix)
-      if: ${{ matrix.platform_name == 'none' }}
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -S ${{ github.workspace }}
+    # - name: Configure CMake (opentdu) (Unix)
+    #   if: ${{ matrix.platform_name == 'none' }}
+    #   # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+    #   # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+    #   run: >
+    #     cmake -B ${{ steps.strings.outputs.build-output-dir }}
+    #     -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+    #     -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+    #     -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+    #     -S ${{ github.workspace }}
 
     - name: Build Asset Extractor
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target opentdu_assetExtractor
