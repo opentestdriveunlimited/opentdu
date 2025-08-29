@@ -13,6 +13,8 @@ public:
 
     void setOrthoDimensions(float width, float height);
 
+    int32_t testBoundingSphere(Eigen::Vector4f& param_2, float param_3);
+
 private:
     Eigen::Vector4f zLimits;
     Eigen::Vector4f zProjection;

@@ -99,3 +99,61 @@ void Frustum::setOrthoDimensions(float width, float height)
     orthoProjectionMatrix.col(0)[0] = 3.3333333f;
     orthoProjectionMatrix.col(1)[1] = 2.0f / orthoHeight;
 }
+
+int32_t Frustum::testBoundingSphere(Eigen::Vector4f &param_2, float param_3)
+{
+    // FUN_0050b980
+    float fVar2 = 0.0f;
+    float fVar3 = 0.0f;
+    float fVar4 = 0.0f;
+    float fVar5 = 0.0f;
+    float fVar6 = 0.0f;
+    float fVar7 = 0.0f;
+
+    if (!bIs2DProjection) {
+        fVar2 = 0.0f - param_2.z();
+        fVar3 = abs(param_2.x()) * pCamera->getInvAspectRatio();
+        fVar6 = abs(param_2.y()) * pCamera->getInvAspectRatio();
+        fVar4 = abs(param_2.z());
+        if ((zLimits.x() <= fVar2 + param_3) && (fVar2 - param_3 <= zLimits.y())) {
+            float fVar5 = pCamera->getCosHalfFov() * fVar6 - pCamera->getSinHalfFov() * fVar4;
+            fVar2 = pCamera->getTanHalfFov() * fVar4;
+            fVar4 = pCamera->getCosHalfFov() * fVar3 - pCamera->getSinHalfFov() * fVar4;
+            if ((fVar2 <= fVar3) || (fVar2 <= fVar6)) {
+                if (param_3 < fVar4) {
+                    return 0;
+                }
+                if (param_3 < fVar5) {
+                    return 0;
+                }
+            } else if ((param_3 < abs(fVar5)) && (param_3 < abs(fVar4))) {
+                return 1;
+            }
+            return 2;
+        }
+    } else {
+        fVar3 = orthoWidth * 0.5f;
+        fVar4 = orthoHeight * 0.5f;
+        fVar6 = param_2.x() + param_3;
+        fVar2 = param_3 + param_2.y();
+        fVar5 = param_2.x() - param_3;
+        fVar7 = param_2.y() - param_3;
+        if ((((0.0f - fVar3 <= fVar6) && (0.0f - fVar4 <= fVar2)) && (fVar5 <= fVar3)) && (fVar7 <= fVar4)) {
+            if (fVar3 < fVar6) {
+                return 2;
+            }
+            if (fVar4 < fVar2) {
+                return 2;
+            }
+            if (fVar5 < 0.0 - fVar3) {
+                return 2;
+            }
+            if (fVar7 < 0.0 - fVar4) {
+                return 2;
+            }
+            return 1;
+        }
+    }
+
+    return 0;
+}
