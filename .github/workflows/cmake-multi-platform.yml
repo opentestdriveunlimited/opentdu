@@ -98,7 +98,7 @@ jobs:
 
     - name: Release (Win32)
       uses: softprops/action-gh-release@v2
-      if: ${{ not matrix.platform_name == 'none' }}
+      if: matrix.platform_name == 'Win32' || matrix.platform_name == 'x64'
       with:
         files: |
             ${{ github.workspace }}/build/bin/opentdu_assetExtractor_${{ matrix.platform_name }}.exe
