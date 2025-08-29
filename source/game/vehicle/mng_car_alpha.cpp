@@ -111,10 +111,8 @@ bool MngCarAlpha::initializeElement(uint32_t param_1)
     iVar7->pLayerTextures[0].pTextureSection = peVar8->getBitmapSection();
     iVar7->pLayerTextures[0].SamplerAddress[0] = '\x02';
     iVar7->pLayerTextures[0].SamplerAddress[1] = '\x02';
-
-    // TODO: FIXME: We can't store those bits on x64...
-    //   iVar7->pLayerTextures[0].MinMagFilter = '\x01';
-    //   iVar7->pLayerTextures[0].MipFilter = '\x01';
+    iVar7->pLayerTextures[0].MinMagFilter = '\x01';
+    iVar7->pLayerTextures[0].MipFilter = '\x01';
 
     uint32_t uVar4 = pHVar8->NumParameters;
     

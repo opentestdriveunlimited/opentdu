@@ -39,3 +39,6 @@ protected:
     Header* pHeader;
     Section* pSections;
 };
+
+OTDU_SIZE_MUST_MATCH(RenderFile::Header, 0x10);
+OTDU_SIZE_MUST_MATCH(RenderFile::Section, 0x10);

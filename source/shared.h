@@ -29,7 +29,7 @@ extern int32_t gCmdLineArgCount;
 #define OTDU_UNIMPLEMENTED OTDU_ASSERT(false);
 
 // Function is not implemented (and is probably not required)
-#define OTDU_IMPLEMENTATION_SKIPPED( funAddress ) OTDU_LOG_WARN("'%s' is unimplemented!\n", funAddress);
+#define OTDU_IMPLEMENTATION_SKIPPED( funAddress )
 #else
 #define OTDU_UNIMPLEMENTED
 #define OTDU_IMPLEMENTATION_SKIPPED( funAddress )
@@ -117,3 +117,17 @@ static char* strupr(char* s)
     return s;
 }
 #endif
+
+#if defined(__x86_64__) || defined(_WIN64) || defined(__aarch64__)
+#define OTDU_64_BITS 1
+#define OTDU_32_BITS 0
+#else
+#define OTDU_64_BITS 0
+#define OTDU_32_BITS 1
+#endif
+
+#include "x86_pointer_emulation.h"
+
+// Helper for generic static assert checking the size of the object. Useful for
+// any class/struct used by assets
+#define OTDU_SIZE_MUST_MATCH( obj, size ) static_assert( sizeof( obj ) == size, #obj ": size does not match (asset deserialization will fail!)")

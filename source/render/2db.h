@@ -21,7 +21,7 @@ struct Texture
     uint8_t Type; // Seems it can only be 3 (DDS)
     uint16_t StreamOffset;
 };
-static_assert(sizeof(Texture) == 0x30, "Keep this valid (or else streaming will be fucked)");
+OTDU_SIZE_MUST_MATCH(Texture, 0x30);
 
 class Render2DB : public RenderFile {
 public:

@@ -20,12 +20,15 @@ struct MaterialLayerTexture
 {
     uint64_t TextureTypeHashcode; // NMAP, COLOR, etc.
     uint64_t Hashcode; // .2DB Hashcode
-    RenderFile::Section* pTextureSection;
-    // uint8_t UnknownFlags[4]; // TODO: This is stomped by the pointer (since we are on x64). Are those bytes in use?
+    x86Pointer_t pTextureSection;
+    uint8_t UnknownFlags[2];
+    uint8_t MinMagFilter;
+    uint8_t MipFilter;
     uint8_t SamplerAddress[3]; // UVW
     uint8_t __PADDING__;
-    MaterialLayerTextureAttribute* pAttributes;
+    x86Pointer_t pAttributes;
 };
+OTDU_SIZE_MUST_MATCH(MaterialLayerTexture, 0x20);
 
 struct MaterialLayer 
 {
@@ -39,6 +42,7 @@ struct MaterialLayer
 
     uint8_t getNumUsedTextureSlots();
 };
+OTDU_SIZE_MUST_MATCH(MaterialLayer, 0x110);
 
 struct MaterialParameterFlags 
 {
@@ -75,7 +79,7 @@ struct MaterialParameterFlags
     uint8_t __PADDING2__[2];
     uint8_t pCustomFlags[8];
 };
-static_assert( sizeof( MaterialParameterFlags ) == 0x30, "Size mismatch! Material deserialization will break" );
+OTDU_SIZE_MUST_MATCH(MaterialParameterFlags, 0x30);
 
 struct MaterialParameter 
 {
@@ -86,7 +90,7 @@ struct MaterialParameter
 
     MaterialLayer* getLayer( const uint32_t index );
 };
-static_assert( sizeof( MaterialParameter ) == 0x40, "Size mismatch! Material deserialization will break" );
+OTDU_SIZE_MUST_MATCH(MaterialParameter, 0x40);
 
 struct MaterialShaderParameter
 {
@@ -95,11 +99,12 @@ struct MaterialShaderParameter
     uint32_t Size;
     uint32_t bBindToVS;
 };
+OTDU_SIZE_MUST_MATCH(MaterialShaderParameter, 0x10);
 
 struct MaterialShaderParameterArray : public MaterialParameter 
 {
     uint32_t NumParameters;
-    RenderFile::Section* pParameters; // TODO: Check deserialization (as x86 pointer are 4 bytes we are reading padding)
+    x86Pointer_t pParameters;
     uint32_t __PADDING__;
 
     MaterialShaderParameter* getParameter( const uint32_t type, uint32_t* pOutParamIndex = nullptr );
@@ -108,11 +113,13 @@ struct MaterialShaderParameterArray : public MaterialParameter
     MaterialShaderParameter* getLastParameter();
     MaterialShaderParameter* getParameterByIndex( const uint32_t index );
 };
+OTDU_SIZE_MUST_MATCH(MaterialShaderParameterArray, 0x50);
 
 struct MaterialTerrainParameter : public MaterialParameter {
     uint32_t                AlphaBlendModeTest[8]; // TODO: I assume this is used to control layer blending (but still need confirmation)
-    RenderFile::Section*    pLayers[8];
+    x86Pointer_t            pLayers[8];
 };
+OTDU_SIZE_MUST_MATCH(MaterialTerrainParameter, 0x80);
 
 struct Material 
 {
@@ -120,7 +127,7 @@ struct Material
     uint16_t NumParams;
     uint32_t FXFlags;
     uint32_t FXFlags2;
-    uint32_t pOTNodePointer32;
+    x86Pointer_t pOTNode;
     uint8_t DepthTest;
     uint8_t DepthWrite;
     uint8_t AlphaSource;
@@ -149,8 +156,8 @@ struct Material
     uint32_t StencilRefCW;
     uint32_t StencilMaskCW;
     uint32_t StenwilWriteMaskCW;
-    const GPUShader* pVertexShaders[4];
-    const GPUShader* pPixelShaders[4];
+    const x86Pointer_t pVertexShaders[8];
+    const x86Pointer_t pPixelShaders[8];
     Eigen::Vector4f AmbientColor;
     Eigen::Vector4f DiffuseColor;
     Eigen::Vector4f SpecularColor;
@@ -165,7 +172,7 @@ struct Material
     uint16_t getOTForParameter( MaterialParameter* param_1 );
     void bind();
 };
-static_assert( sizeof( Material ) == 0xd0, "Size mismatch; material deserialization will fail!!" );
+OTDU_SIZE_MUST_MATCH(Material, 0xd0);
 
 class MaterialRegister {
 public:

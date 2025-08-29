@@ -5,17 +5,6 @@
 
 MaterialRegister gMaterialRegister = {};
 
-int64_t __allshl( int32_t param_1, int32_t param_2, int32_t param_3 )
-{
-    if ( 0x3f < param_1 ) {
-        return 0;
-    }
-    if ( param_1 < 0x20 ) {
-        return ( param_2 << ( param_1 & 0x1f ) | ( ( int64_t )( param_3 ) >> 0x20 ) - ( param_1 & 0x1f ) ) << 0x20 | ( int64_t )( param_3 << ( param_1 & 0x1f ) );
-    }
-    return ( int64_t )( uint32_t )( param_3 << ( param_1 & 0x1f ) ) << 0x20;
-}
-
 static bool IsFloatAlmostZero( float* param_1 )
 {
     float fVar1;
@@ -45,7 +34,7 @@ void Material::setDefaultMaterial()
     OT = 0;
     FXFlags = 0;
     FXFlags2 = 0;
-    pOTNodePointer32 = 0u;
+    pOTNode = nullptr;
     AlphaSource = '\0';
     FillMode = '\0';
     MatrixParam = '\0';
@@ -83,14 +72,14 @@ void Material::setDefaultMaterial()
     pPixelShaders[2] = nullptr;
     pVertexShaders[3] = nullptr;
     pPixelShaders[3] = nullptr;
-    //pVertexShaders[4] = ( void* )0x0;
-    //pPixelShaders[4] = ( void* )0x0;
-    //pVertexShaders[5] = ( void* )0x0;
-    //pPixelShaders[5] = ( void* )0x0;
-    //pVertexShaders[6] = ( void* )0x0;
-    //pPixelShaders[6] = ( void* )0x0;
-    //pVertexShaders[7] = ( void* )0x0;
-    //pPixelShaders[7] = ( void* )0x0;
+    pVertexShaders[4] = nullptr;
+    pPixelShaders[4] = nullptr;
+    pVertexShaders[5] = nullptr;
+    pPixelShaders[5] = nullptr;
+    pVertexShaders[6] = nullptr;
+    pPixelShaders[6] = nullptr;
+    pVertexShaders[7] = nullptr;
+    pPixelShaders[7] = nullptr;
     AmbientColor = Eigen::Vector4<float>( 1.0f, 1.0f, 1.0f, 1.0f );
     DiffuseColor = Eigen::Vector4<float>( 1.0f, 1.0f, 1.0f, 1.0f );
     SpecularColor = Eigen::Vector4<float>( 0.0f, 0.0f, 0.0f, 1.0f );
@@ -438,7 +427,7 @@ uint16_t Material::getOTNumber()
         iVar2 = 0x28;
     }
 LAB_00990061:
-    uVar3 = __allshl( iVar2, 0, 1 );
+    uVar3 = (iVar2 << 1ull);
     if ( ( uVar3 & 0x82000005fff ) != 0 ) {
         StencilEnable = '\x01';
         StencilFail = '\0';

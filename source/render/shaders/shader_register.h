@@ -92,7 +92,7 @@ struct ShaderBindingFlags // TODO: Rename me
     uint8_t UniformsShadows[4]; // TODO: This is a limit from DX9; this could be removed once we move to modern gfx APIs
     uint8_t __PADDING__[20];
 };
-static_assert( sizeof( ShaderBindingFlags ) == 0x20, "Size mismatch! Shader permutation deserialization will fail" );
+OTDU_SIZE_MUST_MATCH(ShaderBindingFlags, 0x20);
 
 struct ShaderPermutationFlags 
 {

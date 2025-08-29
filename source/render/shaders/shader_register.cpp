@@ -41,11 +41,11 @@ void ShaderRegister::retrieveShadersForMaterial( Material* param_1, const uint32
 {
     OTDU_ASSERT( param_1 );
 
-    if ( param_1->pVertexShaders[index] != nullptr ) {
+    if ( (void*)param_1->pVertexShaders[index] != nullptr ) {
         param_1->pVertexShaders[index] = nullptr;
     }
 
-    if ( param_1->pPixelShaders[index] != nullptr ) {
+    if ( (void*)param_1->pPixelShaders[index] != nullptr ) {
         param_1->pPixelShaders[index] = nullptr;
     }
 
@@ -61,7 +61,7 @@ void ShaderRegister::retrieveShadersForMaterial( Material* param_1, const uint32
     // TODO: Not sure why this is cached (they might be caching the whole struct?)
     latestFoundHashcode = local_58.PermutationHashcode;
     
-    bool bFoundPermutations = retrieveVSPSForFlags( local_58, const_cast<GPUShader*>(param_1->pVertexShaders[index]), const_cast<GPUShader*>(param_1->pPixelShaders[index]) );
+    bool bFoundPermutations = retrieveVSPSForFlags( local_58, param_1->pVertexShaders[index], param_1->pPixelShaders[index] );
     if ( !bFoundPermutations ) {
         // TODO: This is redundant; we might want to keep this in devbuild only to avoid unecessary
         // overhead
@@ -73,7 +73,7 @@ void ShaderRegister::retrieveShadersForMaterial( Material* param_1, const uint32
         local_58.PermutationFlags.pCustomFlags[0] = param_1 == pDefaultMaterial /*PTR_DAT_00f47514*/;
         local_58.PermutationHashcode = 0x3dafe4f6b9bae7f4;
 
-        bool bFoundPermutations = retrieveVSPSForFlags( local_58, const_cast<GPUShader*>(param_1->pVertexShaders[index]), const_cast<GPUShader*>(param_1->pPixelShaders[index]) );
+        bool bFoundPermutations = retrieveVSPSForFlags( local_58, param_1->pVertexShaders[index], param_1->pPixelShaders[index] );
         OTDU_ASSERT_FATAL( bFoundPermutations );
     }
 

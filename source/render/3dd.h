@@ -4,13 +4,21 @@
 
 struct RenderObject {
     uint32_t Flags;
-    uint32_t GeometrySectionOffset;
-    uint32_t PrimitiveSectionOffset;
+    x86Pointer_t GeometrySection;
+    x86Pointer_t PrimitiveSection;
     uint32_t NumPrimitives;
     float BoundingSphereOrigin[3];
     float BoundingSphereRadius;
 };
-static_assert(sizeof(RenderObject) == 0x20, "Must match or else resource parsing will fail");
+OTDU_SIZE_MUST_MATCH(RenderObject, 0x20);
+
+struct Heightmap : public RenderObject {
+    uint32_t NumTiles;
+    uint32_t NumTileX;
+    uint32_t NumTileZ;
+    float    TileSize;
+};
+OTDU_SIZE_MUST_MATCH(Heightmap, 0x30);
 
 class Render3DD : public RenderFile {
 public:
@@ -26,4 +34,5 @@ private:
     RenderFile::Section* pHiearchyArray;
 };
 
-static constexpr uint32_t kObjectMagic = 0x2e4a424f; // .OBJ
+static constexpr uint32_t kObjectMagic      = 0x2e4a424f; // .OBJ
+static constexpr uint32_t kHeightmapMagic   = 0x50414d48; // HMAP

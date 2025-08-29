@@ -72,7 +72,7 @@ struct SerializedTransform {
     float ScaleY = 1.0f;
     float ScaleZ = 1.0f;
 };
-static_assert(sizeof(SerializedTransform) == 40, "Size mismatch! Binary deserialization might fail" );
+OTDU_SIZE_MUST_MATCH(SerializedTransform, 40);
 
 struct SerializedAttribute {
 public:
