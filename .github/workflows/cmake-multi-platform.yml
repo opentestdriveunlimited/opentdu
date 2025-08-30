@@ -107,7 +107,7 @@ jobs:
       with:
         name: "${{ env.sha_short }}"
         files: |
-            ${{ github.workspace }}/build/bin/opentdu_assetExtractor_${{ matrix.platform_name }}
+            ${{ github.workspace }}/build/bin/opentdu_assetextractor_${{ matrix.platform_name }}
             ${{ github.workspace }}/build/bin/opentdu_savedecryptor_${{ matrix.platform_name }}
 
     - name: Release (Windows)
@@ -116,5 +116,5 @@ jobs:
       with:
         name: "${{ env.sha_short }}"
         files: |
-            ${{ github.workspace }}/build/bin/opentdu_assetExtractor_${{ matrix.platform_name }}.exe
+            ${{ github.workspace }}/build/bin/opentdu_assetextractor_${{ matrix.platform_name }}.exe
             ${{ github.workspace }}/build/bin/opentdu_savedecryptor_${{ matrix.platform_name }}.exe
