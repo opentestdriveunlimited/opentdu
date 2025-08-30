@@ -41,7 +41,10 @@ extern int32_t gNCmdShow;
 #include <unistd.h>
 #include <semaphore.h>
 #include <sys/types.h>
+
+#if defined( OTDU_MACOS )
 #include <sys/sysctl.h>
+#endif
 
 #define OTDU_MAX_PATH PATH_MAX
 #endif
