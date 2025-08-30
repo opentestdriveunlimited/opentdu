@@ -36,7 +36,7 @@ extern int32_t gNCmdShow;
 
 #define OTDU_MAX_PATH MAX_PATH
 
-#elif defined( OTDU_MACOS )
+#elif defined( OTDU_UNIX )
 #include <stdlib.h>
 #include <unistd.h>
 #include <semaphore.h>
@@ -95,7 +95,7 @@ namespace TestDrive
     {
         MessageBoxA( 0, pErrorMessage, pWindowTitle, 0 );
     }
-#elif defined( OTDU_MACOS )
+#elif defined( OTDU_UNIX )
     inline void* Alloc( const size_t size )
     {
         return malloc( size );
@@ -135,12 +135,17 @@ namespace TestDrive
 
     inline uint64_t GetAvailableVirtualMemory()
     {
+#if defined( OTDU_MACOS )
         size_t pagesz = sysconf( _SC_PAGE_SIZE );
         uint64_t mem = 0ull;
         size_t len = sizeof( mem );
         sysctlbyname( "hw.memsize", &mem, &len, NULL, 0 );
-
         return mem;
+#else
+        long pages = sysconf(_SC_PHYS_PAGES);
+        long page_size = sysconf(_SC_PAGE_SIZE);
+        return pages * page_size;
+#endif
     }
 
     inline void DisplayMessageBox( const char* pErrorMessage, const char* pWindowTitle = "Test Drive Unlimited" )
