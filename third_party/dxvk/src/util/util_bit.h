@@ -209,10 +209,6 @@ namespace dxvk::bit {
     #endif
   }
 
-  inline uint32_t lzcnt(size_t n) {
-    return lzcnt((uint64_t)n);
-  }
-
   template<typename T>
   uint32_t pack(T& dst, uint32_t& shift, T src, uint32_t count) {
     constexpr uint32_t Bits = 8 * sizeof(T);
