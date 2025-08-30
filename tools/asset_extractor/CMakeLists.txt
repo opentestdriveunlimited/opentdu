@@ -20,7 +20,7 @@ include_directories( "${OTDU_THIRDPARTY_FOLDER}/spirv_cross/" )
 include_directories( "${OTDU_THIRDPARTY_FOLDER}/spirv_cross/include" )
 
 if ( WIN32 )
-    set_target_properties( opentdu_assetExtractor PROPERTIES OUTPUT_NAME "opentdu_assetextractor_win32")
+    set_target_properties( opentdu_assetExtractor PROPERTIES OUTPUT_NAME "opentdu_assetextractor_${CMAKE_GENERATOR_PLATFORM}")
 elseif ( APPLE )
     set_target_properties( opentdu_assetExtractor PROPERTIES OUTPUT_NAME "opentdu_assetextractor_darwin")
 else()

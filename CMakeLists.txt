@@ -458,7 +458,7 @@ if (${OTDU_GFX_API} STREQUAL "OTDU_VULKAN")
     include_directories( "${OTDU_THIRDPARTY_FOLDER}/VulkanMemoryAllocator/include" )
 
     if ( WIN32 )
-        set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_win32_vulkan")
+        set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_${CMAKE_GENERATOR_PLATFORM}_vulkan")
     elseif ( APPLE )
         set_target_properties( opentdu PROPERTIES OUTPUT_NAME "opentdu_darwin_vulkan")
     else()

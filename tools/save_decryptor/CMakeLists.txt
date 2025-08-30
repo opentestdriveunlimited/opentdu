@@ -10,7 +10,7 @@ if ( WIN32 )
 endif ( WIN32 )
 
 if ( WIN32 )
-    set_target_properties( opentdu_savedecryptor PROPERTIES OUTPUT_NAME "opentdu_savedecryptor_win32")
+    set_target_properties( opentdu_savedecryptor PROPERTIES OUTPUT_NAME "opentdu_savedecryptor_${CMAKE_GENERATOR_PLATFORM}")
 elseif ( APPLE )
     set_target_properties( opentdu_savedecryptor PROPERTIES OUTPUT_NAME "opentdu_savedecryptor_darwin")
 else()
