@@ -66,6 +66,7 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
 
     - name: Configure CMake (opentdu) (Windows)
       if: matrix.platform_name == 'Win32' || matrix.platform_name == 'x64'
@@ -100,6 +101,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: matrix.platform_name == 'Win32' || matrix.platform_name == 'x64'
       with:
+        name: "${{ env.sha_short }} (${{ matrix.platform_name }})"
         files: |
             ${{ github.workspace }}/build/bin/opentdu_assetExtractor_${{ matrix.platform_name }}.exe
             ${{ github.workspace }}/build/bin/opentdu_savedecryptor_${{ matrix.platform_name }}.exe
