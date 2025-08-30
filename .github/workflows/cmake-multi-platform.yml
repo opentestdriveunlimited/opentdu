@@ -41,7 +41,7 @@ jobs:
             platform_name: x64
           - os: macos-latest
             c_compiler: clang
-            cpp_compiler: clang
+            cpp_compiler: clang++
             platform_name: darwin
         exclude:
           - os: windows-latest
