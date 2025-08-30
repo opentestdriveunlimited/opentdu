@@ -41,6 +41,7 @@ extern int32_t gNCmdShow;
 #include <unistd.h>
 #include <semaphore.h>
 #include <sys/types.h>
+#include <sys/file.h>
 #include <fcntl.h>
 
 #if defined( OTDU_MACOS )
