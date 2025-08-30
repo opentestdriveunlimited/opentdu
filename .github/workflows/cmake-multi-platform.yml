@@ -71,7 +71,13 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
         echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+        echo "binary_extension=" >> "$GITHUB_ENV"
 
+    - name: Set binary extension (Windows)
+      if: matrix.platform_name == 'Win32' || matrix.platform_name == 'x64'
+      run: >
+        echo "binary_extension=.exe" >> "$GITHUB_ENV"
+    
     - name: Configure CMake (opentdu) (Windows)
       if: matrix.platform_name == 'Win32' || matrix.platform_name == 'x64'
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -106,6 +112,6 @@ jobs:
       with:
         name: "${{ env.sha_short }}"
         files: |
-            ${{ github.workspace }}/build/bin/opentdu_assetExtractor_${{ matrix.platform_name }}.exe
-            ${{ github.workspace }}/build/bin/opentdu_savedecryptor_${{ matrix.platform_name }}.exe
+            ${{ github.workspace }}/build/bin/opentdu_assetExtractor_${{ matrix.platform_name }}${{ env.binary_extension }}
+            ${{ github.workspace }}/build/bin/opentdu_savedecryptor_${{ matrix.platform_name }}${{ env.binary_extension }}
     
