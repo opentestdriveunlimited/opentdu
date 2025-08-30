@@ -26,10 +26,10 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os:  [windows-latest]
+        os:  [windows-latest, macos-latest]
         build_type: [Release]
         c_compiler: [clang, cl]
-        platform_name: [Win32, x64, none]
+        platform_name: [Win32, x64, darwin]
         include:
           - os: windows-latest
             c_compiler: cl
@@ -39,6 +39,10 @@ jobs:
             c_compiler: cl
             cpp_compiler: cl
             platform_name: x64
+          - os: macos-latest
+            c_compiler: clang
+            cpp_compiler: clang
+            platform_name: darwin
         exclude:
           - os: windows-latest
             c_compiler: clang
@@ -53,7 +57,7 @@ jobs:
             c_compiler: clang
             platform_name: Win32
           - os: windows-latest
-            platform_name: none
+            platform_name: darwin
 
     steps:
     - uses: actions/checkout@v4
@@ -80,16 +84,16 @@ jobs:
         -S ${{ github.workspace }}
         -A ${{ matrix.platform_name }}
 
-    # - name: Configure CMake (opentdu) (Unix)
-    #   if: ${{ matrix.platform_name == 'none' }}
-    #   # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-    #   # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-    #   run: >
-    #     cmake -B ${{ steps.strings.outputs.build-output-dir }}
-    #     -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-    #     -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-    #     -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-    #     -S ${{ github.workspace }}
+    - name: Configure CMake (opentdu) (Unix)
+      if: ${{ matrix.platform_name == 'none' }}
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
 
     - name: Build Asset Extractor
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target opentdu_assetExtractor
@@ -97,11 +101,10 @@ jobs:
     - name: Build Save Decryptor
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target opentdu_savedecryptor
 
-    - name: Release (Win32)
+    - name: Release
       uses: softprops/action-gh-release@v2
-      if: matrix.platform_name == 'Win32' || matrix.platform_name == 'x64'
       with:
-        name: "${{ env.sha_short }} (${{ matrix.platform_name }})"
+        name: "${{ env.sha_short }}"
         files: |
             ${{ github.workspace }}/build/bin/opentdu_assetExtractor_${{ matrix.platform_name }}.exe
             ${{ github.workspace }}/build/bin/opentdu_savedecryptor_${{ matrix.platform_name }}.exe
