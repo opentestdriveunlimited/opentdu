@@ -170,7 +170,7 @@ void GameMode::mainLoop(TestDriveGameInstance* param_1)
             DAT_016914a4 = DAT_016914a0;
         } else {
             submitDrawCommands(gGSTimer.GameDeltaTime,gGSTimer.GameTotalTime);
-            iVar6 = gpRender->flushDrawCommands(false);
+            iVar6 = gpRender->flushDrawCommands(true);
             if (iVar6 == 4) {
                 gbRequestedExit = true;
             }
