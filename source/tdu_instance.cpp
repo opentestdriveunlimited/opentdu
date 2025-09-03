@@ -79,27 +79,21 @@ bool DAT_010e723d = false;
 bool DAT_010e7245 = false;
 
 // TODO: Move those to the right cpp/h
-static bool gWindowed = false;
-static bool gNoPub = false;
 static bool gFPSCounterEnabled = false;
 static bool gPOSEnabled = false;
-static int8_t gVBL = false;
 static char gORBAddress[128];
 static uint64_t gAvailableMemory = 0;
 
 static constexpr const char* kDefaultORBAddress = "orb.testdriveunlimited.com";
 
-static CmdLineArg CmdLineArgWindowed( "w", []( const char* pArg ) { gWindowed = true; } );
-static CmdLineArg CmdLineArgVBL( "vbl", []( const char* pArg ) {
-    char var = *pArg;
+bool gBreakOnAssertFailure = false; // DAT_00f47931
+static CmdLineArg CmdLineArgDbgBreakOnAssertFailure( "break_on_assert_failure", []( const char* pArg ) { gBreakOnAssertFailure = true; } );
 
-    if ( 47 < var && var < 51 ) {
-        gVBL = var - 48;
-    }
-} );
+bool gDisableAssert = false;
+static CmdLineArg CmdLineArgDisableAssert( "disable_assert", []( const char* pArg ) { gDisableAssert = true; } );
+
 static CmdLineArg CmdLineArgFPS( "fps", []( const char* pArg ) { gFPSCounterEnabled = true; } );
 static CmdLineArg CmdLineArgPOS( "pos", []( const char* pArg ) { gPOSEnabled = true; } );
-static CmdLineArg CmdLineArgNoPub( "nopub", []( const char* pArg ) { gNoPub = true; } );
 static CmdLineArg CmdLineArgORB( "orb", []( const char* pArg ) {
     strncpy( gORBAddress, pArg, sizeof( char ) * 128 );
     gORBAddress[127] = '\0';
@@ -214,6 +208,7 @@ int32_t TestDrive::InitAndRun( const char** pCmdLineArgs, const int32_t argCount
             return 0;
         }
     }
+    OTDU_LOG_INFO("Game instance already running!\n");
 
     return 1;
 }
@@ -663,7 +658,7 @@ void TestDriveGameInstance::tickGameMode(float param_1, float param_2, float del
 void TestDriveGameInstance::FUN_0097c8b0()
 {
     // FUN_0097c6e0 (inlined)
-    OTDU_UNIMPLEMENTED;
+    // OTDU_UNIMPLEMENTED;
 }
 
 void TestDriveGameInstance::FUN_009b4650()

@@ -24,6 +24,19 @@
 static constexpr const char* kSystemPCIniFilename = "SystemPC.ini"; // DAT_00f76524
 static constexpr const char* kRadioIniFilename = "Radio.ini"; // DAT_00f76574
 
+static bool gForceWindowed = false; // DAT_0143f5ac
+static CmdLineArg CmdLineArgWindowed( "w", []( const char* pArg ) { gForceWindowed = true; } );
+
+static int8_t gVBL = 0; // 0143f5b0
+static CmdLineArg CmdLineArgVBL( "vbl", []( const char* pArg ) {
+    // FUN_004064e0
+    char var = *pArg;
+
+    if ( 47 < var && var < 51 ) {
+        gVBL = var - 48;
+    }
+} );
+
 GSConfig* gpConfig = nullptr;
 
 GSConfig::GSConfig()
@@ -170,6 +183,8 @@ void GSConfig::parseIniFiles()
     //    }
     //    };
     //}
+
+    bWindowed = gForceWindowed;
 }
 
 void GSConfig::registerCommands()

@@ -2,8 +2,8 @@
 
 #include "logger.h"
 
-static bool gSkipAssert = false;
-static bool gBreakOnAssertFailure = true;
+extern bool gDisableAssert;
+extern bool gBreakOnAssertFailure; // DAT_00f47931
 
 [[noreturn]] static void OnFatalError()
 {
@@ -23,7 +23,7 @@ static bool gBreakOnAssertFailure = true;
 
 #ifdef OTDU_DEVBUILD
 #define OTDU_ASSERT( condition )\
-if ( !gSkipAssert && !( condition ) ) {\
+if ( !gDisableAssert && !( condition ) ) {\
     OTDU_LOG_ERROR( "Assertion failure file: %s line: %u\n", __FILE__, __LINE__ );\
     if ( gBreakOnAssertFailure ) {\
         OTDU_TRIGGER_BREAKPOINT;\
