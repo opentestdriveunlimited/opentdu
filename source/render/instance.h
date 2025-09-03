@@ -28,6 +28,7 @@ public:
     inline RenderFile::Section* getMaterialBank() const { return pBankMat; }
     inline const Eigen::Matrix4f& getModelMatrix() const { return matrix; }
     inline float getBoundingScale() const { return biggestScale; }
+    inline LOD* getLODs() { return lods.data(); }
 
 public:
     Instance();

@@ -3,6 +3,7 @@
 #include "render_file.h"
 #include "gs_render_helper.h"
 #include "core/color.h"
+#include "render/3dg.h"
 
 #include <Eigen/Dense>
 
@@ -24,7 +25,6 @@ struct DrawStreams {
 };
 
 static constexpr uint32_t kGeometryBufferMagic  = 0x54534c44; // DLST (DrawLiST)
-static constexpr uint32_t kPrimitiveMagic       = 0x4d495250; // PRIM (PRIMitive)
 
 // This is only used to match what TDU1 uses (TDU1 uses C arrays)
 static constexpr uint32_t kDrawCommandsInitialNumVertexAttributes = 16; 
@@ -45,56 +45,6 @@ struct GeometryBuffer {
     char pUnknown[16];
 
     void* lock(const uint32_t startOffset, const uint32_t length);
-};
-
-struct PrimtiveVertexAttributes {
-    static constexpr uint32_t kMaxNumAttributes = 14;
-
-    struct Stream {
-        uint8_t Number;
-        uint8_t Format;
-        uint8_t Unknown;
-        uint8_t Offset;
-    };
-    
-    Stream Position;
-    Stream Normal;
-    Stream Diffuse;
-    Stream Specular;
-    Stream UV;
-    Stream Tangent;
-    Stream Binormal;
-    Stream Bones;
-    Stream BoneWeight;
-    Stream Unknown1;
-    Stream Unknown2;
-    Stream Unknown3;
-    Stream Unknown4;
-
-    uint8_t NumAttributes;
-};
-
-struct Primitive {
-    uint32_t        Flags;
-    ePrimitiveType  Type;
-
-    RenderFile::Section* pIndexBuffer;
-    RenderFile::Section* pVertexBuffer;
-    RenderFile::Section* pBonesBuffer;
-    void*                pVertexDeclaration;
-    uint8_t              bUploaded;
-    uint8_t              NumBones;
-    uint16_t             MaterialID;
-    uint16_t             IndexType;
-    uint8_t              __PADDING__[2]; // Explicit padding to match 3DG declaration. DO NOT REMOVE
-    uint32_t             VertexOffset;
-    uint32_t             NumVertex;
-    uint32_t             IndexOffset;
-    uint32_t             NumIndex;
-    PrimtiveVertexAttributes VertexStreams;
-    void* pOTNode;
-    void* pOTNodeMaterial;
-    void* pMorphTarget;
 };
 
 struct DrawPrimitive {
@@ -149,7 +99,9 @@ public:
     uint32_t getNumPrimitives() const;
     Material* getMaterialAtIndex( const uint32_t index ) const { return ppMaterials[index]; }
     uint32_t* getFlagsAtIndex( const uint32_t index ) const { return ppFlags[index]; }
-
+    const Eigen::Matrix4f& getMatrixAtIndex( const uint32_t index ) const { return pMatrices[index]; }
+    const DrawPrimitive& getPrimitiveAtIndex( const uint32_t index ) const { return pMemPrimsList[index]; }
+    
 private:
     struct Pool {
         Pool();

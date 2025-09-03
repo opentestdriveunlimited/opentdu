@@ -7,8 +7,7 @@ struct RenderObject {
     x86Pointer_t GeometrySection;
     x86Pointer_t PrimitiveSection;
     uint32_t NumPrimitives;
-    float BoundingSphereOrigin[3];
-    float BoundingSphereRadius;
+    Eigen::Vector4f BoundingSphere; // Origin (xyz) + Radius (w)
 };
 OTDU_SIZE_MUST_MATCH(RenderObject, 0x20);
 

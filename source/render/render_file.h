@@ -26,7 +26,8 @@ public:
     virtual ~RenderFile();
 
     virtual void destroy();
-    virtual bool parseSection( Section* pSection ) { return true; }    
+    virtual bool parseSection( Section* pSection ) { return true; }
+    virtual void unparseSection( Section* pSection ) {}
 
     void reset();
     void unparse();

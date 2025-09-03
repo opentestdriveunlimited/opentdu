@@ -11,6 +11,7 @@ struct FramebufferAttachments;
 struct RenderObject;
 struct Heightmap;
 class LightSetupNode;
+struct Material;
 
 #include "frustum.h"
 #include "render_object_base.h"
@@ -109,9 +110,10 @@ private:
 
     void submitDrawListToBucket(DrawList* param_2);
     void submitInstance(Instance* param_2);
-
     void submitHeightmap(Heightmap* param_1, Instance* param_2);
     void submitObject(RenderObject* param_1, Instance* param_2);
+    void submitInstanceWithCustomMaterial(RenderObject* param_2, InstanceWithCustomMaterial* param_3);
 
     bool isInstanceVisible(RenderObject* param_1, Instance* param_2);
+    bool FUN_00508930(Material* param_2) const;
 };

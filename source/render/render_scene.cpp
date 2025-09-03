@@ -9,6 +9,9 @@
 #include "render/draw_list.h"
 #include "render/2dm.h"
 #include "render/material.h"
+#include "render/3dg.h"
+#include "render/hiearchy_node.h"
+#include "render/setup_node.h"
 
 #include "core/mutex.h"
 
@@ -178,11 +181,14 @@ void RenderScene::submitDrawCommands(uint32_t param_2)
     }
 
     for (Instance* peVar2 : pDrawCommands->StaticInstances) {
-        OTDU_UNIMPLEMENTED;
+        submitInstance( peVar2 );
     }
 
-    for (HiearchyNode* peVar2 : pDrawCommands->StaticHiearchies) {
-        OTDU_UNIMPLEMENTED;
+    for (HiearchyNode* peVar5 : pDrawCommands->StaticHiearchies) {
+        for (uint16_t iVar13 = peVar5->NumChildren + 1; iVar13 != 0; iVar13 = iVar13 + -1) {
+            submitInstance( peVar5->pInstance );
+            peVar5 = peVar5->pNext;
+        }
     }
 
     for (DrawList* peVar2 : pDrawCommands->DynamicDrawLists) {
@@ -190,7 +196,7 @@ void RenderScene::submitDrawCommands(uint32_t param_2)
     }
     
     for (Instance* peVar2 : pDrawCommands->DynamicInstances) {
-        OTDU_UNIMPLEMENTED;
+        submitInstance( peVar2 );
     }
     
     for (InstanceWithCustomMaterial* peVar6 : pDrawCommands->DynamicInstancesWithCustomMat) {
@@ -206,7 +212,7 @@ void RenderScene::submitDrawCommands(uint32_t param_2)
                 uint32_t pMagic = *(uint32_t*)piVar8;
                 if (pMagic == kObjectMagic) {
                     RenderObject* pObj = (RenderObject*)((uint8_t*)piVar8 + 4);
-                    OTDU_UNIMPLEMENTED;
+                    submitInstanceWithCustomMaterial(pObj, peVar6);
                 }
             }
         }
@@ -214,13 +220,75 @@ void RenderScene::submitDrawCommands(uint32_t param_2)
     
     for (auto& peVar10 : pDrawCommands->DynamicInstancesArrays) {
         for (Instance* peVar2 : *peVar10) {
-            OTDU_UNIMPLEMENTED;
+            submitInstance(peVar2);
         }
     }
     
-    for (HiearchyNode* peVar2 : pDrawCommands->DynamicHiearchies) {
-        OTDU_UNIMPLEMENTED;
+    for (HiearchyNode* peVar5 : pDrawCommands->DynamicHiearchies) {
+        for (uint16_t iVar13 = peVar5->NumChildren + 1; iVar13 != 0; iVar13 = iVar13 + -1) {
+            submitInstance( peVar5->pInstance );
+            peVar5 = peVar5->pNext;
+        }
     }
+}
+
+ // Default (or global) Light Setup?
+static LightSetupNode DAT_00fe89f8; // DAT_00fe89f8
+
+struct RenderCommand
+{
+
+};
+
+struct LightSetupCommand
+{
+    LightSetupNode* pLightSetupNode;
+};
+
+struct RenderBucket 
+{
+    uint32_t Index;
+    uint32_t Flags;
+    uint32_t Unknown;
+    uint32_t Unknown2;
+
+    std::vector<RenderCommand>          DrawCommands;
+    std::vector<LightSetupCommand>      SetupCommands;
+
+    LightSetupCommand* allocateLightSetupCommand(LightSetupNode* param_2);
+};
+
+static RenderBucket* gRenderBuckets = nullptr; // DAT_00faf478
+
+inline RenderBucket& GetBucket(const uint16_t param_1)
+{
+    return gRenderBuckets[param_1];
+}
+
+void AddPrimToBucket(Material* param_1, DrawList* param_2, const Eigen::Matrix4f& param_3, const Primitive& param_4, uint32_t* param_5, const uint32_t isHeightmap)
+{
+    // FUN_005f23c0
+    RenderBucket& pBucket = GetBucket(param_1->OT);
+
+
+    OTDU_UNIMPLEMENTED;
+}
+
+void AddPrimToBucket(Material* param_1, Instance* param_2, Primitive* param_3, const uint32_t isHeightmap, Eigen::Vector4f& boundingSphereAndRadius, LOD* param_6)
+{
+    // FUN_005f21b0
+    OTDU_UNIMPLEMENTED;
+}
+
+LightSetupCommand* RenderBucket::allocateLightSetupCommand(LightSetupNode* param_2)
+{
+    // FUN_DAT_00fe89f8
+    if (param_2 == nullptr) {
+        param_2 = &DAT_00fe89f8;
+    }
+
+    LightSetupCommand cmd;
+    cmd.pLightSetupNode = param_2;
 }
 
 void RenderScene::submitDrawListToBucket(DrawList * param_2)
@@ -234,10 +302,10 @@ void RenderScene::submitDrawListToBucket(DrawList * param_2)
 
         uint32_t* peVar4 = param_2->getFlagsAtIndex( iVar6 );
         if ( ( ( ( peVar7->FXFlags >> 3 ) & 1 ) != 0 )
-        && ( gpRender->getActiveScene()->getUnknownMask() & ( 1ull << peVar7->OT ) ) ) { // TODO: Can we simplify and use 'this' instead?
-            OTDU_UNIMPLEMENTED;
-            // AddPrimToBucket(peVar7,pRVar5,(float *)((int)pTVar3->Scalars[0] + local_14),
-            //                 &(param_2->Streams).Normals + (int)&(peVar2->Chunk).Type,peVar4,0);
+        &&  gpRender->getActiveScene()->FUN_00508930(peVar7) ) {
+            const Eigen::Matrix4f& modelMatrix = param_2->getMatrixAtIndex( iVar6 );
+            const DrawPrimitive& primitive = param_2->getPrimitiveAtIndex( iVar6 );
+            AddPrimToBucket(peVar7, param_2, modelMatrix, primitive.Primitive, peVar4, 0);
         }
     }
 }
@@ -251,7 +319,7 @@ void RenderScene::submitInstance(Instance * param_2)
             param_2->calculateLOD(gpRender->getActiveCamera());
         }
 
-        if (param_2->getActiveLODIndex() < 4) {
+        if (param_2->getActiveLODIndex() < kMaxNumLOD) {
             uint32_t* piVar1 = (uint32_t*)param_2->getLOD(param_2->getActiveLODIndex()).pUnknown;
             if (*piVar1 == kHeightmapMagic) {
                 Heightmap* pHmap = (Heightmap*)(piVar1 + 4); // + 0x10
@@ -263,35 +331,103 @@ void RenderScene::submitInstance(Instance * param_2)
         }
     }
 }
+ 
+bool RenderScene::FUN_00508930(Material * param_2) const
+{
+    // FUN_00508930
+    return ((1ull << param_2->OT) & unknownMask) != 0;
+}
 
 void RenderScene::submitHeightmap(Heightmap * param_1, Instance * param_2)
 {
     // FUN_005092f0
-    OTDU_UNIMPLEMENTED;
+    if (((param_2->getFlags() & 1) == 0) || isInstanceVisible(param_1, param_2)) {
+        Render2DM::HashTableEntry* peVar2 = (Render2DM::HashTableEntry*)param_2->getMaterialBank();
+        Primitive* pPrimitive = (Primitive*)( (uint8_t*)param_1->PrimitiveSection + 0x10 );
+        uint16_t uVar1 = pPrimitive->MaterialID;
+
+        Material* peVar7 = DAT_00fe67dc.pMaterial;
+        if (peVar2 != nullptr && uVar1 == 0xffff ) {
+            RenderFile::Section* pMaterialSection = peVar2[uVar1 + 1].pMaterial;
+            if ( pMaterialSection != nullptr ) {
+                peVar7 = (Material*)(pMaterialSection + 1);
+            } 
+        }
+
+        if ((peVar7->FXFlags >> 3 & 1) != 0
+        &&  gpRender->getActiveScene()->FUN_00508930(peVar7) ) {
+            AddPrimToBucket(peVar7, param_2, pPrimitive, 1u, param_1->BoundingSphere, param_2->getLODs());
+        }
+    }
 }
 
 void RenderScene::submitObject(RenderObject * param_1, Instance * param_2)
 {
     // FUN_00509160
-    OTDU_UNIMPLEMENTED;
+    if (((param_2->getFlags() & 1) == 0) || isInstanceVisible(param_1, param_2)) {
+        RenderFile::Section* pPrimitiveSection = param_1->PrimitiveSection;
+        if (pPrimitiveSection != nullptr) {
+            Render2DM::HashTableEntry* peVar2 = (Render2DM::HashTableEntry*)param_2->getMaterialBank();
+            Primitive* pPrimitive = (Primitive*)( (uint8_t*)pPrimitiveSection + 0x10 );
+            for (uint32_t local_c = 0; local_c < param_1->NumPrimitives; local_c++) {
+                uint16_t uVar1 = pPrimitive->MaterialID;
+
+                Material* peVar7 = DAT_00fe67dc.pMaterial;
+                if (peVar2 != nullptr && uVar1 == 0xffff ) {
+                    RenderFile::Section* pMaterialSection = peVar2[uVar1 + 1].pMaterial;
+                    if ( pMaterialSection != nullptr ) {
+                        peVar7 = (Material*)(pMaterialSection + 1);
+                    } 
+                }
+
+                if ((peVar7->FXFlags >> 3 & 1) != 0
+                &&  gpRender->getActiveScene()->FUN_00508930(peVar7) ) {
+                    AddPrimToBucket(peVar7, param_2, pPrimitive, 0u, param_1->BoundingSphere, nullptr);
+                }
+            }
+        }
+    }
+}
+
+void RenderScene::submitInstanceWithCustomMaterial(RenderObject * param_2, InstanceWithCustomMaterial * param_3)
+{
+    // FUN_00509250
+    Instance* peVar1 = param_3->pInstance;
+    if (((peVar1->getFlags() & 1) == 0) || isInstanceVisible(param_2, peVar1)) {
+        Material* peVar2 = param_3->pMaterial;
+        RenderFile::Section* peVar4 = param_2->PrimitiveSection;
+        uint8_t* peVar4Bytes = (uint8_t*)peVar4;
+        if (peVar4 != nullptr) {
+            for (uint32_t i = 0; i < param_2->NumPrimitives; i++) {
+                Primitive* pPrimitive = (Primitive*)( peVar4Bytes + 0x10 );
+
+                if ((peVar2->FXFlags >> 3 & 1) != 0
+                &&  gpRender->getActiveScene()->FUN_00508930(peVar2) ) {
+                    AddPrimToBucket(peVar2, peVar1, pPrimitive, 0u, param_2->BoundingSphere, nullptr);
+                }
+
+                peVar4Bytes += peVar4->Size;
+            }
+        }
+    }
 }
 
 bool RenderScene::isInstanceVisible(RenderObject * param_1, Instance * param_2)
 {
     // FUN_005090b0
     Eigen::Vector4f local_40 = { 
-        param_1->BoundingSphereOrigin[0], 
-        param_1->BoundingSphereOrigin[1], 
-        param_1->BoundingSphereOrigin[2],
+        param_1->BoundingSphere.x(),
+        param_1->BoundingSphere.y(),
+        param_1->BoundingSphere.z(),
         0.0f
     };
 
     Eigen::Vector4f local_30 = param_2->getModelMatrix() * local_40;
-    local_30.w() = param_1->BoundingSphereRadius;
+    local_30.w() = param_1->BoundingSphere.w();
 
     const Eigen::Matrix4f& worldToCam = gpRender->getActiveCamera()->getWorldToCam();
     Eigen::Vector4f local_20 = worldToCam * local_30;
 
-    int32_t iVar2 = gpRender->getActiveFrustum()->testBoundingSphere(local_20, param_1->BoundingSphereRadius * param_2->getBoundingScale() );
+    int32_t iVar2 = gpRender->getActiveFrustum()->testBoundingSphere(local_20, param_1->BoundingSphere.w() * param_2->getBoundingScale() );
     return iVar2 != 0;
 }
