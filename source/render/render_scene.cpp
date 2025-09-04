@@ -235,14 +235,37 @@ void RenderScene::submitDrawCommands(uint32_t param_2)
  // Default (or global) Light Setup?
 static LightSetupNode DAT_00fe89f8; // DAT_00fe89f8
 
-struct RenderCommand
+struct TransformMatrixCommand
 {
-
+    Eigen::Matrix4f                     ModelMatrix = Eigen::Matrix4f::Identity();
+    uint32_t                            IsInstanciated = 0;
+    uint32_t                            Unknown = 0;
+    DrawList*                           pDrawList = nullptr;
+    Instance*                           pInstance = nullptr;
+    const SetupGraph*                   pSetup = nullptr;
 };
 
-struct LightSetupCommand
+struct DrawCommand
 {
-    LightSetupNode* pLightSetupNode;
+    uint32_t                            IsHeightmap = 0;
+    uint32_t                            Unknown = 0;
+    const Primitive*                    pPrimitive = nullptr;
+    LOD*                                pActiveLOD = nullptr;
+    std::list<TransformMatrixCommand>   Matrices;
+};
+
+struct DrawCommandMaterial
+{
+    uint32_t                    Unknown = 0;
+    float                       ZSort = 0.0f;
+    Material*                   pMaterial = nullptr;
+    std::list<DrawCommand>    DrawCommands;
+};
+
+struct SceneSetupCommand
+{
+    LightSetupNode*                     pLightSetupNode;
+    std::list<DrawCommandMaterial>      MaterialCommands;
 };
 
 struct RenderBucket 
@@ -252,10 +275,10 @@ struct RenderBucket
     uint32_t Unknown;
     uint32_t Unknown2;
 
-    std::vector<RenderCommand>          DrawCommands;
-    std::vector<LightSetupCommand>      SetupCommands;
+    std::list<DrawCommand>        DrawCommands;
+    std::list<SceneSetupCommand>  SceneSetupCommands;
 
-    LightSetupCommand* allocateLightSetupCommand(LightSetupNode* param_2);
+    SceneSetupCommand* allocateSceneSetupCommand(LightSetupNode* param_2);
 };
 
 static RenderBucket* gRenderBuckets = nullptr; // DAT_00faf478
@@ -265,11 +288,51 @@ inline RenderBucket& GetBucket(const uint16_t param_1)
     return gRenderBuckets[param_1];
 }
 
-void AddPrimToBucket(Material* param_1, DrawList* param_2, const Eigen::Matrix4f& param_3, const Primitive& param_4, uint32_t* param_5, const uint32_t isHeightmap)
+inline DrawCommandMaterial* InsertBasedOnDepth(SceneSetupCommand* sceneSetup, float z)
+{
+    // FUN_005f1900
+    DrawCommandMaterial cmd;
+
+    for (auto it = sceneSetup->MaterialCommands.begin(); it != sceneSetup->MaterialCommands.end(); it++) {
+        if (it->ZSort > z) {
+            auto insertIt = sceneSetup->MaterialCommands.insert(it, cmd);
+            return &*insertIt;
+        }
+    }
+
+    sceneSetup->MaterialCommands.push_back(cmd);
+    return &sceneSetup->MaterialCommands.back();
+}
+
+void AddPrimToBucket(Material* param_1, DrawList* param_2, const Eigen::Matrix4f& param_3, const Primitive* param_4, SetupGraph* param_5, const uint32_t isHeightmap)
 {
     // FUN_005f23c0
     RenderBucket& pBucket = GetBucket(param_1->OT);
+    SceneSetupCommand* peVar2 = pBucket.allocateSceneSetupCommand(&DAT_00fe89f8);
+    DrawCommandMaterial* puVar4 = param_1->pOTNode;
+    if ((puVar4 == nullptr) || ((pBucket.Flags >> 2 & 1) != 0)) {
+        peVar2->MaterialCommands.push_back({});
+        puVar4 = &peVar2->MaterialCommands.back();
+        
+        puVar4->pMaterial = param_1;
+        puVar4->Unknown = 0x0;
+        param_1->pOTNode = puVar4;
+    }
 
+    DrawCommand* puVar6 = &puVar4->DrawCommands.back();
+    puVar6->pActiveLOD = nullptr;
+    puVar6->Unknown = 0;
+    puVar6->IsHeightmap = isHeightmap;
+    puVar6->pPrimitive = param_4;
+
+    puVar6->Matrices.push_back({});
+    TransformMatrixCommand* pfVar6 = &puVar6->Matrices.back();
+    pfVar6->IsInstanciated = 1;
+    pfVar6->Unknown = 0;
+    pfVar6->ModelMatrix = param_3;
+    pfVar6->pDrawList = param_2;
+    pfVar6->pInstance = nullptr;
+    pfVar6->pSetup = param_5;
 
     OTDU_UNIMPLEMENTED;
 }
@@ -277,18 +340,82 @@ void AddPrimToBucket(Material* param_1, DrawList* param_2, const Eigen::Matrix4f
 void AddPrimToBucket(Material* param_1, Instance* param_2, Primitive* param_3, const uint32_t isHeightmap, Eigen::Vector4f& boundingSphereAndRadius, LOD* param_6)
 {
     // FUN_005f21b0
-    OTDU_UNIMPLEMENTED;
+    RenderBucket& pBucket = GetBucket(param_1->OT);
+    SceneSetupCommand* peVar2 = pBucket.allocateSceneSetupCommand(&DAT_00fe89f8);
+    DrawCommandMaterial* peVar3 = nullptr;
+
+    bool bBindNodeToMaterial = true;
+    if ((pBucket.Flags >> 2 & 1) == 0) { // No Z sort?
+        if ((pBucket.Flags & 3) == 0) { // Use shared/global cmd?
+            peVar3 = param_1->pOTNode;
+            if (peVar3 == nullptr) {
+                peVar2->MaterialCommands.push_back({});
+                peVar3 = &peVar2->MaterialCommands.back();
+            } else {
+                bBindNodeToMaterial = false;
+            }
+        } else {
+            Eigen::Vector4f local_30 = { 
+                boundingSphereAndRadius.x(),
+                boundingSphereAndRadius.y(),
+                boundingSphereAndRadius.z(),
+                0.0f
+            };
+            
+            Eigen::Vector4f local_40 = param_2->getModelMatrix() * local_30;
+            local_30 = gActiveCamToWorld * local_40;
+            
+            float local_34 = local_30.z();
+            if ((pBucket.Flags >> 1 & 1) != 0) { // Back to front/front to back sort flag?
+                local_34 = local_30.z() * -1.0f;
+            }
+            peVar3 = InsertBasedOnDepth(peVar2, local_34);
+            peVar3->ZSort = local_34;
+        }
+    } else {
+        peVar2->MaterialCommands.push_back({});
+        peVar3 = &peVar2->MaterialCommands.back();
+    }
+
+    if (bBindNodeToMaterial) {
+        peVar3->pMaterial = param_1;
+        peVar3->Unknown = 0x0;
+        param_1->pOTNode = peVar3;
+    }
+
+    DrawCommand* puVar6 = param_3->pOTNode;
+    if (puVar6 == nullptr || param_3->pOTNodeMaterial != peVar3) {
+        peVar3->DrawCommands.push_back({});
+        puVar6 = &peVar3->DrawCommands.back();
+        puVar6->pActiveLOD = param_6;
+        puVar6->Unknown = 0;
+        puVar6->IsHeightmap = isHeightmap;
+        puVar6->pPrimitive = param_3;
+        param_3->pOTNode = puVar6;
+        param_3->pOTNodeMaterial = peVar3;
+    }
+
+    puVar6->Matrices.push_back({});
+    TransformMatrixCommand* pfVar6 = &puVar6->Matrices.back();
+    pfVar6->IsInstanciated = 1;
+    pfVar6->Unknown = 0;
+    pfVar6->ModelMatrix = param_2->getModelMatrix();
+    pfVar6->pDrawList = nullptr;
+    pfVar6->pInstance = param_2;
+    pfVar6->pSetup = param_2->getSetup();
 }
 
-LightSetupCommand* RenderBucket::allocateLightSetupCommand(LightSetupNode* param_2)
+SceneSetupCommand* RenderBucket::allocateSceneSetupCommand(LightSetupNode* param_2)
 {
     // FUN_DAT_00fe89f8
     if (param_2 == nullptr) {
         param_2 = &DAT_00fe89f8;
     }
 
-    LightSetupCommand cmd;
+    SceneSetupCommand cmd;
     cmd.pLightSetupNode = param_2;
+    SceneSetupCommands.push_back(cmd);
+    return &SceneSetupCommands.back();
 }
 
 void RenderScene::submitDrawListToBucket(DrawList * param_2)
@@ -300,12 +427,12 @@ void RenderScene::submitDrawListToBucket(DrawList * param_2)
             peVar7 = DAT_00f4751c; // TODO: I guess this is the fallback/pink material?
         }
 
-        uint32_t* peVar4 = param_2->getFlagsAtIndex( iVar6 );
+        SetupGraph* peVar4 = param_2->getSetupAtIndex( iVar6 );
         if ( ( ( ( peVar7->FXFlags >> 3 ) & 1 ) != 0 )
         &&  gpRender->getActiveScene()->FUN_00508930(peVar7) ) {
             const Eigen::Matrix4f& modelMatrix = param_2->getMatrixAtIndex( iVar6 );
             const DrawPrimitive& primitive = param_2->getPrimitiveAtIndex( iVar6 );
-            AddPrimToBucket(peVar7, param_2, modelMatrix, primitive.Primitive, peVar4, 0);
+            AddPrimToBucket(peVar7, param_2, modelMatrix, &primitive.Primitive, peVar4, 0);
         }
     }
 }

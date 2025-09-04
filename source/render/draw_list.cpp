@@ -253,9 +253,9 @@ bool DrawList::initialize(
     memoryPool.currentUsage += materialsMemoryUsage;
     memoryPool.pCurrent += materialsMemoryUsage;
 
-    ppFlags = reinterpret_cast<uint32_t**>( memoryPool.pCurrent );
+    ppSetups = reinterpret_cast<SetupGraph**>( memoryPool.pCurrent );
 
-    uint32_t flagsMemoryUsage = numPrimitives * sizeof(uint32_t*) + 0xf & 0xfffffff0;
+    uint32_t flagsMemoryUsage = numPrimitives * sizeof(SetupGraph*) + 0xf & 0xfffffff0;
     memoryPool.currentUsage += flagsMemoryUsage;
     memoryPool.pCurrent += flagsMemoryUsage;
 
@@ -448,7 +448,7 @@ bool DrawList::initializePrimitive(ePrimitiveType param_2, uint32_t numVertex, u
        (pCopy == this)) {
       ppMaterials[numPrimitives] = activeCommand.pMaterial;
       pMatrices[numPrimitives] = activeCommand.TransformMat;
-      ppFlags[numPrimitives] = &activeCommand.Flags;
+      ppSetups[numPrimitives] = &activeCommand.Setup;
       
       activePrimitive.pPrimitive = &pMemPrimsList[numPrimitives].Primitive;
       
@@ -631,7 +631,7 @@ void DrawList::updateGPUBuffer( GeometryBuffer* pGeometryBuffer )
 DrawList::ActiveDrawCommand::ActiveDrawCommand()
     : TransformMat( Eigen::Matrix4f::Identity() )
     , pMaterial( nullptr )
-    , Flags( 0u )
+    , Setup{}
 {
     Normals.reserve( kDrawCommandsInitialNumVertexAttributes );
     Tangents.reserve( kDrawCommandsInitialNumVertexAttributes );

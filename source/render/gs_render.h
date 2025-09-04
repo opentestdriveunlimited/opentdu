@@ -446,3 +446,5 @@ private:
 };
 
 extern GSRender* gpRender;
+
+extern Eigen::Matrix4f gActiveCamToWorld; // DAT_00faf500

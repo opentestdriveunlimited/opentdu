@@ -18,8 +18,7 @@ Instance::Instance()
     , color()
     , uvTime( 0.0f )
     , uvaFlags( 0 )
-    , pSetupFlags( nullptr )
-    , setupMask( 0 )
+    , setupGraph{}
     , pInstanceDef( nullptr )
 {
     

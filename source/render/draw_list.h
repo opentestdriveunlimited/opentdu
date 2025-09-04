@@ -4,6 +4,7 @@
 #include "gs_render_helper.h"
 #include "core/color.h"
 #include "render/3dg.h"
+#include "render/setup_node.h"
 
 #include <Eigen/Dense>
 
@@ -98,7 +99,7 @@ public:
 
     uint32_t getNumPrimitives() const;
     Material* getMaterialAtIndex( const uint32_t index ) const { return ppMaterials[index]; }
-    uint32_t* getFlagsAtIndex( const uint32_t index ) const { return ppFlags[index]; }
+    SetupGraph* getSetupAtIndex( const uint32_t index ) const { return ppSetups[index]; }
     const Eigen::Matrix4f& getMatrixAtIndex( const uint32_t index ) const { return pMatrices[index]; }
     const DrawPrimitive& getPrimitiveAtIndex( const uint32_t index ) const { return pMemPrimsList[index]; }
     
@@ -122,7 +123,7 @@ private:
     struct ActiveDrawCommand {
         Eigen::Matrix4f                 TransformMat;
         Material*                       pMaterial;
-        uint32_t                        Flags;
+        SetupGraph                      Setup;
         std::vector<Eigen::Vector3f>    Normals;
         std::vector<Eigen::Vector3f>    Tangents;
         std::vector<Eigen::Vector3f>    Binormals;
@@ -145,7 +146,7 @@ private:
     DrawPrimitive*      pMemPrimsList;
     Eigen::Matrix4f*    pMatrices;
     Material**          ppMaterials;
-    uint32_t**          ppFlags;
+    SetupGraph**        ppSetups;
 
     DrawList*           pCopy;
     uint32_t            flags;

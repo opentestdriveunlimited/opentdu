@@ -3,6 +3,7 @@
 #include "lod.h"
 #include "render_file.h"
 #include "core/color.h"
+#include "render/setup_node.h"
 
 class Camera;
 struct Material;
@@ -29,6 +30,7 @@ public:
     inline const Eigen::Matrix4f& getModelMatrix() const { return matrix; }
     inline float getBoundingScale() const { return biggestScale; }
     inline LOD* getLODs() { return lods.data(); }
+    inline const SetupGraph* getSetup() const { return &setupGraph; }
 
 public:
     Instance();
@@ -51,8 +53,7 @@ private:
     float uvTime;
     uint16_t uvaFlags;
     std::array<LOD, kMaxNumLOD> lods;
-    uint32_t* pSetupFlags;
-    uint32_t setupMask;
+    SetupGraph setupGraph;
     InstanceDef* pInstanceDef;
 };
 
