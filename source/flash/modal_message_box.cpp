@@ -74,6 +74,23 @@ ModalMessageBox::eInputState ModalMessageBox::getInputState() const
     return inputState;
 }
 
+bool ModalMessageBox::close()
+{
+    // FUN_0099fdc0
+    if (inputState == eInputState::MMBIS_None) {
+        return false;
+    }
+
+    FlashPlayer* peVar1 = gpFlash->getFlashPlayer("GENERAL");
+    peVar1->showFrame("w_out", "/waiting", true);
+
+    inputState = eInputState::MMBIS_Closing;
+    displayTime = 0.0f;
+    closeAfterDuration = 0.0f;
+
+    return true;
+}
+
 const char *ModalMessageBox::getFrameToDisplay(const float param_1) const
 {
     if (param_1 <= 1.0)         return "waiting_1";

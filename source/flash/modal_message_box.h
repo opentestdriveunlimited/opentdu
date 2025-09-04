@@ -29,6 +29,7 @@ public:
     bool display(uint64_t hashcode, float param_2, int32_t param_5, UserCallback_t* pCallback, void *pCallbackData, bool param_7);
     eDisplayState getDisplayState() const;
     eInputState getInputState() const;
+    bool close();
 
 private:
     FlashPlayer* pFlashPlayer;
