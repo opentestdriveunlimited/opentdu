@@ -4,6 +4,8 @@
 #include "render/draw_list.h"
 #include "gs_timer.h"
 #include "gs_flash.h"
+#include "modal_message_box.h"
+#include "render/gs_render.h"
 
 #include "tdu_instance.h"
 
@@ -32,12 +34,12 @@ MngFade::MngFade()
 
 MngFade::~MngFade()
 {
-    delete pDrawListTransition;
-    delete pDrawListLogo;
+
 }
 
 bool MngFade::initialize(TestDriveGameInstance *)
-{                  
+{
+    // FUN_006cfb3          
     DrawStreams eStack_20;
     eStack_20.Tangent = '\0';
     eStack_20.Binormal = '\0';
@@ -60,12 +62,18 @@ bool MngFade::initialize(TestDriveGameInstance *)
     return true;
 }
 
-void MngFade::tick(float systemDeltaTime, float)
+void MngFade::tick(float deltaTime, float)
 {
-    if (systemDeltaTime <= 0.0 && gGSTimer.GameSpeed <= 0.0) {
-        systemDeltaTime = gGSTimer.SystemDeltaTime;
+    // FUN_006cfc40
+    if ((deltaTime <= 0.0f) && (gGSTimer.GameSpeed <= 0.0f)) {
+        deltaTime = gGSTimer.SystemDeltaTime;
     }
-    systemDeltaTime = Min(systemDeltaTime, 0.1f);
+    if (0.1f < deltaTime) {
+        deltaTime = 0.1f;
+    }
+    if (pDrawListTransition == nullptr) {
+        return;
+    }
 
     pDrawListTransition->reset();
     bool bVar2 = false;
@@ -73,7 +81,7 @@ void MngFade::tick(float systemDeltaTime, float)
     float fVar7 = 0.0f;
     if ((flags & 1) != 0) {
         float fVar6 = (elapsedTime / transitionDuration) * 255.0f;
-        elapsedTime += systemDeltaTime;
+        elapsedTime += deltaTime;
         bVar2 = true;
         fVar7 = fVar6;
         if ((flags >> 2 & 1) != 0) {
@@ -101,16 +109,16 @@ void MngFade::tick(float systemDeltaTime, float)
         alpha = 0xff;
     }
 
-    fVar7 = 0.0;
+    fVar7 = 0.0f;
     if ((flags >> 1 & 1) == 0) {
-        fVar7 = -1.0;
+        fVar7 = -1.0f;
     }
 
     if (bVar2) {
         encodeTransitionDrawList(alpha, fVar7);
     }
 
-    if (bRenderLogo) {
+    if (pDrawListLogo != nullptr && bRenderLogo) {
         pDrawListLogo->reset();
         encodeLogoDrawList();
         
@@ -119,14 +127,66 @@ void MngFade::tick(float systemDeltaTime, float)
             OTDU_ASSERT( pPlayer );
 
             if (gpActiveGameMode != nullptr && !gbLoadingInProgress) {
-                OTDU_UNIMPLEMENTED; // TODO:
+                bWaitForPopup = gpFlashMessageBox->display(0x36c66a2, 4.0f, 0, nullptr, nullptr, false );
             }
+        }
+
+        if (!bRenderLogo && !gbLoadingInProgress) {
+            return;
+        }
+    }
+
+    if (bWaitForPopup) {
+        FlashPlayer* peVar3 = gpFlash->getFlashPlayer( "GENERAL" );
+        if (peVar3 != nullptr) {
+            bWaitForPopup = false;
+            gpFlashMessageBox->close();
         }
     }
 }
 
 void MngFade::terminate()
 {
+    // FUN_006cf8c0
+    pDrawListLogo->destroy();
+    if (pDrawListLogo != nullptr) {
+        delete pDrawListLogo;
+    }
+    pDrawListLogo = nullptr;
+
+    pDrawListTransition->destroy();
+    if (pDrawListTransition != nullptr) {
+        delete pDrawListTransition;
+    }
+    pDrawListTransition = nullptr;
+}
+
+void MngFade::draw()
+{
+    // FUN_006cfa90
+    if (pDrawListTransition != nullptr) {
+        RenderPass& pass = ((flags >> 1 & 1) == 0) 
+            ? gpRender->getRenderPass<eRenderPass::RP_After2D>() 
+            : gpRender->getRenderPass<eRenderPass::RP_Before2D>();
+
+        pass.pScene->enqueueDynamicDrawList(pDrawListTransition);
+    }
+
+    if (pDrawListLogo != nullptr) {
+        gpRender->getRenderPass<eRenderPass::RP_After2D>().pScene->enqueueDynamicDrawList(pDrawListLogo);
+    }
+}
+
+void MngFade::pause()
+{
+    // FUN_006cfa50
+    if (bWaitForPopup) {
+        FlashPlayer* peVar1 = gpFlash->getFlashPlayer( "GENERAL" );
+        if (peVar1 != nullptr) {
+            bWaitForPopup = false;
+            gpFlashMessageBox->close();
+        }
+    }
 }
 
 void MngFade::encodeTransitionDrawList(const uint8_t alpha, const float fVar7)
@@ -147,29 +207,10 @@ void MngFade::encodeTransitionDrawList(const uint8_t alpha, const float fVar7)
 
 void MngFade::encodeLogoDrawList()
 {
-    OTDU_ASSERT(p2DMBuffer);
-    float fVar2 = gGSTimer.SystemTotalTime - logoElapsedTime;
-    constexpr float FLOAT_00fabf34 = 0.05f;
-    if ((fVar2 < 0.0) || (FLOAT_00fabf34 <= fVar2)) {
-        logoElapsedTime = gGSTimer.SystemTotalTime;
+    // FUN_006cf730
+    static constexpr float FLOAT_00fabf34 = 0.05f;
+    // TODO: Looks like this is never called? (p2DMBuffer is always null at runtime)
+    if (p2DMBuffer != nullptr) {
+        OTDU_UNIMPLEMENTED;
     }
-    pDrawListLogo->setActiveMaterial( pMaterial );
-    pDrawListLogo->beginPrimitive(ePrimitiveType::PT_TriangleStrip, 4);
-   
-    pDrawListLogo->commitPrimitive();
-
-    OTDU_UNIMPLEMENTED; // TODO: Figure out where the stack integers come from
-    // pDrawListLogo->setTexCoords( 0, { local_38, local_34 } );
-    // pDrawListLogo->pushVertex(local_40,1.0 - local_3c,-2.0);
-    
-    // pDrawListLogo->setTexCoords( 0, { local_28, local_24 } );
-    // pDrawListLogo->pushVertex(local_30,1.0 - local_2c,-2.0);
-    
-    // pDrawListLogo->setTexCoords( 0, { local_8, local_4 } );
-    // pDrawListLogo->pushVertex(local_30,local_10,1.0 - local_c,-2.0);
-    
-    // pDrawListLogo->setTexCoords( 0, { local_18, local_14 } );
-    // pDrawListLogo->pushVertex(local_20,1.0 - local_1c,-2.0);
-    
-    pDrawListLogo->commitPrimitive();
 }

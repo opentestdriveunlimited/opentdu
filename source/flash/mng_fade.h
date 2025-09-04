@@ -22,6 +22,8 @@ public:
     virtual bool initialize( TestDriveGameInstance* ) override;
     virtual void tick( float, float )  override;
     virtual void terminate()  override;
+    virtual void draw() override;
+    virtual void pause() override;
 
 private:
     FileCollection2D fileCollection;
