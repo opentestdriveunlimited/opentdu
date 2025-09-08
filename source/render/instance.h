@@ -31,6 +31,8 @@ public:
     inline float getBoundingScale() const { return biggestScale; }
     inline LOD* getLODs() { return lods.data(); }
     inline const SetupGraph* getSetup() const { return &setupGraph; }
+    inline Eigen::Matrix4f* getBones() const { return pBoneArray; }
+    inline const ColorRGBA& getColor() const { return color; }
 
 public:
     Instance();
