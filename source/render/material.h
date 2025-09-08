@@ -171,6 +171,7 @@ struct Material
     MaterialParameter* getParameterByIndex( const uint32_t index );
     uint16_t getOTForParameter( MaterialParameter* param_1 );
     void bind();
+    void bindConstants();
 };
 OTDU_SIZE_MUST_MATCH(Material, 0xd0);
 

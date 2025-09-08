@@ -2,11 +2,13 @@
 #include "material.h"
 
 #include "render/shaders/shader_register.h"
+#include "render/render_buckets.h"
 
 MaterialRegister gMaterialRegister = {};
 
 static bool IsFloatAlmostZero( float* param_1 )
 {
+    // FUN_00404bf0
     float fVar1;
 
     fVar1 = *param_1;
@@ -88,12 +90,13 @@ void Material::setDefaultMaterial()
 
 uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
 {
-    uint32_t iVar6 = 0x2d;
-    uint32_t local_4 = 0x2d;
+    // FUN_0098f8e0
+    uint32_t iVar6 = RB_Invalid;
+    uint32_t local_4 = RB_Invalid;
 
     switch ( param_2->Hashcode ) {
     case 0xccddeeffffeeddcc:
-        return 0x2b;
+        return RB_Video;
 
     case 0x31d3942a1b383483:
     case 0x55ae5ef8c288dfc4:
@@ -111,15 +114,15 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
     case 0x31d6646666383483:
     {
         if ( AlphaTest == '\0' ) {
-            iVar6 = 1;
+            iVar6 = RB_CarAlphaTest;
         }
 
         if ( BlendOP == '\x06' ) {
-            if ( iVar6 == 0x2d ) {
-                iVar6 = 0;
+            if ( iVar6 == RB_Invalid ) {
+                iVar6 = RB_Car;
             }
         } else {
-            iVar6 = 0x22;
+            iVar6 = RB_CarAlpha;
         }
 
         return iVar6;
@@ -127,7 +130,7 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
     case 0x5455291bc8ad93c9:
         BlendOP = '\x06';
         AlphaTest = '\x01';
-        return 10;
+        return RB_Road;
 
     case 0xf123473b0f1234b:
     {
@@ -136,27 +139,27 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
         //*( undefined4* )( iVar4 + 0x58 ) = 1;
         //*( undefined4* )( iVar4 + 0x5c ) = 0;
         param_2->Flags.pCustomFlags[2] = '\x01';
-        return 0x2d;
+        return RB_Invalid;
     }
 
     case 0xcaca336d73078865:
     case 0xcacacaca73078865:
     {
         if ( AlphaTest == '\0' ) {
-            iVar6 = 7;
+            iVar6 = RB_VegetationAlphaTest;
         }
         if ( BlendOP != '\x06' ) {
-            iVar6 = 0x23;
+            iVar6 = RB_VegetationAlpha;
         }
         if ( DepthWrite == '\x02' ) {
             AlphaTest = '\x01';
-            return 0x24;
+            return RB_VegetationFullAlpha;
         }
-        if ( iVar6 == 0x2d ) {
-            return 6;
+        if ( iVar6 == RB_Invalid ) {
+            return RB_Vegetation;
         }
 
-        return 8;
+        return RB_Opaque;
     }
 
     case 0x27c8abacd453201:
@@ -167,37 +170,37 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
         DstBlend = '\x06';
         AlphaRef = '\n';
         AlphaTest = '\0';
-        return 0x15;
+        return RB_HardInst;
     }
 
     case 0xe0d553158eaf208e:
     {
         if ( DepthWrite == '\x02' ) {
-            return 0x12;
+            return RB_CloudFullAlpha;
         }
         if ( BlendOP != '\x06' ) {
-            return 0x11;
+            return RB_Cloud;
         }
         AlphaTest = '\x01';
-        return 8;
+        return RB_Opaque;
     }
 
     case 0xca37333333378865:
     {
-        return ( DepthWrite == '\x02' ) + 0x11;
+        return ( DepthWrite == '\x02' ) ? RB_CloudFullAlpha : RB_Cloud;
     }
 
     case 0x232101231232101:
     case 0x562101231232104:
     {
-        return ( DepthWrite == '\x02' ) + 0xf;
+        return ( DepthWrite == '\x02' ) ? RB_WaterFullAlpha : RB_Water;
     }
 
     case 0xa8c8cacacafe8dec:
-        return 0x19;
+        return RB_TallGrass;
 
     case 0xdebdbaaffacaa96b:
-        return 0x29;
+        return RB_Sun;
 
     case 0xdb79dadbd5013ed0:
     case 0xdb79babad5013ed0:
@@ -209,38 +212,38 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
     case 0xdb79bbbbd5013ed0:
     {
         if ( AlphaTest == '\0' ) {
-            iVar6 = 3;
+            iVar6 = RB_AvatarAlphaTest;
         }
         if ( BlendOP != '\x06' ) {
-            iVar6 = 0x1b;
+            iVar6 = RB_AvatarAlpha;
         }
         if ( DepthWrite == '\x02' ) {
             uint32_t uVar3 = param_2->Flags.pCustomFlags[1] << 1 | param_2->Flags.pCustomFlags[0];
 
             if ( uVar3 == 0 ) {
-                return 0x1e;
+                return RB_AvatarFullAlpha0;
             }
             if ( uVar3 == 1 ) {
-                return 0x1f;
+                return RB_AvatarFullAlpha1;
             }
             if ( uVar3 == 2 ) {
-                return 0x20;
+                return RB_AvatarFullAlpha2;
             }
             if ( uVar3 == 3 ) {
-                return 0x21;
+                return RB_AvatarFullAlpha3;
             }
         }
-        if ( iVar6 != 0x2d ) {
+        if ( iVar6 != RB_Invalid ) {
             return iVar6;
         }
-        return 2;
+        return RB_Avatar;
     }
 
     case 0xcaca336d83078865:
     {
         param_2->Flags.NumPrelight = '\x01';
         param_2->Flags.bUsingAmbient = '\x01';
-        return 0x2d;
+        return RB_Invalid;
     }
 
     case 0xbc4589eeac78ce32:
@@ -248,7 +251,7 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
         AlphaTest = '\0';
         AlphaRef = '\0';
         DepthWrite = '\x02';
-        return 0x28;
+        return RB_FullAlpha;
     }
 
     case 0xbc4589ffac78df32:
@@ -263,7 +266,7 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
 
     case 0xc68e90cdfd9658ba:
     {
-        return 0x14;
+        return RB_Shadow;
     }
 
     case 0x1446886d97abe189:
@@ -281,19 +284,19 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
         param_2->Flags.bUsingBinormal = '\0';
         param_2->Flags.NumPrelight = '\x01';
         param_2->Flags.bUsingTangent = '\x01';
-        return 0x13;
+        return RB_RoadPatch;
     }
 
     case 0x1c6c7357dddddddd:
     {
         MaterialLayer* peVar2 = param_2->getLayer( 0 );
         param_2->Flags.NumUVMaps = '\x02';
-        return 0x2d;
+        return RB_Invalid;
     }
 
     case 0x2cea0000:
     {
-        return 0xe;
+        return RB_WaterSea;
     }
 
     case 0x8a4efd79643cdcb2:
@@ -304,7 +307,7 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
         //0098fd43 89 58 3c        MOV        dword ptr[EAX + param_2 + 0x3c], EBX
         peVar2->pLayerTextures[1].Hashcode = 1ull << 32;
 
-        return 0x2d;
+        return RB_Invalid;
     }
 
     case 0x1c6cff57183157b8:
@@ -342,8 +345,7 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
 
     case 0x1c6cee57241375b8:
     {
-        if ( !param_2->Flags.bUsingReflection )
-        {
+        if ( !param_2->Flags.bUsingReflection ) {
             break;
         }
 
@@ -366,21 +368,21 @@ uint16_t Material::getOTForParameter( MaterialParameter* param_2 )
     }
     default:
         OTDU_LOG_WARN( "Unhandled material parameter hashcode 0x%p; default OT will be used\n", param_2->Hashcode );
-        return 0x2d;
+        return RB_Invalid;
     };
 
-    iVar6 = 5;
+    iVar6 = RB_BuildingAlphaTest;
     if ( AlphaTest != '\0' ) {
         iVar6 = local_4;
     }
     if ( BlendOP != '\x06' ) {
-        iVar6 = 0x1c;
+        iVar6 = RB_BuildingAlpha;
     }
     if ( DepthWrite == '\x02' ) {
-        return 0x1d;
+        return RB_BuildingFullAlpha;
     }
-    if ( iVar6 == 0x2d ) {
-        return 4;
+    if ( iVar6 == RB_Invalid ) {
+        return RB_Building;
     }
 
     return iVar6;
@@ -391,10 +393,17 @@ void Material::bind()
     OTDU_UNIMPLEMENTED;
 }
 
+void Material::bindConstants()
+{
+    // FUN_005fcd50
+    OTDU_UNIMPLEMENTED;
+}
+
 uint16_t Material::getOTNumber()
 {
+    // FUN_0098ffd0
     MaterialParameter* peVar1 = nullptr;
-    uint16_t iVar2 = 0x2d;
+    uint16_t iVar2 = RB_Invalid;
     uint64_t uVar3 = 0;
 
     if ( NumParams != 0 ) {
@@ -403,28 +412,28 @@ uint16_t Material::getOTNumber()
             iVar2 = getOTForParameter( peVar1 );
         } else if ( peVar1->Type == 1 ) {
             if ( AlphaTest == '\0' ) {
-                iVar2 = 0xc;
+                iVar2 = RB_HeightmapAlphaTest;
             }
             if ( BlendOP == '\x06' ) {
-                if ( iVar2 == 0x2d ) {
-                    iVar2 = 0xb;
+                if ( iVar2 == RB_Invalid ) {
+                    iVar2 = RB_Heightmap;
                 }
             } else {
-                iVar2 = 0xd;
+                iVar2 = RB_HeightmapAlpha;
             }
             goto LAB_00990061;
         }
-        if ( iVar2 != 0x2d ) goto LAB_00990061;
+        if ( iVar2 != RB_Invalid ) goto LAB_00990061;
     }
     if ( AlphaTest == '\0' ) {
-        iVar2 = 9;
+        iVar2 = RB_AlphaTest;
     }
-    if ( ( BlendOP == '\x06' ) || ( iVar2 = 0x26, DepthWrite != '\x02' ) ) {
-        if ( iVar2 == 0x2d ) {
-            iVar2 = 8;
+    if ( ( BlendOP == '\x06' ) || ( iVar2 = RB_Alpha, DepthWrite != '\x02' ) ) {
+        if ( iVar2 == RB_Invalid ) {
+            iVar2 = RB_Opaque;
         }
     } else {
-        iVar2 = 0x28;
+        iVar2 = RB_FullAlpha;
     }
 LAB_00990061:
     uVar3 = (iVar2 << 1ull);
