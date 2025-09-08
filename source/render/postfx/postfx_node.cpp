@@ -32,17 +32,17 @@ uint32_t PostFXNode::getNumOutput()
 
 RenderTarget* PostFXNode::getOuput(uint32_t param_2)
 {
-    return (numOutput <= param_2 ) ? nullptr : pRenderTargets[param_2];
+    return (param_2 < numOutput) ? pRenderTargets[param_2] : nullptr;
 }
 
-PostFXNode* PostFXNode::getInputNode(uint32_t param_2)
+PostFX* PostFXNode::getInputNode(uint32_t param_2)
 {
-    return (numInput <= param_2 ) ? nullptr : inputs[param_2].pPostFX;
+    return (param_2 < numInput) ? inputs[param_2].pPostFX->getEffect() : nullptr;
 }
 
 uint32_t PostFXNode::getInputLinkIndex(uint32_t param_2)
 {
-    return (numInput <= param_2 ) ? 0xffffffff : inputs[param_2].LinkIndex;
+    return (param_2 < numInput) ? inputs[param_2].LinkIndex : 0xffffffff;
 }
 
 uint32_t PostFXNode::getUnknownMask() const
@@ -74,6 +74,7 @@ bool PostFXNode::connect(PostFXNode *pInput, uint32_t outputSlotID, uint32_t inp
 void PostFXNode::setOutput(RenderTarget *param_2, uint32_t param_3)
 {
     OTDU_ASSERT( param_3 < kMaxNumLink );
+    OTDU_ASSERT( param_2 );
     pRenderTargets[param_3] = param_2;
 }
 
@@ -117,4 +118,9 @@ bool PostFXNode::execute()
     state = 2 - ((bVar2) ? 1 : 0);
 
     return state == 1;
+}
+
+PostFX *PostFXNode::getEffect()
+{
+    return pPostFX;
 }

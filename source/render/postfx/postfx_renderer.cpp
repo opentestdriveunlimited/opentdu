@@ -6,6 +6,7 @@
 #include "render/gs_render.h"
 #include "render/render_scene.h"
 #include "render/shaders/shader_register.h"
+#include "render/scene_renderer.h"
 
 PostFXRenderer gPostFXRenderer = {};
 
@@ -180,15 +181,15 @@ void PostFXRenderer::drawFullscreenQuad(bool bClearColor, bool bClearDepth, bool
     }
     
     bool bVar1 = false;
-    if (gpActiveRenderScene != nullptr && ((gpActiveRenderScene->getFlags() >> 3 & 1) != 0)) {
-        gpActiveRenderScene->setFlags(gpActiveRenderScene->getFlags() & 0xfffffff7);
+    if (gSceneRenderer.pActiveScene != nullptr && ((gSceneRenderer.pActiveScene->getFlags() >> 3 & 1) != 0)) {
+        gSceneRenderer.pActiveScene->setFlags(gSceneRenderer.pActiveScene->getFlags() & 0xfffffff7);
         bVar1 = true;
     }
 
     gpRender->getRenderDevice()->bindMaterial(pMaterial);
 
     if (bVar1) {
-        gpActiveRenderScene->setFlags(gpActiveRenderScene->getFlags() | 8);
+        gSceneRenderer.pActiveScene->setFlags(gSceneRenderer.pActiveScene->getFlags() | 8);
     }
 
     if (bClearColor) {

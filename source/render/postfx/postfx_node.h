@@ -25,7 +25,7 @@ public:
     uint32_t getNumOutput();
     RenderTarget* getOuput(uint32_t param_2);
 
-    PostFXNode* getInputNode(uint32_t param_2);
+    PostFX* getInputNode(uint32_t param_2);
     uint32_t getInputLinkIndex(uint32_t param_2);
 
     uint32_t getUnknownMask() const;
@@ -36,6 +36,8 @@ public:
     void setOutput(RenderTarget* param_2, uint32_t param_3);
     bool prepare();
     bool execute();
+
+    PostFX* getEffect();
 
 protected:
     PostFX* pPostFX;

@@ -25,10 +25,10 @@ bool PostFXDownscale::execute()
     }
     
     RenderTarget* peVar9 = nullptr;
-    PostFXNode* peVar5 = pOwner->getInputNode(0);
+    PostFX* peVar5 = pOwner->getInputNode(0);
     if (peVar5 != nullptr) {
         uint32_t uVar6 = pOwner->getInputLinkIndex(0);
-        peVar9 = peVar5->getOuput(uVar6);
+        peVar9 = peVar5->getOutput(uVar6);
     }
 
     gPostFXRenderer.bindShaders( nullptr, pPixelShader );
@@ -43,8 +43,8 @@ bool PostFXDownscale::execute()
     float pShaderConstants[0x10];
     FUN_005f7060(uVar7,uVar6,pShaderConstants);
 
-    uint32_t reg_idx = 0xf; // TODO: Retrieve this from metadata
-    gpRender->getRenderDevice()->setFloatConstants( eShaderType::ST_Pixel, pShaderConstants, 0x10 );
+    uint32_t reg_idx = 0xf; // TODO: Retrieve this from metadata // (pPixelShader->PSFloatConstantMap).pConstants[0x254];
+    gpRender->getRenderDevice()->setFloatConstants( eShaderType::ST_Pixel, pShaderConstants, reg_idx, 0x10 );
     gpRender->getRenderDevice()->bindRenderTargetAndSetViewport( pRenderTargets[0], 0 );
 
     Texture* peVar8 = peVar9->getBound2DB()->getFirstBitmap();

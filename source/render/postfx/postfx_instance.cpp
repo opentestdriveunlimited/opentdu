@@ -93,3 +93,7 @@ uint64_t PostFX::getPixelShaderHashcode() const
     return 0ull;
 }
 
+RenderTarget *PostFX::getOutput(const uint32_t index)
+{
+    return pRenderTargets[index];
+}

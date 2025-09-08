@@ -26,12 +26,18 @@ bool PostFXBlit::execute()
     }
     
     RenderTarget* peStack_e8 = nullptr;
-    PostFXNode* peVar4 = pOwner->getInputNode(0);
+    PostFX* peVar4 = pOwner->getInputNode(0);
     if (peVar4 != nullptr) {
         uint32_t uVar5 = pOwner->getInputLinkIndex(0);
-        peStack_e8 = peVar4->getOuput(uVar5);
+        peStack_e8 = peVar4->getOutput(uVar5);
     }
 
+    Render2DB* peVar7 = peStack_e8->getBound2DB();
+
+    // To save time (and avoid potential issues); let's use built-in blit instead of a gfx based impl from the SM2.0 era...
+#if 1
+    gpRender->getRenderDevice()->blit(peVar7, pRenderTargets[0], true);
+#else
     gPostFXRenderer.bindShaders( nullptr, nullptr );
 
     uint32_t uVar6 = pRenderTargets[0]->getHeight();
@@ -50,7 +56,6 @@ bool PostFXBlit::execute()
 
     gPostFXRenderer.bindRasterState( &eStack_e0 );
 
-    Render2DB* peVar7 = peStack_e8->getBound2DB();
     gpRender->getRenderDevice()->bindTexture(peVar7->getFirstBitmap(), 0);
     
     uVar6 = pOwner->getUnknownMask();
@@ -60,15 +65,11 @@ bool PostFXBlit::execute()
         uVar7 = 0xffffffff;
     }
 
-    // To save time (and avoid potential issues); let's use built-in blit instead of a gfx based impl from the SM2.0 era...
-#if 1
-    gpRender->getRenderDevice()->blit(peVar7, pRenderTargets[0], true);
-#else
     gPostFXRenderer.drawFullscreenQuad((uVar6 != 0xffffffff),false,false,uVar7);
     gPostFXRenderer.bindShaders();
-#endif
-    gPostFXRenderer.bindRasterState( nullptr );
 
+    gPostFXRenderer.bindRasterState( nullptr );
+#endif
     if ((pOwner->getFlags() & 1) != 0) {
         pRenderTargets[0]->resolveMSAA(0);
     }

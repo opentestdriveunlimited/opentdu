@@ -17,6 +17,8 @@ public:
     virtual uint64_t getVertexShaderHashcode() const;
     virtual uint64_t getPixelShaderHashcode() const;
     
+    RenderTarget* getOutput(const uint32_t index);
+
 protected:
     PostFXNode* pOwner;
 
