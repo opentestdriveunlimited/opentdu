@@ -2,6 +2,8 @@
 
 struct Light;
 
+static constexpr uint32_t kMaxNumLightPerScene = 4;
+
 class SetupNode {
 public:
     SetupNode();
@@ -42,10 +44,14 @@ public:
     void removeFrustumNodes();
 
     bool addNode(SetupNode* node);
-    void bind(uint32_t param_1);
+    void bind(uint32_t param_1) const;
     void unbind(uint32_t param_1);
+
+    static bool ExecuteCached(uint32_t param_1);
 
 private:
     uint32_t flags;
     std::vector<SetupNode*> nodes;
 };
+
+extern Light* gBoundLights[kMaxNumLightPerScene];

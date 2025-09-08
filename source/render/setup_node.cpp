@@ -1,9 +1,6 @@
 #include "shared.h"
 #include "setup_node.h"
 
-static uint32_t gNumLights = 0; // DAT_00facb20
-static Light* DAT_00facb18 = nullptr; // DAT_00facb18
-
 // DAT_00fe7028
 struct NodeCacheEntry
 {
@@ -11,8 +8,11 @@ struct NodeCacheEntry
     std::list<std::tuple<SetupNode*, uint32_t>> Nodes;
 };
 
+static uint32_t gNumLights = 0; // DAT_00facb20
+static Light* DAT_00facb18 = nullptr; // DAT_00facb18
 static NodeCacheEntry gNodeCache[4];
 static int32_t gRenderSetupCacheFlags = 0; // DAT_00fe7008
+Light* gBoundLights[kMaxNumLightPerScene] = { nullptr, nullptr, nullptr, nullptr }; // DAT_00facb04
 
 SetupNode::SetupNode()
     : flags( 0 )
@@ -35,10 +35,6 @@ LightSetupNode::~LightSetupNode()
 {
     lights.clear();
 }
-
-static constexpr uint32_t kMaxNumLightPerScene = 4;
-// TODO: Who owns this?
-static Light* gBoundLights[kMaxNumLightPerScene] = { nullptr, nullptr, nullptr, nullptr };
 
 void LightSetupNode::execute()
 {
@@ -129,7 +125,7 @@ bool SetupGraph::addNode(SetupNode *node)
     return true;
 }
 
-void SetupGraph::bind(uint32_t param_1)
+void SetupGraph::bind(uint32_t param_1) const
 {
     for (SetupNode* peVar1 : nodes) {
         if ((peVar1->getFlags() >> 8 & 1) != 0) {
@@ -170,4 +166,25 @@ void SetupGraph::unbind(uint32_t param_1)
             gRenderSetupCacheFlags = gRenderSetupCacheFlags & 0xfffffffb;
         }
     }
+}
+
+bool SetupGraph::ExecuteCached(uint32_t param_1)
+{
+    // FUN_00513410
+    uint32_t uVar1 = gNodeCache[param_1].NumNodes;
+     if (uVar1 != -1 
+        && std::get<0>(gNodeCache[param_1].Nodes.back()) != nullptr) {
+        SetupNode* puVar2 = std::get<0>(gNodeCache[param_1].Nodes.back());
+        if ((puVar2->getFlags() >> 9 & 1) != 0) {
+            // TODO: This is supposed to call the first function in the vtable.
+            // This function is not implemented in any child class so I have no idea if
+            // it's used or not...
+            OTDU_UNIMPLEMENTED;
+        }
+
+        puVar2->execute();
+        return true;
+    }
+
+    return false;
 }
