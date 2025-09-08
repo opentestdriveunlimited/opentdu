@@ -137,8 +137,6 @@ private:
     bool retrieveVSPSForFlags( ShaderPermutationFlags& param_1, GPUShader* pOutVertexShader, GPUShader* pOutPixelShader );
 
 private:
-    uint64_t latestFoundHashcode;
-
     Material* pDefaultMaterial;
 
     std::unordered_map<std::string, void*> shaderTableBinary;

@@ -8,11 +8,12 @@
 #include "core/hash/crc64.h"
 #include "filesystem/gs_file.h"
 
+#include "render/scene_renderer.h"
+
 ShaderRegister gShaderRegister = {};
 
 ShaderRegister::ShaderRegister()
-    : latestFoundHashcode( 0 )
-    , pDefaultMaterial( nullptr )
+    : pDefaultMaterial( nullptr )
     , vertexShaderInstanceCount( 0 )
     , pixelShaderInstanceCount( 0 )
 {
@@ -58,8 +59,7 @@ void ShaderRegister::retrieveShadersForMaterial( Material* param_1, const uint32
         }
     }
 
-    // TODO: Not sure why this is cached (they might be caching the whole struct?)
-    latestFoundHashcode = local_58.PermutationHashcode;
+    gSceneRenderer.ActiveShaderHashcode = local_58.PermutationHashcode;
     
     bool bFoundPermutations = retrieveVSPSForFlags( local_58, param_1->pVertexShaders[index], param_1->pPixelShaders[index] );
     if ( !bFoundPermutations ) {
@@ -77,7 +77,7 @@ void ShaderRegister::retrieveShadersForMaterial( Material* param_1, const uint32
         OTDU_ASSERT_FATAL( bFoundPermutations );
     }
 
-    latestFoundHashcode = local_58.PermutationHashcode;
+    gSceneRenderer.ActiveShaderHashcode = local_58.PermutationHashcode;
 }
 
 void ShaderRegister::registerShader( const ShaderTableEntry* pTableEntry )
