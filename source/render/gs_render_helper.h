@@ -274,10 +274,15 @@ enum eBlendOP : uint8_t {
     BO_Count,
 };
 
+static void* AllocateFromRenderPool(const size_t param_1)
+{
+    OTDU_UNIMPLEMENTED;
+    return nullptr;
+}
+
 // TODO: Not sure who's supposed to own this...
 extern eViewFormat gDepthStencilFormat; // DAT_00fac8e4
 extern GPUTexture* gpMainDepthBuffer; // DAT_00f47920
-extern class RenderScene* gpActiveRenderScene; // DAT_00fe77c0
 
 #ifdef OTDU_D3D9
 #include "d3d9/render_device.h"

@@ -18,72 +18,17 @@
 #include "render/frame_graph.h"
 #include "gs_timer.h"
 
+#include "render_buckets.h"
+#include "scene_renderer.h"
+
 GSRender* gpRender = nullptr;
 eViewFormat gDepthStencilFormat = eViewFormat::VF_D24S8F; // DAT_00fac8e4
 GPUTexture* gpMainDepthBuffer = nullptr; // DAT_00f47920
-RenderScene* gpActiveRenderScene = nullptr;
 static float gUVATime = 0.0f; // DAT_016a2c14
 Eigen::Matrix4f gActiveCamToWorld = Eigen::Matrix4f::Identity();
 
 // Used to calculate weather stuff (but appears to never be modified at runtime; could be some debug leftover)
 static Eigen::Vector4f DAT_00fac360 = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-struct RenderBucket
-{
-    uint32_t TransparencyOrder;
-    const char* pName;
-    uint32_t Flags;
-    float Time;
-};
-
-// DAT_00f71ef8
-static RenderBucket gRenderBuckets[45] = {
-    RenderBucket{ 0x00, "CAR",                      0, 0.0f },
-    RenderBucket{ 0x01, "CAR_ALPHATEST",            0, 0.0f },
-    RenderBucket{ 0x02, "AVATAR",                   0, 0.0f },
-    RenderBucket{ 0x03, "AVATAR_ALPHATEST",         0, 0.0f },
-    RenderBucket{ 0x04, "BUILDING",                 0, 0.0f },
-    RenderBucket{ 0x05, "BUILDING_ALPHATEST",       0, 0.0f },
-    RenderBucket{ 0x06, "VEGETATION",               8, 0.0f },
-    RenderBucket{ 0x07, "VEGETATION_ALPHATEST",     8, 0.0f },
-    RenderBucket{ 0x08, "OPAQUE",                   0, 0.0f },
-    RenderBucket{ 0x09, "ALPHATEST",                0, 0.0f },
-    RenderBucket{ 0x0a, "ROAD",                     0, 0.0f },
-    RenderBucket{ 0x0b, "HEIGHTMAP",                0, 0.0f },
-    RenderBucket{ 0x0c, "HEIGHTMAP_ALPHATEST",      0, 0.0f },
-    RenderBucket{ 0x0d, "HEIGHTMAP_ALPHA",          0, 0.0f },
-    RenderBucket{ 0x0e, "WATER_SEA",                0, 0.0f },
-    RenderBucket{ 0x0f, "WATER",                    0, 0.0f },
-    RenderBucket{ 0x10, "WATER_FULLALPHA",          0, 0.0f },
-    RenderBucket{ 0x11, "CLOUD",                    0, 0.0f },
-    RenderBucket{ 0x12, "CLOUD_FULLALPHA",          0, 0.0f },
-    RenderBucket{ 0x13, "ROAD_PATCH",               0, 0.0f },
-    RenderBucket{ 0x14, "SHADOW",                   0, 0.0f },
-    RenderBucket{ 0x15, "HARDINST",                 0, 0.0f },
-    RenderBucket{ 0x16, "FULLALPHA_FAR",            0, 0.0f },
-    RenderBucket{ 0x17, "IMPOSTOR",                 0, 0.0f },
-    RenderBucket{ 0x18, "IMPOSTOR_FAR",             0, 0.0f },
-    RenderBucket{ 0x19, "TALLGRASS",                0, 0.0f },
-    RenderBucket{ 0x1a, "ELECTRICAL",               0, 0.0f },
-    RenderBucket{ 0x1b, "AVATAR_ALPHA",             0, 0.0f },
-    RenderBucket{ 0x1c, "BUILDING_ALPHA",           0, 0.0f },
-    RenderBucket{ 0x1d, "BUILDING_FULLALPHA",       0, 0.0f },
-    RenderBucket{ 0x1e, "AVATAR_FULLALPHA_0",       0, 0.0f },
-    RenderBucket{ 0x1f, "AVATAR_FULLALPHA_1",       0, 0.0f },
-    RenderBucket{ 0x20, "AVATAR_FULLALPHA_2",       0, 0.0f },
-    RenderBucket{ 0x21, "AVATAR_FULLALPHA_3",       0, 0.0f },
-    RenderBucket{ 0x22, "CAR_ALPHA",                0, 0.0f },
-    RenderBucket{ 0x23, "VEGETATION_ALPHA",         8, 0.0f },
-    RenderBucket{ 0x24, "VEGETATION_FULLALPHA",     8, 0.0f },
-    RenderBucket{ 0x25, "SHADOW_PLANE",             0, 0.0f },
-    RenderBucket{ 0x26, "ALPHA",                    0, 0.0f },
-    RenderBucket{ 0x27, "SHADOW_INT",               0, 0.0f },
-    RenderBucket{ 0x28, "FULLALPHA",                0, 0.0f },
-    RenderBucket{ 0x29, "SUN",                      0, 0.0f },
-    RenderBucket{ 0x2a, "FRONTEND",                 4, 0.0f },
-    RenderBucket{ 0x2b, "VIDEO",                    4, 0.0f },
-    RenderBucket{ 0x2c, "PROFILE",                  4, 0.0f },
-};
 
 GSRender::GSRender()
     : GameSystem()
@@ -268,11 +213,16 @@ GSRender::GSRender()
     , pActiveFrustum( nullptr )
     , pActiveFramebuffer( nullptr )
     , pActiveViewport( nullptr )
+    , activeBucketIndex( 0x2d )
+    , pActiveBucket( nullptr )
+    , pActiveMaterial( nullptr )
 {
     sunDirection.normalize();
 
     shaderUniforms[4] = { 0.1456f, -0.49f, -0.49f, -1.5f };
     shaderUniforms[5] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+    AllocateRenderBuckets();
 
     gpRender = this;
 }
@@ -280,6 +230,9 @@ GSRender::GSRender()
 GSRender::~GSRender()
 {
     terminate();
+
+    FreeRenderBuckets();
+
     gpRender = nullptr;
 }
 
@@ -355,8 +308,8 @@ void GSRender::draw(float deltaTime)
     shaderUniforms[5].y() = -1.0f / hmapFadeLength;
     shaderUniforms[5].z() = (hmapBeginFadeDist + hmapFadeLength) * (1.0f / hmapFadeLength);
 
-    pRenderDevice->setFloatConstants(eShaderType::ST_Vertex, (float*)shaderUniforms, kNumShaderConstants);
-    pRenderDevice->setFloatConstants(eShaderType::ST_Pixel, (float*)shaderUniforms, kNumShaderConstants);
+    pRenderDevice->setFloatConstants(eShaderType::ST_Vertex, (float*)shaderUniforms, 0, kNumShaderConstants);
+    pRenderDevice->setFloatConstants(eShaderType::ST_Pixel, (float*)shaderUniforms, 0, kNumShaderConstants);
 }
 
 void GSRender::terminate()
@@ -392,11 +345,12 @@ void GSRender::endFrame()
     // FUN_00513860
     bFrameRecordingInProgress = false;
     frameIndex++;
+    pRenderDevice->bumpInternalFrameIndex();
 }
 
 void GSRender::present()
 {
-    OTDU_UNIMPLEMENTED;
+    pRenderDevice->present();
 }
 
 void GSRender::setLODQuality(const uint32_t qualityIndex)
@@ -513,10 +467,24 @@ void GSRender::beginRenderScene(RenderScene* param_2)
     FUN_00515000();
 }
 
-void GSRender::FUN_00512420()
+void GSRender::renderScene()
+{
+    // FUN_005f2550
+    for (int32_t i = 0; i < kNumRenderBuckets; i++) {
+        bindBucket(&gRenderBuckets[i]);
+
+        for (SceneSetupCommand& sceneSetupCmd : gRenderBucketDatas[i].SceneSetupCommands) {
+            sceneSetupCmd.execute();
+        }
+        gRenderBucketDatas[i].SceneSetupCommands.clear();
+    }
+}
+
+void GSRender::flushSubmittedScene()
 {
     // FUN_00512420
-    OTDU_UNIMPLEMENTED;
+    renderScene();
+    endScene();
 }
 
 void GSRender::registerMngCallback(MngRegisterCallback_t &callback)
@@ -1045,7 +1013,8 @@ bool GSRender::allocateAtmosphereResources()
             return false;
         }
         pSunRTs[i] = CreateRenderTargetFrom2DB( &sun2DBs[i], 2 );
-        
+        OTDU_ASSERT(pSunRTs[i]);
+
         dimension >>= 2;
         if ( dimension < 2 ) {
             dimension = 1;
@@ -1314,7 +1283,7 @@ void GSRender::bindActiveFramebufferToDevice()
             if (pRenderTarget == nullptr && uVar1 == 0) {
                 pRenderTarget = RenderTarget::GetBackBuffer();
             }
-            pRenderDevice->bindRenderTarget(pRenderTarget, uVar1, (gpActiveRenderScene->getFlags() >> 4 & 1) != 0);
+            pRenderDevice->bindRenderTarget(pRenderTarget, uVar1, (gSceneRenderer.pActiveScene->getFlags() >> 4 & 1) != 0);
         }
     } else {
         pRenderDevice->bindRenderTarget(RenderTarget::GetBackBuffer(), 0, false);
@@ -1347,4 +1316,30 @@ void GSRender::FUN_00515000()
 {
     // FUN_00515000
     OTDU_UNIMPLEMENTED;
+}
+
+void GSRender::bindBucket(RenderBucket *param_2)
+{
+    // FUN_00513930
+    activeBucketIndex = param_2->TransparencyOrder;
+    pActiveBucket = param_2;
+}
+
+void GSRender::endScene()
+{
+    // FUN_005143d0
+    // TODO: This should probably be NOP since all this stuff is set in the render pass descriptor
+
+    // ResolveMSAA(gSceneRenderer.pActiveScene->getFlags() >> 5 & 1);
+    // if (gClipPlaneEnabled != 0) {
+    //     pD3DDevice->SetRenderState(D3DRS_CLIPPLANEENABLE,0);
+    //     gClipPlaneEnabled = 0;
+    // }
+}
+
+void GSRender::bindMaterial(Material* param_2)
+{
+    // FUN_00513970
+    pActiveMaterial = param_2;
+    pActiveMaterial->bind();
 }

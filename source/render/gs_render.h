@@ -17,6 +17,7 @@ class PostFXNodeTexSample;
 class PostFXNodeDownscale;
 class PostFXNodeBlit;
 class FrameGraph;
+struct RenderBucket;
 
 // TODO: Not sure what's this callback really is...
 using MngRegisterCallback_t = std::function<bool(void)>;
@@ -134,6 +135,7 @@ public:
     inline Camera* getActiveCamera() const { return pActiveCamera; }
     inline RenderScene* getActiveScene() const { return pActiveScene; }
     inline Frustum* getActiveFrustum() const { return pActiveFrustum; }
+
 public:
     GSRender();
     ~GSRender();
@@ -156,9 +158,12 @@ public:
 
     void beginRenderScene(RenderScene* param_2);
 
-    void FUN_00512420();
+    void renderScene();
+    void flushSubmittedScene();
 
     void registerMngCallback(MngRegisterCallback_t& callback);
+
+    void bindMaterial(Material* param_2);
 
 private:
     static constexpr int32_t kNumSunRT = 8;
@@ -417,6 +422,11 @@ private:
 
     std::list<MngRegisterCallback_t> registerCallbacks;
 
+    uint16_t activeBucketIndex;
+    RenderBucket* pActiveBucket;
+
+    Material* pActiveMaterial;
+
 private:
     bool initializeShaderCache();
     bool allocateDeviceResources();
@@ -443,6 +453,9 @@ private:
     void setupProjection(Camera* param_1, Frustum* param_2, bool bPerspectiveProj, bool param_4);
     void FUN_00513b50(Camera* param_1);
     void FUN_00515000();
+
+    void bindBucket(RenderBucket* param_2);
+    void endScene();
 };
 
 extern GSRender* gpRender;

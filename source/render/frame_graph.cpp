@@ -8,9 +8,7 @@
 #include "render/postfx/postfx_stack.h"
 #include "render/postfx/postfx_node.h"
 
-uint32_t    DAT_00fe77c4 = 0;
-uint32_t    DAT_00fe77c8 = 0;
-uint32_t    DAT_00fe77cc = 0;
+#include "render/scene_renderer.h"
 
 FrameGraph::FrameGraph()
     : bRemoveDynamicDrawCmds( false )
@@ -62,11 +60,11 @@ void FrameGraph::submitDrawCommands(bool param_2)
             clearCommands.pop();
         }
     }
-
-    gpActiveRenderScene = nullptr;
-    DAT_00fe77c4 = 0;
-    DAT_00fe77c8 = 0;
-    DAT_00fe77cc = 0;
+   
+    gSceneRenderer.pActiveScene = nullptr;
+    gSceneRenderer.pActiveInstance = nullptr;
+    gSceneRenderer.pActiveDrawList = nullptr;
+    gSceneRenderer.pActiveTransform = nullptr;
 
     if (param_2) {
         uint32_t uVar5 = 0;
@@ -74,10 +72,10 @@ void FrameGraph::submitDrawCommands(bool param_2)
             uint32_t puVar2 = pNode->getObjectType();
             if (puVar2 == 0) {
                 RenderScene* peVar1 = (RenderScene*)pNode;
-                gpActiveRenderScene = peVar1;
+                gSceneRenderer.pActiveScene = peVar1;
                 peVar1->getSetup().bind(0);
                 peVar1->submitDrawCommands(uVar5);
-                gpRender->FUN_00512420();
+                gpRender->flushSubmittedScene();
                 peVar1->getSetup().unbind(0);
             } else if (puVar2 == 1) {
                 PostFXNode* peVar1 = (PostFXNode*)pNode;
