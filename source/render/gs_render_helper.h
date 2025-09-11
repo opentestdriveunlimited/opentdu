@@ -95,6 +95,39 @@ enum eViewFormat : uint32_t {
     VF_D16 = 24,
 };
 
+// Based on DAT_00eedac4 LUT + stride and vertex size LUTs (see below) + vertex declaration creation logic
+// TODO: Some formats are assumed to be unsupported because stride and size are zeros.
+enum eVertexAttributeFormat : uint32_t {
+    VAF_POSITION_R32G32B32_SFLOAT = 0x0,
+    VAF_POSITION_R16G16B16A16_SFLOAT = 0x1,
+    VAF_COLOR_B8G8R8A8_UNORM = 0x2,
+    VAF_COLOR_B8G8R8A8_UNORM_2 = 0x3, // TODO: Dupe? Or some format that D3D9 doesnt support natively (e.g. UCHAR3)?
+    VAF_COLOR_B8G8R8A8_UNORM_3 = 0x4,
+    VAF_COLOR_B8G8R8A8_UNORM_4 = 0x5,
+    VAF_NORMAL_R32G32B32_SFLOAT = 0x6,
+    VAF_UNUSED = 0x7,
+    VAF_UNUSED_2 = 0x8,
+    VAF_NORMAL_A2B10G10R10_SNORM_PACK32 = 0x9,
+    VAF_NORMAL_R16G16B16A16_UNORM = 0xa,
+    VAF_NORMAL_R16G16B16A16_SFLOAT = 0xb,
+    VAF_TEXCOORD_R32G32_SFLOAT = 0xc,
+    VAF_TEXCOORD_R16G16_SNORM = 0xd,
+    VAF_TEXCOORD_R16G16_SFLOAT = 0xe,
+    VAF_POSITION_R32_SFLOAT = 0xf,
+    VAF_UNUSED_3 = 0x10,
+    VAF_BONEINDEX_R8G8B8A8_USCALED = 0x11,
+    VAF_BONEWEIGHT_R32_SFLOAT = 0x12,
+    VAF_BONEWEIGHT_R32G32_SFLOAT = 0x13,
+    VAF_BONEWEIGHT_R32G32B32_SFLOAT = 0x14,
+    VAF_TANGENT_R32G32B32_SFLOAT = 0x15,
+    VAF_TANGENT_A2B10G10R10_SNORM_PACK32 = 0x16,
+    VAF_TANGENT_R16G16B16A16_SFLOAT = 0x17,
+    VAF_NORMAL_R16G16B16A16_SNORM = 0x18,
+    VAF_TANGENT_R16G16B16A16_SNORM = 0x19,
+
+    VAF_Count,
+};
+
 enum class ePrimitiveType {
     PT_Point = 0,
     PT_Line = 1,
@@ -148,7 +181,8 @@ static bool IsBlockCompressedFormat( eViewFormat format )
         || format == eViewFormat::VF_ATI2;
 }
 
-static constexpr const uint32_t kVertexComponentSizeLUT[0x10] = {
+// Size of a single vertex attribute
+static constexpr const uint32_t kVertexComponentSizeLUT[eVertexAttributeFormat::VAF_Count] = {
     4,
     2,
     4,
@@ -164,10 +198,22 @@ static constexpr const uint32_t kVertexComponentSizeLUT[0x10] = {
     4,
     2,
     2,
-    4
+    4,
+    2,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    2,
+    2,
+    2,
 };
-  
-static constexpr const uint32_t kVertexComponentStrideLUT[0x10] = {
+
+// FUNC_00507250 (converted to a constexpr LUT)
+// Stride for a given vertex attribute (1 => 1D, 2 => 2D, etc.)
+static constexpr const uint32_t kVertexComponentStrideLUT[eVertexAttributeFormat::VAF_Count] = {
    3,
    4,
    1,
@@ -183,11 +229,22 @@ static constexpr const uint32_t kVertexComponentStrideLUT[0x10] = {
    2,
    2,
    2,
-   1
+   1,
+   1,
+   1,
+   1,
+   2,
+   3,
+   3,
+   1,
+   4,
+   4,
+   0
 };
 
 static constexpr uint32_t GetVertexAttributeSize(const uint32_t attribute)
 {
+    // FUN_005072f0
     return kVertexComponentStrideLUT[attribute] * kVertexComponentSizeLUT[attribute];
 }
 
