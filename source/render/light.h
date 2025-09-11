@@ -69,3 +69,33 @@ struct PointLight : public Light {
     float AttenuationCutoff;
     float AttenuationDropoff;
 };
+
+struct SpotLight : public Light {
+     SpotLight()
+        : Light(eLightType::LT_Spot)
+        , Diffuse(Eigen::Vector4f::Zero())
+        , Ambient(Eigen::Vector4f::Zero())
+        , Specular(Eigen::Vector4f::Zero())
+        , Position(Eigen::Vector4f::Zero())
+        , Attenuated(0)
+        , AttenuationCutoff(0.0f)
+        , AttenuationDropoff(0.0f)
+        , InnerAttenuation(0)
+        , InnerAttenuationCutoff(0.0f)
+        , InnerAttenuationDropoff(0.0f)
+    {
+        
+    }
+
+    Eigen::Vector4f Diffuse;
+    Eigen::Vector4f Ambient;
+    Eigen::Vector4f Specular;
+    Eigen::Vector4f Position;
+    Eigen::Vector4f Direction;
+    int32_t Attenuated;
+    float AttenuationCutoff;
+    float AttenuationDropoff;
+    int32_t InnerAttenuation;
+    float InnerAttenuationCutoff;
+    float InnerAttenuationDropoff;
+};

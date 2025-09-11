@@ -14,6 +14,9 @@ static NodeCacheEntry gNodeCache[4];
 static int32_t gRenderSetupCacheFlags = 0; // DAT_00fe7008
 Light* gBoundLights[kMaxNumLightPerScene] = { nullptr, nullptr, nullptr, nullptr }; // DAT_00facb04
 
+ShaderParameter* gpActiveStaticParams = nullptr; // DAT_00facb68
+size_t gActiveNumStaticParams = 0ull; // DAT_00facb6c
+
 SetupNode::SetupNode()
     : flags( 0 )
 {
@@ -187,4 +190,25 @@ bool SetupGraph::ExecuteCached(uint32_t param_1)
     }
 
     return false;
+}
+
+ShaderParameterSetupNode::ShaderParameterSetupNode()
+{
+}
+
+ShaderParameterSetupNode::~ShaderParameterSetupNode()
+{
+}
+
+void ShaderParameterSetupNode::execute()
+{
+    // FUN_0050e49
+    gpActiveStaticParams = parameters.data();
+    gActiveNumStaticParams = parameters.size();
+}
+
+uint32_t ShaderParameterSetupNode::getType() const
+{
+    // FUN_00423f20
+    return 1;
 }

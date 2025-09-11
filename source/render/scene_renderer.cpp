@@ -21,6 +21,9 @@ static Eigen::Matrix4f gInvActiveTransformMatrix = Eigen::Matrix4f::Identity(); 
 static Eigen::Vector4f DAT_00fac350 = Eigen::Vector4f::Zero(); // DAT_00fac350
 static Eigen::Vector4f DAT_00fac260 = /* FUN_009e4fe0 */ { 1.0f, 0.0f, 0.0f, 0.0f }; // DAT_00fac260
 
+// TODO: Should be owned by whatever system is reponsible for shader/PSO binding (not the scene renderer)
+static ShaderConstantsMap* gpActiveConstantMap = nullptr; // DAT_00fadbcc
+
 inline Eigen::Matrix4f& GetInvTransformMatrix()
 {
     if (!BOOL_00fe777d) {
@@ -243,74 +246,40 @@ void SceneRenderer::uploadAmbientLight(AmbientLight *param_1, int32_t param_2, b
 Eigen::Vector4f SceneRenderer::computeLightAttenuation(float param_1,float param_2)
 {
     // FUN_005ffdc0
+    // TODO: Might be inaccurate (function is never called at runtime)
     Eigen::Vector4f local_70 = DAT_00fac260 * param_2;
     Eigen::Vector4f local_80 = DAT_00fac260 * param_1;
+
     Eigen::Vector4f local_60 = GetInvTransformMatrix() * local_80;
+    float fVar6 = local_60.x() * local_60.x() + local_60.y() * local_60.y();
+    float fVar7 = local_60.y() * local_60.y() + local_60.x() * local_60.x();
+    float fVar8 = local_60.z() * local_60.z() + local_60.w() * local_60.w();
+    float fVar9 = local_60.w() * local_60.w() + local_60.z() * local_60.z();
+    local_60.y() = fVar7 + fVar9;
+    local_60.x() = fVar6 + fVar8;
+    local_60.z() = fVar8 + fVar6;
+    local_60.w() = fVar9 + fVar7;
+    auto local_80_sqrt = local_60.array().sqrt();
 
-    // TODO: Part of the pcode below is weird; need to check whats going on at runtime
-    OTDU_UNIMPLEMENTED;
-    // auVar1.x = pTVar1->x;
-    // auVar1.y = pTVar1->y;
-    // auVar1.z = pTVar1->z;
-    // local_80.x = auVar1.x;
-    // local_80.y = auVar1.y;
-    // local_80.z = auVar1.z;
-    // local_80.w = auVar1.w;
-    
-    // fVar6 = local_80.x * local_80.x + local_80.y * local_80.y;
-    // fVar7 = local_80.y * local_80.y + local_80.x * local_80.x;
-    // fVar8 = local_80.z * local_80.z + local_80.w * local_80.w;
-    // fVar9 = local_80.w * local_80.w + local_80.z * local_80.z;
-    // local_80.y = fVar7 + fVar9;
-    // local_80.x = fVar6 + fVar8;
-    // local_80.z = fVar8 + fVar6;
-    // local_80.w = fVar9 + fVar7;
-    // local_80 = (TDUVector4D)sqrtps((undefined1  [16])local_80,(undefined1  [16])local_80);
-    
-
-    // auVar1 = *pTVar1;
-    // local_80.x = auVar1.x;
-    // local_80.y = auVar1.y;
-    // local_80.z = auVar1.z;
-    // fVar9 = pTVar1[1].x * pTVar1[1].x;
-    // fVar6 = local_80.x * local_80.x + local_80.y * local_80.y;
-    // fVar7 = local_80.y * local_80.y + local_80.x * local_80.x;
-    // fVar8 = local_80.z * local_80.z + fVar9;
-    // fVar9 = fVar9 + local_80.z * local_80.z;
-    // local_80.y = fVar7 + fVar9;
-    // local_80.x = fVar6 + fVar8;
-    // local_80.z = fVar8 + fVar6;
-    // local_80.w = fVar9 + fVar7;
-    // local_80 = (TDUVector4D)sqrtps((undefined1  [16])local_80,(undefined1  [16])local_80);
-    
-    // local_60 = GetInvTransformMatrix() * local_70;
-
-    // auVar2._0_4_ = pTVar2->x;
-    // auVar2._4_4_ = pTVar2->y;
-    // auVar2._8_4_ = pTVar2->z;
-    // local_70.x = auVar2._0_4_;
-    // local_70.y = auVar2._4_4_;
-    // local_70.z = auVar2._8_4_;
-    // fVar9 = pTVar2->w * pTVar2->w;
-    // fVar6 = local_70.x * local_70.x + local_70.y * local_70.y;
-    // fVar7 = local_70.y * local_70.y + local_70.x * local_70.x;
-    // fVar8 = local_70.z * local_70.z + fVar9;
-    // fVar9 = fVar9 + local_70.z * local_70.z;
-    // local_70.y = fVar7 + fVar9;
-    // local_70.x = fVar6 + fVar8;
-    // local_70.z = fVar8 + fVar6;
-    // local_70.w = fVar9 + fVar7;
-    // auVar9 = (TDUVector4D)sqrtps((undefined1  [16])local_70,(undefined1  [16])local_70);
-    // local_70.x = auVar9.x;
+    local_60 = GetInvTransformMatrix() * local_70;
+    fVar6 = local_60.x() * local_60.x() + local_60.y() * local_60.y();
+    fVar7 = local_60.y() * local_60.y() + local_60.x() * local_60.x();
+    fVar8 = local_60.z() * local_60.z() + local_60.w() * local_60.w();
+    fVar9 = local_60.w() * local_60.w() + local_60.z() * local_60.z();
+    local_60.y() = fVar7 + fVar9;
+    local_60.x() = fVar6 + fVar8;
+    local_60.z() = fVar8 + fVar6;
+    local_60.w() = fVar9 + fVar7;
+    auto local_70_sqrt = local_60.array().sqrt();
 
     Eigen::Vector4f param_3 = {
-        local_80.x(),
+        local_80_sqrt.x(),
         1e+06f,
         0.0f,
         0.0f
     };
 
-    float fVar2 = local_70.x() - local_80.x();
+    auto fVar2 = local_70_sqrt.x() - local_80_sqrt.x();
     if (1e-06f < abs(fVar2)) {
         param_3.y() = 1.0f / fVar2;
     }
@@ -352,7 +321,51 @@ void SceneRenderer::uploadPointLight(PointLight *param_1, int32_t param_2, bool 
 void SceneRenderer::uploadSpotLight(SpotLight *param_1, int32_t param_2, bool param_3)
 {
     // FUN_00600590
-    OTDU_UNIMPLEMENTED;
+    Eigen::Vector4f local_90[3] = {
+        param_1->Ambient.array() * pActiveMaterial->AmbientColor.array(),
+        param_1->Diffuse.array() * pActiveMaterial->DiffuseColor.array(),
+        param_1->Specular.array() * pActiveMaterial->SpecularColor.array()
+    };
+    applyInstanceColor(pActiveInstance, local_90[0], local_90[1], local_90[2]);
+
+    Eigen::Vector4f local_60 = {
+        DAT_00fac350.x(),
+        DAT_00fac350.y(),
+        0.0f,
+        0.0f
+    };
+
+    if (param_1->Attenuated == 1) {
+        local_60 = computeLightAttenuation(param_1->AttenuationCutoff, param_1->AttenuationDropoff);
+    }
+
+    if ((param_1->InnerAttenuation + -1) == 0) {
+        float fVar8 = cos(0.5f * param_1->InnerAttenuationCutoff);
+        local_60.z() = fVar8;
+        fVar8 = cos((param_1->InnerAttenuationDropoff - param_1->InnerAttenuationCutoff) * 0.5f);
+        local_60.w() = fVar8;
+    }
+
+    Eigen::Vector4f local_d0(
+        param_1->Direction.x(), 
+        param_1->Direction.y(),
+        param_1->Direction.z(),
+        0.0f
+    );
+    Eigen::Vector4f local_a0 = GetInvTransformMatrix() * local_d0;
+    local_a0.normalize();
+
+    Eigen::Vector4f local_b0(param_1->Position.x(), param_1->Position.y(), param_1->Position.z(), 0.0f);
+    Eigen::Vector4f local_c0 = GetInvTransformMatrix() * local_b0;
+
+    UploadConstant(pActiveConstantMap1, param_2 * 0x20 + 0x54, local_c0.data(), 1);
+    UploadConstant(pActiveConstantMap1, param_2 * 0x20 + 0x58, local_a0.data(), 1);
+
+    ConstantMap* pMap = param_3 ? pActiveConstantMap1 : pActiveConstantMap0;
+    UploadConstant(pMap, (param_2 + 3) * 0x20, local_90[0].data(), 1);
+    UploadConstant(pMap, param_2 * 0x20 + 100, local_90[1].data(), 1);
+    UploadConstant(pMap, param_2 * 0x20 + 0x68, local_90[2].data(), 1);
+    UploadConstant(pMap, param_2 * 0x20 + 0x5c, local_60.data(), 1);
 }
 
 Eigen::Vector4f& SceneRenderer::FUN_00513000()
@@ -395,5 +408,28 @@ void SceneRenderer::applyInstanceColor(Instance* param_1, Eigen::Vector4f& ambie
 void SceneRenderer::bindMaterialParameters()
 {
     // FUN_00513a50
-    OTDU_UNIMPLEMENTED;
+    if (pActiveMaterial != nullptr) {
+        gpActiveStaticParams = nullptr;
+        gActiveNumStaticParams = 0ull;
+        
+        bool bVar2 = SetupGraph::ExecuteCached(1);
+        if (bVar2) {
+            MaterialParameter* peVar3 = pActiveMaterial->getParameterByIndex(0);
+            uint64_t local_10 = (peVar3 != nullptr) ? peVar3->Hashcode : 0ull;
+
+            if (0ull < gActiveNumStaticParams) {
+                ShaderParameter* pSVar5 = gpActiveStaticParams;
+                size_t uVar4 = gActiveNumStaticParams;
+                do {
+                    if (pSVar5->pMaterial == pActiveMaterial || pSVar5->ShaderHashcode == local_10) {
+                        ConstantMap* pMap = &( (pSVar5->bBindToPixelShader) ? gpActiveConstantMap->FloatPS : gpActiveConstantMap->FloatVS );
+                        UploadConstant(pMap, pSVar5->ParameterID * 4, (float *)pSVar5->pParameters, pSVar5->NumParameters);
+                    }
+                    
+                    pSVar5++;
+                    uVar4--;
+                } while (uVar4 != 0ull);
+            }
+        }
+    }
 }

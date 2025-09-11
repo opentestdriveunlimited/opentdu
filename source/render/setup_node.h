@@ -1,6 +1,7 @@
 #pragma once
 
 struct Light;
+struct Material;
 
 static constexpr uint32_t kMaxNumLightPerScene = 4;
 
@@ -16,6 +17,27 @@ public:
 
 protected:
     uint32_t flags;
+};
+
+struct ShaderParameter {
+    uint64_t ShaderHashcode = 0ull;
+    Material* pMaterial = nullptr;
+    uint32_t ParameterID = 0;
+    void* pParameters = nullptr;
+    int32_t NumParameters = 0;
+    bool bBindToPixelShader = false;
+};
+
+class ShaderParameterSetupNode : public SetupNode {
+public:
+    ShaderParameterSetupNode();
+    ~ShaderParameterSetupNode();
+
+    void execute() override;
+    uint32_t getType() const override;
+
+private:
+    std::vector<ShaderParameter> parameters;
 };
 
 class LightSetupNode : public SetupNode {
@@ -55,3 +77,5 @@ private:
 };
 
 extern Light* gBoundLights[kMaxNumLightPerScene];
+extern ShaderParameter* gpActiveStaticParams;
+extern size_t gActiveNumStaticParams;
