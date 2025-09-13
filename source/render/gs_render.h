@@ -149,7 +149,7 @@ public:
 
     int32_t beginFrame();
     void endFrame();
-    void present(); // FUN_00513900
+    void present();
 
     void setLODQuality( const uint32_t qualityIndex );
 
@@ -166,10 +166,12 @@ public:
     void registerMngCallback(MngRegisterCallback_t& callback);
 
     void bindMaterial(Material* param_2);
-
     void bindPrimitive(Primitive* param_1, LOD* param_2);
+    void bindHeightmap(Primitive* param_1, LOD* param_2);
 
     bool isVertexAttributeFormatSupported(eVertexAttributeFormat format) const;
+    void drawIndexedPrimitive(Primitive* param_1);
+    void drawHeightmap(Primitive* param_1, LOD* param_2);
 
 private:
     static constexpr int32_t kNumSunRT = 8;

@@ -293,10 +293,10 @@ void GSRender::tick(float totalTime, float deltaTime)
         fVar2 = vegetationWindSpeedLimit;
     }
     gUVATime = vegetationUVAFactor * fVar2 * deltaTime + gUVATime;
-    gRenderBuckets[6].Time = gUVATime;
-    gRenderBuckets[7].Time = gUVATime;
-    gRenderBuckets[0x23].Time = gUVATime;
-    gRenderBuckets[0x24].Time = gUVATime;
+    gRenderBuckets[eRenderBucket::RB_Vegetation].Time = gUVATime;
+    gRenderBuckets[eRenderBucket::RB_VegetationAlphaTest].Time = gUVATime;
+    gRenderBuckets[eRenderBucket::RB_VegetationAlpha].Time = gUVATime;
+    gRenderBuckets[eRenderBucket::RB_VegetationFullAlpha].Time = gUVATime;
     updateWind();
 
     pActiveScene = nullptr;
@@ -351,6 +351,7 @@ void GSRender::endFrame()
 
 void GSRender::present()
 {
+    // FUN_00513900
     pRenderDevice->present();
 }
 
@@ -1360,7 +1361,65 @@ void GSRender::bindPrimitive(Primitive *param_1, LOD* param_2)
     }
 }
 
+void GSRender::bindHeightmap(Primitive *param_1, LOD *param_2)
+{
+    // FUN_005157e0
+    // FUN_005ff040 (inlined)
+    if (param_1->bUploaded == '\0') {
+        Render3DG::UploadHeightmapToGPU(param_1, param_2);
+    }
+}
+
 bool GSRender::isVertexAttributeFormatSupported(eVertexAttributeFormat format) const
 {
     return pRenderDevice->isVertexAttributeFormatSupported(format);
+}
+
+inline void BindSkinningConstants(uint32_t* pIndices, uint32_t numBounces)
+{
+    // FUN_00600e00
+    OTDU_UNIMPLEMENTED;
+}
+
+inline uint32_t GetPrimitiveCount(ePrimitiveType type, uint32_t numIndex)
+{
+    // FUN_005fda50
+    switch (type) {
+    case ePrimitiveType::PT_HMap:
+      return 0;
+    case ePrimitiveType::PT_Point:
+      return numIndex;
+    case ePrimitiveType::PT_Line:
+      return numIndex / 2;
+    case ePrimitiveType::PT_LineStrip:
+      return numIndex - 1u;
+    case ePrimitiveType::PT_Triangle:
+      return numIndex / 3;
+    case ePrimitiveType::PT_Quad:
+        return (numIndex + ((int)numIndex >> 0x1f & 3U)) >> 2;
+    default:
+      return numIndex - 2;
+    };
+}
+
+void GSRender::drawIndexedPrimitive(Primitive *param_1)
+{
+    // FUN_00515800
+    // FUN_005fe0c0 (inlined)
+    uint8_t* pBonesBuffer = param_1->pBonesBuffer;
+    if (gpActiveBonesArray != nullptr && pBonesBuffer != nullptr) {
+        BindSkinningConstants((uint32_t*)(pBonesBuffer + 0x10), param_1->NumBones);
+    }
+
+    uint32_t primCount = GetPrimitiveCount(param_1->Type,param_1->NumIndex);
+    if (primCount > 0) {
+        pRenderDevice->drawIndexedPrimitive(param_1->Type, 0, param_1->VertexOffset, param_1->NumVertex, param_1->IndexOffset, primCount);
+    }
+}
+
+void GSRender::drawHeightmap(Primitive *param_1, LOD *param_2)
+{
+    // FUN_00515810
+    // FUN_005ff060 (inlined)
+    
 }
