@@ -152,28 +152,47 @@ void AddPrimToBucket(Material *param_1, Instance *param_2, Primitive *param_3, c
     pfVar6->pSetup = param_2->getSetup();
 }
 
+bool UploadInstance(Instance* param_1, TransformMatrixCommand* param_2, bool bIsLastInstance)
+{
+    // FUN_00604400
+    OTDU_UNIMPLEMENTED;
+    return false;
+}
+
 void DrawCommand::execute(bool param_2, uint32_t param_3)
 {
     // FUN_005f1d30
-    OTDU_UNIMPLEMENTED;
-    // if (param_2) {
-    //     if (IsHeightmap == 0) {
+    if (param_2) {
+        if (IsHeightmap == 0) {
+            gpRender->bindPrimitive(pPrimitive, pActiveLOD);
+        } else if (IsHeightmap == 1) {
+            gpRender->bindHeightmap(pPrimitive, pActiveLOD);
+        }
 
-    //     } else if (IsHeightmap == 1) {
+        if (!Matrices.empty()) {
+            if ((param_3 & 4) != 0) {
+                gSceneRenderer.bindPrimitiveInstance(pPrimitive, &Matrices.front());
 
-    //     }
-
-    //     if (!Matrices.empty()) {
-    //         if ((param_3 & 4) != 0) {
-                
-    //         } else {
-    //             for (TransformMatrixCommand& cmd : Matrices) {
-    //                 cmd.execute();
-    //             }
-    //         }
-    //     }
-    // } 
-    // Matrices.clear();
+                size_t uVar2 = Matrices.size();
+                size_t iVar3 = 0ull;
+                for (TransformMatrixCommand& puVar1 : Matrices) {
+                    bool bVar1 = UploadInstance(puVar1.pInstance,&puVar1,iVar3 == uVar2 - 1);
+                    if (!bVar1) {
+                        gpRender->drawIndexedPrimitive(pPrimitive);
+                    }
+                    iVar3++;
+                }
+                         
+                // gInstanceManager.unbindStreams();
+                SetupGraph::Unbind(1);
+            } else {
+                for (TransformMatrixCommand& cmd : Matrices) {
+                    cmd.execute(IsHeightmap, pPrimitive, pActiveLOD);
+                }
+            }
+        }
+    } 
+    Matrices.clear();
 }
 
 void DrawCommandMaterial::execute()
@@ -207,7 +226,7 @@ void SceneSetupCommand::execute()
 
 SceneSetupCommand* RenderBucketData::allocateSceneSetupCommand(LightSetupNode* param_2)
 {
-    // FUN_DAT_00fe89f8
+    // FUN_00fe89f8
     if (param_2 == nullptr) {
         param_2 = &DAT_00fe89f8;
     }
@@ -216,4 +235,25 @@ SceneSetupCommand* RenderBucketData::allocateSceneSetupCommand(LightSetupNode* p
     cmd.pLightSetupNode = param_2;
     SceneSetupCommands.push_back(cmd);
     return &SceneSetupCommands.back();
+}
+
+void TransformMatrixCommand::execute(uint32_t isHeightmap, Primitive *param_3, LOD *param_4)
+{
+    // FUN_005f17d0
+    gSceneRenderer.pActiveInstance = pInstance;
+    gSceneRenderer.pActiveDrawList = pDrawList;
+    gSceneRenderer.pActiveTransform = this;
+    
+    pSetup->bind(1);
+    if (0xffffffff < IsInstanciated && IsInstanciated < 2) {
+        gSceneRenderer.bindInstance(this, this->pInstance);
+    }
+
+    if (isHeightmap == 0) {
+        gpRender->drawIndexedPrimitive(param_3);
+    } else if (isHeightmap == 1) {
+        gpRender->drawHeightmap(param_3, param_4);
+    }
+
+    SetupGraph::Unbind(1);
 }

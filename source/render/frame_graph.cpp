@@ -76,7 +76,7 @@ void FrameGraph::submitDrawCommands(bool param_2)
                 peVar1->getSetup().bind(0);
                 peVar1->submitDrawCommands(uVar5);
                 gpRender->flushSubmittedScene();
-                peVar1->getSetup().unbind(0);
+                SetupGraph::Unbind(0);
             } else if (puVar2 == 1) {
                 PostFXNode* peVar1 = (PostFXNode*)pNode;
 

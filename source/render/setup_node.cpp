@@ -140,7 +140,7 @@ void SetupGraph::bind(uint32_t param_1) const
     }
 }
 
-void SetupGraph::unbind(uint32_t param_1)
+void SetupGraph::Unbind(uint32_t param_1)
 {
     // FUN_0050e640
     if (gNodeCache[0].NumNodes != -1 

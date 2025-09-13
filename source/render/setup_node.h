@@ -67,8 +67,8 @@ public:
 
     bool addNode(SetupNode* node);
     void bind(uint32_t param_1) const;
-    void unbind(uint32_t param_1);
 
+    static void Unbind(uint32_t param_1);
     static bool ExecuteCached(uint32_t param_1);
 
 private:

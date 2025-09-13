@@ -124,13 +124,15 @@ struct TransformMatrixCommand
     DrawList*                           pDrawList = nullptr;
     Instance*                           pInstance = nullptr;
     const SetupGraph*                   pSetup = nullptr;
+
+    void execute(uint32_t isHeightmap, Primitive* param_3, LOD* param_4);
 };
 
 struct DrawCommand
 {
     uint32_t                            IsHeightmap = 0;
     uint32_t                            Unknown = 0;
-    const Primitive*                    pPrimitive = nullptr;
+    Primitive*                          pPrimitive = nullptr;
     LOD*                                pActiveLOD = nullptr;
     std::list<TransformMatrixCommand>   Matrices;
 

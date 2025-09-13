@@ -71,3 +71,4 @@ struct SceneRenderer {
 };
 
 extern SceneRenderer gSceneRenderer; // DAT_00fe77c0
+extern Eigen::Matrix4f* gpActiveBonesArray;
