@@ -81,6 +81,8 @@ public:
     virtual void unparseSection(RenderFile::Section* pSection) override;
 
     static bool UploadPrimitiveToGPU(Primitive* param_1, LOD* param_2);
+    static bool UploadHeightmapToGPU(Primitive* param_1, LOD* param_2);
+
     static void CreateVertexDeclaration(Primitive* param_1);
 
 private:

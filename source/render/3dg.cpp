@@ -216,6 +216,13 @@ bool Render3DG::UploadPrimitiveToGPU(Primitive *param_1, LOD* param_2)
     return false;
 }
 
+bool Render3DG::UploadHeightmapToGPU(Primitive *param_1, LOD *param_2)
+{
+    // FUN_005fee00
+    OTDU_UNIMPLEMENTED;
+    return false;
+}
+
 void Render3DG::CreateVertexDeclaration(Primitive *param_1)
 {
     // FUN_005fdbb0
