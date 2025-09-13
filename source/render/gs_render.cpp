@@ -20,6 +20,7 @@
 
 #include "render_buckets.h"
 #include "scene_renderer.h"
+#include "3dg.h"
 
 GSRender* gpRender = nullptr;
 eViewFormat gDepthStencilFormat = eViewFormat::VF_D24S8F; // DAT_00fac8e4
@@ -1342,4 +1343,24 @@ void GSRender::bindMaterial(Material* param_2)
     // FUN_00513970
     pActiveMaterial = param_2;
     pActiveMaterial->bind();
+}
+
+void GSRender::bindPrimitive(Primitive *param_1, LOD* param_2)
+{
+    // FUN_005157d0
+    // FUN_005fe700 (inlined)
+    if (param_1->NumVertex != 0) {
+        if (!param_1->bUploaded) {
+            bool bUploaded = Render3DG::UploadPrimitiveToGPU(param_1, param_2);
+            if (!bUploaded) {
+                OTDU_LOG_ERROR("Failed to upload Primitive to GPU!\n");
+                return;
+            }
+        }
+    }
+}
+
+bool GSRender::isVertexAttributeFormatSupported(eVertexAttributeFormat format) const
+{
+    return pRenderDevice->isVertexAttributeFormatSupported(format);
 }

@@ -18,6 +18,8 @@ class PostFXNodeDownscale;
 class PostFXNodeBlit;
 class FrameGraph;
 struct RenderBucket;
+struct Primitive;
+struct LOD;
 
 // TODO: Not sure what's this callback really is...
 using MngRegisterCallback_t = std::function<bool(void)>;
@@ -164,6 +166,10 @@ public:
     void registerMngCallback(MngRegisterCallback_t& callback);
 
     void bindMaterial(Material* param_2);
+
+    void bindPrimitive(Primitive* param_1, LOD* param_2);
+
+    bool isVertexAttributeFormatSupported(eVertexAttributeFormat format) const;
 
 private:
     static constexpr int32_t kNumSunRT = 8;

@@ -97,7 +97,7 @@ enum eViewFormat : uint32_t {
 
 // Based on DAT_00eedac4 LUT + stride and vertex size LUTs (see below) + vertex declaration creation logic
 // TODO: Some formats are assumed to be unsupported because stride and size are zeros.
-enum eVertexAttributeFormat : uint32_t {
+enum eVertexAttributeFormat : uint8_t {
     VAF_POSITION_R32G32B32_SFLOAT = 0x0,
     VAF_POSITION_R16G16B16A16_SFLOAT = 0x1,
     VAF_COLOR_B8G8R8A8_UNORM = 0x2,
@@ -242,7 +242,7 @@ static constexpr const uint32_t kVertexComponentStrideLUT[eVertexAttributeFormat
    0
 };
 
-static constexpr uint32_t GetVertexAttributeSize(const uint32_t attribute)
+static constexpr uint32_t GetVertexAttributeSize(const eVertexAttributeFormat attribute)
 {
     // FUN_005072f0
     return kVertexComponentStrideLUT[attribute] * kVertexComponentSizeLUT[attribute];
