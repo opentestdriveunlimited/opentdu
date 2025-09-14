@@ -380,7 +380,7 @@ eVertexAttributeFormat AdjustVertexAttributeFormat(eVertexAttributeFormat param_
         if (param_1 == VAF_TANGENT_A2B10G10R10_SNORM_PACK32) {
             return VAF_TANGENT_R32G32B32_SFLOAT;
         }
-        param_1 = (eVertexAttributeFormat)((-(uint32_t)(param_1 != 0x19) & 5) + 0x15);
+        param_1 = (eVertexAttributeFormat)((-(uint32_t)(param_1 != eVertexAttributeFormat::VAF_TANGENT_R16G16B16A16_SNORM) & 5) + 0x15);
     }
     return param_1;
 }
@@ -391,7 +391,7 @@ uint32_t PrimtiveVertexAttributes::adjustAttributesFormat()
 #define OTDU_ADJUST_VAF( attrib )\
     if (attrib.Number != '\0') {\
         eVertexAttributeFormat eVar1 = AdjustVertexAttributeFormat(attrib.Format);\
-        if (eVar1 == eVertexAttributeFormat::VAF_Count) {\
+        if (eVar1 == eVertexAttributeFormat::VAF_Count || eVar1 == eVertexAttributeFormat::VAF_Invalid) {\
             return 0;\
         }\
         bVar2 |= eVar1 != attrib.Format;\

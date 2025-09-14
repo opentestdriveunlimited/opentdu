@@ -152,13 +152,6 @@ void AddPrimToBucket(Material *param_1, Instance *param_2, Primitive *param_3, c
     pfVar6->pSetup = param_2->getSetup();
 }
 
-bool UploadInstance(Instance* param_1, TransformMatrixCommand* param_2, bool bIsLastInstance)
-{
-    // FUN_00604400
-    OTDU_UNIMPLEMENTED;
-    return false;
-}
-
 void DrawCommand::execute(bool param_2, uint32_t param_3)
 {
     // FUN_005f1d30
@@ -176,14 +169,14 @@ void DrawCommand::execute(bool param_2, uint32_t param_3)
                 size_t uVar2 = Matrices.size();
                 size_t iVar3 = 0ull;
                 for (TransformMatrixCommand& puVar1 : Matrices) {
-                    bool bVar1 = UploadInstance(puVar1.pInstance,&puVar1,iVar3 == uVar2 - 1);
+                    bool bVar1 = gInstanceRenderer.uploadInstance(puVar1.pInstance,&puVar1,iVar3 == uVar2 - 1);
                     if (!bVar1) {
                         gpRender->drawIndexedPrimitive(pPrimitive);
                     }
                     iVar3++;
                 }
-                         
-                // gInstanceManager.unbindStreams();
+
+                gInstanceRenderer.unbind();
                 SetupGraph::Unbind(1);
             } else {
                 for (TransformMatrixCommand& cmd : Matrices) {

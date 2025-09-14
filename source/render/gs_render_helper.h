@@ -126,6 +126,9 @@ enum eVertexAttributeFormat : uint8_t {
     VAF_TANGENT_R16G16B16A16_SNORM = 0x19,
 
     VAF_Count,
+
+    VAF_INSTANCE_R32G32B32A32_SFLOAT, // Single matrix row in instance buffer
+    VAF_Invalid = 0xff
 };
 
 enum class ePrimitiveType {
@@ -247,6 +250,18 @@ static constexpr uint32_t GetVertexAttributeSize(const eVertexAttributeFormat at
     // FUN_005072f0
     return kVertexComponentStrideLUT[attribute] * kVertexComponentSizeLUT[attribute];
 }
+
+// Mirrors D3DVERTEXELEMENT9
+struct VertexLayoutAttribute {
+    uint16_t Stream;
+    uint16_t Offset;
+    eVertexAttributeFormat Type;
+    uint8_t Method;
+    uint8_t Usage;
+    uint8_t UsageIndex;
+};
+// End of vertex layout value (mirrors D3DDECL_END)
+static constexpr VertexLayoutAttribute kVertexLayoutSentinel = { 0xff, 0,  eVertexAttributeFormat::VAF_Invalid, 0, 0x0, 0x0 };
 
 struct GPUBufferDesc {
     enum class Type {

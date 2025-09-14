@@ -31,6 +31,35 @@ Eigen::Matrix4f gActiveCamToWorld = Eigen::Matrix4f::Identity();
 // Used to calculate weather stuff (but appears to never be modified at runtime; could be some debug leftover)
 static Eigen::Vector4f DAT_00fac360 = { 0.0f, 0.0f, 0.0f, 0.0f };
 
+// TODO: Move this to a separate file
+static constexpr uint32_t kMaxNumVertexStreams = 0x10;
+struct StateCache {
+    struct VertexStreamCache {
+        GPUBuffer* pBuffer = nullptr;
+        uint32_t Offset = 0;
+        uint32_t Stride = 0;
+    };
+    
+    uint32_t VertexBuffersFrequency[kMaxNumVertexStreams]; // DAT_00fadf58
+    VertexStreamCache VertexBuffers[kMaxNumVertexStreams]; // DAT_00fadf98
+    GPUVertexLayout* pVertexLayout = nullptr;
+
+    uint8_t bWriteChannelR : 1;
+    uint8_t bWriteChannelG : 1;
+    uint8_t bWriteChannelB : 1;
+    uint8_t bWriteChannelA : 1;
+
+    StateCache() 
+        : bWriteChannelR( true )
+        , bWriteChannelG( true )
+        , bWriteChannelB( true )
+        , bWriteChannelA( true )
+    {
+        memset(VertexBuffersFrequency, 0, sizeof(uint32_t) * kMaxNumVertexStreams);
+    }
+};
+StateCache gStateCache;
+
 GSRender::GSRender()
     : GameSystem()
     , pRenderDevice( nullptr )
@@ -1299,7 +1328,37 @@ void GSRender::bindActiveFramebufferToDevice()
 void GSRender::beginRenderPass()
 {
     // FUN_005144e0
-    OTDU_UNIMPLEMENTED;
+    RenderTarget* peVar8 = RenderTarget::GetBackBuffer();
+    if (pActiveFramebuffer != nullptr) {
+        peVar8 = pActiveFramebuffer->pAttachments[0];
+    }
+
+    uint32_t uVar6 = peVar8->getWidth();
+    uint32_t uVar7 = peVar8->getHeight();
+
+    float fVar4 = pActiveViewport->Width;
+    float fVar5 = pActiveViewport->Height;
+    float fVar1 = pActiveViewport->Y;
+    float fVar2 = pActiveViewport->X;
+
+    Viewport passViewport;
+    passViewport.X = round(((float)uVar6 + 0.5f) * fVar2);
+    passViewport.Y = round(((float)uVar7 + 0.5f) * fVar1);
+    passViewport.Width = round(((float)uVar6 + 0.5f) * fVar4);
+    passViewport.Height = round(((float)uVar7 + 0.5f) * fVar5);
+    pRenderDevice->setViewport(passViewport);
+
+    uint32_t uVar6 = pActiveViewport->Flags;
+    bool bClearColor = (uVar6 & 1) != 0;
+    bool bClearDepth = ((uVar6 >> 1 & 1) != 0);
+    bool bClearStencil = ((uVar6 >> 2 & 1) != 0);
+    bool bVar9 = (bClearColor || bClearDepth || bClearStencil);
+
+    setColorWriteChannels(true, true, true, true);
+
+    if (bVar9) {
+        pRenderDevice->clearFramebuffer(pActiveViewport->ClearColor.Color, 1.0f, 0, bClearColor, bClearDepth, bClearStencil);
+    }
 }
 
 void GSRender::setupProjection(Camera *param_1, Frustum *param_2, bool bPerspectiveProj, bool param_4)
@@ -1370,6 +1429,34 @@ void GSRender::bindHeightmap(Primitive *param_1, LOD *param_2)
     }
 }
 
+void GSRender::bindVertexBuffer(GPUBuffer *param_1, uint32_t bindIndex, uint32_t offset, uint32_t stride)
+{
+    // FUN_005131c0
+    if (gStateCache.VertexBuffers[bindIndex].pBuffer != param_1 ||
+        gStateCache.VertexBuffers[bindIndex].Offset != offset ||
+        gStateCache.VertexBuffers[bindIndex].Stride != stride) {
+        pRenderDevice->bindVertexBuffer(param_1, bindIndex, stride, offset);
+
+        gStateCache.VertexBuffers[bindIndex].pBuffer = param_1;
+        gStateCache.VertexBuffers[bindIndex].Offset = offset;
+        gStateCache.VertexBuffers[bindIndex].Stride = stride;
+    }
+}
+
+void GSRender::bindVertexLayout(GPUVertexLayout *param_1)
+{
+    if (gStateCache.pVertexLayout != param_1 && param_1 != nullptr) {
+        pRenderDevice->bindVertexLayout(param_1);
+    }
+    gStateCache.pVertexLayout = param_1;
+}
+
+void GSRender::setStreamFrequency(int32_t param_1, int32_t param_3)
+{
+    pRenderDevice->setStreamFrequency(param_1, param_3);
+    gStateCache.VertexBuffersFrequency[param_1] = param_3;
+}
+
 bool GSRender::isVertexAttributeFormatSupported(eVertexAttributeFormat format) const
 {
     return pRenderDevice->isVertexAttributeFormatSupported(format);
@@ -1421,5 +1508,20 @@ void GSRender::drawHeightmap(Primitive *param_1, LOD *param_2)
 {
     // FUN_00515810
     // FUN_005ff060 (inlined)
-    
+    OTDU_UNIMPLEMENTED;
+}
+
+void GSRender::setColorWriteChannels(bool bWriteRed, bool bWriteGreen, bool bWriteBlue, bool bWriteAlpha)
+{
+    if (bWriteRed != gStateCache.bWriteChannelR
+    || bWriteGreen != gStateCache.bWriteChannelG
+    || bWriteBlue != gStateCache.bWriteChannelB
+    || bWriteAlpha != gStateCache.bWriteChannelA) {
+        pRenderDevice->setColorWriteChannels(bWriteRed, bWriteGreen, bWriteBlue, bWriteAlpha);
+
+        gStateCache.bWriteChannelR = bWriteRed;
+        gStateCache.bWriteChannelG = bWriteGreen;
+        gStateCache.bWriteChannelB = bWriteBlue;
+        gStateCache.bWriteChannelA = bWriteAlpha;
+    }
 }

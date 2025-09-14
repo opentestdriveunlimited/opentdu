@@ -50,6 +50,11 @@ struct GPUPipelineState {
     VkPipeline PipelineState;
 };
 
+struct GPUVertexLayout {
+    std::vector<VkVertexInputAttributeDescription>  InputAttributes;
+    std::vector<VkVertexInputBindingDescription>    InputBindings;
+};
+
 class RenderTarget;
 class Render2DB;
 
@@ -75,6 +80,7 @@ public:
     GPUBuffer*    createBuffer( const struct GPUBufferDesc* desc );
     GPUShader*    createShader( eShaderType type, const void* pBytecode, const size_t bytecodeSize );
     GPUPipelineState* createPipelineState( struct Material* pMaterial );
+    GPUVertexLayout* createVertexLayout( VertexLayoutAttribute* pAttributes );
 
     void* lockBuffer( GPUBuffer* pBuffer, const uint32_t offset, const uint32_t size );
     void unlockBuffer( GPUBuffer* pBuffer );
@@ -85,6 +91,7 @@ public:
     void destroyBuffer( GPUBuffer* pBuffer );
     void destroyShader( GPUShader* pShader );
     void destroyPipelineState( GPUPipelineState* pPipelineState );
+    void destroyVertexLayout( GPUVertexLayout* pVertexLayout );
 
     void resize( uint32_t width, uint32_t height );
 
@@ -100,7 +107,7 @@ public:
     bool retrieveAdapterInfos( const uint32_t adapterIndex, struct GPUAdapterDesc* pOutDesc );
 
     // D3D9 Emulation (might want to remove this later and treat this as a regular cbuffer).
-    void setFloatConstants( eShaderType stage, float* pFloats, uint32_t numFloat );
+    void setFloatConstants(eShaderType stage, float *pFloats, const uint32_t offset, const uint32_t numVectors);
 
     void bindTexture( Texture* pTexture, const uint32_t index );
 
@@ -108,11 +115,21 @@ public:
     // high level (and make adoption of old immediate binding style APIs)
     void bindMaterial( Material* pMaterial );
 
-    void clearFramebuffer(const bool bClearColor, const bool bClearDepth, const bool bClearStencil);
+    // Clear ALL attachments (mirrors D3D9 clear behavior). Single RT clear should be implemented in the future.
+    void clearFramebuffer(const uint32_t clearColor, const float clearDepth, const uint32_t clearStencil, const bool bClearColor, const bool bClearDepth, const bool bClearStencil);
     void beginRenderPass();
 
-    void bindVertexBuffer(GPUBuffer* pBuffer, const uint32_t index, const uint32_t stride);
+    void bindVertexLayout(GPUVertexLayout* pLayout);
+    void bindVertexBuffer(GPUBuffer* pBuffer, const uint32_t index, const uint32_t stride, const uint32_t offset);
     void draw(uint32_t numVertex, uint32_t numInstance, uint32_t firstVertex = 0, uint32_t firstInstance = 0);
+    void drawIndexedPrimitive(
+        ePrimitiveType primitiveType,
+        int32_t baseVertexIndex,
+        uint32_t minVertexIndex,
+        uint32_t numVertices,
+        uint32_t startIndex,
+        uint32_t primitiveCount
+    );
 
     void blit(Render2DB* pSrc, RenderTarget* pDst, const bool bLinearFiltering);
 
@@ -123,6 +140,14 @@ public:
     RenderTarget* getBoundRenderTargetAtIndex( uint32_t param_1 );
     bool isFramebufferUsingMSAA() const;
     void setMSAAState(bool param_1);
+
+    void bumpInternalFrameIndex();
+    void setCullMode( int32_t param_1, int32_t param_2 );
+
+    bool isVertexAttributeFormatSupported(eVertexAttributeFormat format) const;
+
+    void setStreamFrequency( int32_t param_1, int32_t param_3 );
+    void setColorWriteChannels(bool bWriteRed, bool bWriteGreen, bool bWriteBlue, bool bWriteAlpha);
 
 private:
     VkInstance          instance;
@@ -151,6 +176,7 @@ private:
     GPUBackbuffer* pBackbuffer;
 
     FormatCapabilities formatCaps[eViewFormat::VF_Count];
+    uint32_t bufferFormatSupport; // DAT_00fada5c
 
     // TODO: For now assume single thread cmd submission (should be good enough for a D3D9 game).
     VkCommandBuffer activeCmdBuffer;
@@ -160,6 +186,10 @@ private:
 
     VkSwapchainKHR swapchain;
     std::vector<VkImage> swapchainImages;
+    VkSemaphore nextImageSemaphore[PendingFrameCount];
+
+    VkSemaphore frameSubmissionSemaphore[PendingFrameCount];
+    VkFence inFlightFence;
 
     float shaderConstants[2][kNumShaderConstants];
 

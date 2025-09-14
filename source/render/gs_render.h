@@ -20,6 +20,8 @@ class FrameGraph;
 struct RenderBucket;
 struct Primitive;
 struct LOD;
+struct GPUBuffer;
+struct GPUVertexLayout;
 
 // TODO: Not sure what's this callback really is...
 using MngRegisterCallback_t = std::function<bool(void)>;
@@ -169,9 +171,14 @@ public:
     void bindPrimitive(Primitive* param_1, LOD* param_2);
     void bindHeightmap(Primitive* param_1, LOD* param_2);
 
+    void bindVertexBuffer(GPUBuffer* param_1, uint32_t bindIndex, uint32_t offset, uint32_t stride);
+    void bindVertexLayout(GPUVertexLayout* param_1);
+    void setStreamFrequency(int32_t param_1, int32_t param_3);
+
     bool isVertexAttributeFormatSupported(eVertexAttributeFormat format) const;
     void drawIndexedPrimitive(Primitive* param_1);
     void drawHeightmap(Primitive* param_1, LOD* param_2);
+    void setColorWriteChannels(bool bWriteRed, bool bWriteGreen, bool bWriteBlue, bool bWriteAlpha);
 
 private:
     static constexpr int32_t kNumSunRT = 8;

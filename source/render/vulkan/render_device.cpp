@@ -97,6 +97,35 @@ static constexpr const VkFormat kViewFormatLUT[eViewFormat::VF_Count] = {
     VK_FORMAT_UNDEFINED, // VF_Invalid
 };
 
+static constexpr const VkFormat kVertexAttributeFormats[eVertexAttributeFormat::VAF_Count] = {
+    VK_FORMAT_R32G32B32_SFLOAT,
+    VK_FORMAT_R16G16B16A16_SFLOAT,
+    VK_FORMAT_B8G8R8A8_UNORM,
+    VK_FORMAT_B8G8R8A8_UNORM,
+    VK_FORMAT_B8G8R8A8_UNORM,
+    VK_FORMAT_B8G8R8A8_UNORM,
+    VK_FORMAT_R32G32B32_SFLOAT,
+    VK_FORMAT_UNDEFINED,
+    VK_FORMAT_UNDEFINED,
+    VK_FORMAT_A2B10G10R10_SNORM_PACK32,
+    VK_FORMAT_R16G16B16A16_UNORM,
+    VK_FORMAT_R16G16B16A16_SFLOAT,
+    VK_FORMAT_R32G32_SFLOAT,
+    VK_FORMAT_R16G16_SNORM,
+    VK_FORMAT_R16G16_SFLOAT,
+    VK_FORMAT_R32_SFLOAT,
+    VK_FORMAT_UNDEFINED,
+    VK_FORMAT_R8G8B8A8_USCALED,
+    VK_FORMAT_R32_SFLOAT,
+    VK_FORMAT_R32G32_SFLOAT,
+    VK_FORMAT_R32G32B32_SFLOAT,
+    VK_FORMAT_R32G32B32_SFLOAT,
+    VK_FORMAT_A2B10G10R10_SNORM_PACK32,
+    VK_FORMAT_R16G16B16A16_SFLOAT,
+    VK_FORMAT_R16G16B16A16_SNORM,
+    VK_FORMAT_R16G16B16A16_SNORM
+};
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback( VkDebugUtilsMessageSeverityFlagBitsEXT severity,
                                                      VkDebugUtilsMessageTypeFlagsEXT,
                                                      const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
@@ -179,6 +208,7 @@ RenderDevice::RenderDevice()
     , surface( nullptr )
     , frameIndex( 0 )
     , pBackbuffer( nullptr )
+    , bufferFormatSupport( 0u )
     , activeCmdBuffer( VK_NULL_HANDLE )
     , framebufferInfos{}
     , time(0.0f)
@@ -195,6 +225,14 @@ RenderDevice::RenderDevice()
 
 RenderDevice::~RenderDevice()
 {
+    for (uint32_t i = 0; i < PendingFrameCount; i++) {
+        vkDestroySemaphore(device, nextImageSemaphore[i], nullptr);
+    }
+
+    for (uint32_t i = 0; i < PendingFrameCount; i++) {
+        vkDestroySemaphore(device, frameSubmissionSemaphore[i], nullptr);
+    }
+    
     vkDestroySwapchainKHR(device, swapchain, nullptr);
     vmaDestroyAllocator(allocator);
     vkDestroyDevice(device, nullptr);
@@ -272,6 +310,29 @@ void RenderDevice::initialize()
         } else {
             OTDU_LOG_WARN("Format %u is unsupported by this device!\n", iVar7);
         }
+    }
+
+    for ( uint32_t iVar7 = 0; iVar7 < eVertexAttributeFormat::VAF_Count; iVar7++ ) {
+        VkFormatProperties props = { 0 };
+        vkGetPhysicalDeviceFormatProperties(physicalDevice, kVertexAttributeFormats[iVar7], &props);
+
+        if (props.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) {
+            bufferFormatSupport |= (1 << iVar7);
+        } else {
+            OTDU_LOG_WARN("Vertex Attribute Format %u is unsupported by this device!\n", iVar7);
+        }
+    }
+
+    VkSemaphoreCreateInfo semaphoreInfo = {};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    for (uint32_t i = 0; i < PendingFrameCount; i++) {
+        VkResult semaphoreCreation = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &nextImageSemaphore[i]);
+        OTDU_ASSERT(semaphoreCreation == VK_SUCCESS);
+    }
+
+    for (uint32_t i = 0; i < PendingFrameCount; i++) {
+        VkResult semaphoreCreation = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &frameSubmissionSemaphore[i]);
+        OTDU_ASSERT(semaphoreCreation == VK_SUCCESS);
     }
 }
 
@@ -451,7 +512,12 @@ void RenderDevice::resize( uint32_t width, uint32_t height )
 
 void RenderDevice::destroyPipelineState(GPUPipelineState *pPipelineState)
 {
-    OTDU_IMPLEMENTATION_SKIPPED("RenderDevice::destroyPipelineState");
+    vkDestroyPipeline(device, pPipelineState->PipelineState, nullptr);
+}
+
+void RenderDevice::destroyVertexLayout(GPUVertexLayout *pVertexLayout)
+{
+    OTDU_UNIMPLEMENTED;
 }
 
 GPUBackbuffer *RenderDevice::getBackbuffer()
@@ -525,12 +591,12 @@ void RenderDevice::setViewport(Viewport &vp)
     vkCmdSetViewport( activeCmdBuffer, 0, 1, &viewport );
 }
 
-void RenderDevice::setFloatConstants(eShaderType stage, float *pFloats, uint32_t numFloat)
+void RenderDevice::setFloatConstants(eShaderType stage, float *pFloats, const uint32_t offset, const uint32_t numVectors)
 {
     OTDU_ASSERT( stage == eShaderType::ST_Vertex || stage == eShaderType::ST_Pixel );
 
     uint32_t stageIndex = (stage == eShaderType::ST_Vertex) ? 0 : 1;
-    memcpy(shaderConstants[stageIndex], pFloats, numFloat * sizeof(float));
+    memcpy(&shaderConstants[stageIndex][offset], pFloats, (numVectors * 4) * sizeof(float));
 }
 
 void RenderDevice::bindTexture( Texture* pTexture, const uint32_t index )
@@ -543,7 +609,7 @@ void RenderDevice::bindMaterial( Material* pMaterial )
     OTDU_UNIMPLEMENTED;
 }
 
-void RenderDevice::clearFramebuffer(const bool bClearColor, const bool bClearDepth, const bool bClearStencil)
+void RenderDevice::clearFramebuffer(const uint32_t clearColor, const float clearDepth, const uint32_t clearStencil, const bool bClearColor, const bool bClearDepth, const bool bClearStencil)
 {
     OTDU_UNIMPLEMENTED;
 }
@@ -553,7 +619,12 @@ void RenderDevice::beginRenderPass()
     OTDU_UNIMPLEMENTED;
 }
 
-void RenderDevice::bindVertexBuffer(GPUBuffer * pBuffer, const uint32_t index, const uint32_t stride)
+void RenderDevice::bindVertexLayout(GPUVertexLayout* pLayout)
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderDevice::bindVertexBuffer(GPUBuffer * pBuffer, const uint32_t index, const uint32_t stride, const uint32_t offset)
 {
     OTDU_UNIMPLEMENTED;
 }
@@ -563,13 +634,21 @@ void RenderDevice::draw(uint32_t numVertex, uint32_t numInstance, uint32_t first
     OTDU_UNIMPLEMENTED;
 }
 
+void RenderDevice::drawIndexedPrimitive(ePrimitiveType primitiveType, int32_t baseVertexIndex, uint32_t minVertexIndex, uint32_t numVertices, uint32_t startIndex, uint32_t primitiveCount)
+{
+    OTDU_UNIMPLEMENTED;
+}
+
 void RenderDevice::blit(Render2DB *pBound2DB, RenderTarget *pDst, const bool bLinearFiltering)
 {
+    OTDU_ASSERT(pBound2DB != nullptr);
+    OTDU_ASSERT(pDst != nullptr);
+
     Texture* pSrc = pBound2DB->getFirstBitmap();
     GPUTexture* pTextureRT = pDst->getTextureColor();
 
     VkImage srcImage = pSrc->pTexture->Image[0];
-    VkImage dstImage = pTextureRT->Image[frameIndex % PendingFrameCount];
+    VkImage dstImage = pTextureRT->Image[frameIndex];
 
     VkImageBlit region = {};
     region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -607,7 +686,19 @@ void RenderDevice::resetCachedStates()
     
 void RenderDevice::present()
 {
-    OTDU_UNIMPLEMENTED;
+    // FUN_005f16b0
+    uint32_t imageIndex;
+    vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, nextImageSemaphore[frameIndex], VK_NULL_HANDLE, &imageIndex);
+
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = &frameSubmissionSemaphore[frameIndex];
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &swapchain;
+    presentInfo.pImageIndices = &imageIndex;
+
+    vkQueuePresentKHR(queues[0].queue, &presentInfo);
 }
 
 RenderTarget *RenderDevice::getBoundRenderTargetAtIndex(uint32_t param_1)
@@ -624,6 +715,33 @@ bool RenderDevice::isFramebufferUsingMSAA() const
 void RenderDevice::setMSAAState(bool param_1)
 {
     bIsMainRTUsingMSAA = param_1;
+}
+
+void RenderDevice::bumpInternalFrameIndex()
+{
+    frameIndex = (++frameIndex % PendingFrameCount);
+}
+
+void RenderDevice::setCullMode(int32_t param_1, int32_t param_2)
+{
+    // FUN_0051335
+    OTDU_UNIMPLEMENTED;
+}
+
+bool RenderDevice::isVertexAttributeFormatSupported(eVertexAttributeFormat format) const
+{
+    // FUN_00512e90
+    return (bufferFormatSupport >> format) & 1;
+}
+
+void RenderDevice::setStreamFrequency(int32_t param_1, int32_t param_3)
+{
+    // NOP
+}
+
+void RenderDevice::setColorWriteChannels(bool bWriteRed, bool bWriteGreen, bool bWriteBlue, bool bWriteAlpha)
+{
+    OTDU_UNIMPLEMENTED;
 }
 
 GPUShader* RenderDevice::createShader( eShaderType type, const void* pBytecode, const size_t bytecodeSize )
@@ -658,6 +776,12 @@ GPUPipelineState* RenderDevice::createPipelineState( struct Material* pMaterial 
     // infoVS.module = shaderModule;
     // infoVS.pName = "main";
 
+    return nullptr;
+}
+
+GPUVertexLayout *RenderDevice::createVertexLayout(VertexLayoutAttribute *pAttributes)
+{
+    OTDU_UNIMPLEMENTED;
     return nullptr;
 }
 

@@ -42,12 +42,6 @@ inline void UploadConstant(ConstantMap* pMap, uint32_t offsetInMap, float* pScal
     }
 }
 
-void FUN_00604380(Primitive *param_1)
-{
-    // FUN_00604380
-    OTDU_UNIMPLEMENTED;
-}
-
 void FUN_005146b0(SceneRenderer* param_1)
 {
     // FUN_005146b0
@@ -85,7 +79,7 @@ void SceneRenderer::bindPrimitiveInstance(Primitive *param_1, TransformMatrixCom
         bindInstance( nullptr, nullptr );
     }
 
-    FUN_00604380(param_1);
+    gInstanceRenderer.bind(param_1);
 }
 
 void SceneRenderer::bindInstance(TransformMatrixCommand *param_2, Instance *param_3)

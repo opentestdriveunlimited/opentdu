@@ -193,7 +193,7 @@ void PostFXRenderer::drawFullscreenQuad(bool bClearColor, bool bClearDepth, bool
     }
 
     if (bClearColor) {
-        gpRender->getRenderDevice()->clearFramebuffer(bClearColor, bClearDepth, bClearStencil);
+        gpRender->getRenderDevice()->clearFramebuffer(0, 1.0f, 0, bClearColor, bClearDepth, bClearStencil);
     }
     
     gpRender->getRenderDevice()->beginRenderPass();
