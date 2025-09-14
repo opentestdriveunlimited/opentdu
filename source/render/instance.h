@@ -63,3 +63,31 @@ struct InstanceWithCustomMaterial {
     Instance* pInstance;
     Material* pMaterial;
 };
+
+struct InstanceEntry;
+
+class InstanceRenderer {
+public:
+    InstanceRenderer();
+    ~InstanceRenderer();
+
+    void destroy();
+    bool initialize();
+    
+    void bind(Primitive* param_1);
+    void unbind();
+    bool uploadInstance(Instance* param_1, TransformMatrixCommand* param_2, bool bIsLastInstance);
+
+private:
+    GPUBuffer* pInstanceBuffer;
+    InstanceEntry* pMappedBuffer;
+    GPUVertexLayout* pVertexLayoutPositionNormal;
+    GPUVertexLayout* pVertexLayoutPositionNormalColor;
+    GPUVertexLayout* pVertexLayoutPositionNormalColorUV;
+    GPUVertexLayout* pVertexLayoutPositionNormalUV;
+
+    uint32_t numInstances;
+    uint32_t streamIndex;
+};
+
+extern InstanceRenderer gInstanceRenderer;
