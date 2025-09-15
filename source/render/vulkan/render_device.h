@@ -82,7 +82,7 @@ public:
     GPUPipelineState* createPipelineState( struct Material* pMaterial );
     GPUVertexLayout* createVertexLayout( VertexLayoutAttribute* pAttributes );
 
-    void* lockBuffer( GPUBuffer* pBuffer, const uint32_t offset, const uint32_t size );
+    void* lockBuffer( GPUBuffer* pBuffer, const uint32_t offset, const uint32_t size, const bool bDiscardContent );
     void unlockBuffer( GPUBuffer* pBuffer );
 
     void generateMipchain( GPUTexture* pTexture );
@@ -148,6 +148,9 @@ public:
 
     void setStreamFrequency( int32_t param_1, int32_t param_3 );
     void setColorWriteChannels(bool bWriteRed, bool bWriteGreen, bool bWriteBlue, bool bWriteAlpha);
+
+    void setClipPlaneEnabled(uint32_t param_1);
+    void bindIndexBuffer(GPUBuffer* param_1);
 
 private:
     VkInstance          instance;

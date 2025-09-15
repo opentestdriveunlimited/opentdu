@@ -180,6 +180,8 @@ public:
     void drawHeightmap(Primitive* param_1, LOD* param_2);
     void setColorWriteChannels(bool bWriteRed, bool bWriteGreen, bool bWriteBlue, bool bWriteAlpha);
 
+    void bindIndexBuffer(GPUBuffer* param_1);
+
 private:
     static constexpr int32_t kNumSunRT = 8;
     static constexpr int32_t kNumSunDownscaleRT = 3;
@@ -471,6 +473,8 @@ private:
 
     void bindBucket(RenderBucket* param_2);
     void endScene();
+
+    void resolveMSAA(bool param_1);
 };
 
 extern GSRender* gpRender;

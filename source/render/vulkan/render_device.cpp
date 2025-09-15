@@ -472,7 +472,7 @@ GPUBuffer *RenderDevice::createBuffer( const struct GPUBufferDesc* desc )
     return pBuffer;
 }
 
-void* RenderDevice::lockBuffer(GPUBuffer *pBuffer, const uint32_t offset, const uint32_t size)
+void* RenderDevice::lockBuffer(GPUBuffer *pBuffer, const uint32_t offset, const uint32_t size, const bool bDiscardContent )
 {
     void* pMappedMemory = nullptr;
     VkResult opResult = vmaMapMemory(allocator, pBuffer->Allocation, &pMappedMemory);
@@ -740,6 +740,16 @@ void RenderDevice::setStreamFrequency(int32_t param_1, int32_t param_3)
 }
 
 void RenderDevice::setColorWriteChannels(bool bWriteRed, bool bWriteGreen, bool bWriteBlue, bool bWriteAlpha)
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderDevice::setClipPlaneEnabled(uint32_t param_1)
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderDevice::bindIndexBuffer(GPUBuffer* param_1)
 {
     OTDU_UNIMPLEMENTED;
 }

@@ -21,6 +21,7 @@
 #include "render_buckets.h"
 #include "scene_renderer.h"
 #include "3dg.h"
+#include "geometry_buffer.h"
 
 GSRender* gpRender = nullptr;
 eViewFormat gDepthStencilFormat = eViewFormat::VF_D24S8F; // DAT_00fac8e4
@@ -30,6 +31,9 @@ Eigen::Matrix4f gActiveCamToWorld = Eigen::Matrix4f::Identity();
 
 // Used to calculate weather stuff (but appears to never be modified at runtime; could be some debug leftover)
 static Eigen::Vector4f DAT_00fac360 = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+// Only written to?
+static void* gpActiveVertexLayout = nullptr; // DAT_00fe7a98
 
 // TODO: Move this to a separate file
 static constexpr uint32_t kMaxNumVertexStreams = 0x10;
@@ -42,18 +46,24 @@ struct StateCache {
     
     uint32_t VertexBuffersFrequency[kMaxNumVertexStreams]; // DAT_00fadf58
     VertexStreamCache VertexBuffers[kMaxNumVertexStreams]; // DAT_00fadf98
-    GPUVertexLayout* pVertexLayout = nullptr;
+    GPUBuffer* pIndexBuffer; // DAT_00faf3e8
+    GPUVertexLayout* pVertexLayout; // DAT_00faf3e4
 
     uint8_t bWriteChannelR : 1;
     uint8_t bWriteChannelG : 1;
     uint8_t bWriteChannelB : 1;
     uint8_t bWriteChannelA : 1;
 
+    uint32_t ClipPlaneEnabled; // DAT_00fade70
+
     StateCache() 
-        : bWriteChannelR( true )
+        : pVertexLayout( nullptr )
+        , bWriteChannelR( true )
         , bWriteChannelG( true )
         , bWriteChannelB( true )
         , bWriteChannelA( true )
+        , pIndexBuffer( nullptr )
+        , ClipPlaneEnabled( 0 )
     {
         memset(VertexBuffersFrequency, 0, sizeof(uint32_t) * kMaxNumVertexStreams);
     }
@@ -266,8 +276,13 @@ GSRender::~GSRender()
     gpRender = nullptr;
 }
 
-bool GSRender::initialize( TestDriveGameInstance* )
+bool GSRender::initialize( TestDriveGameInstance* param_2 )
 {
+    // FUN_00996850
+    // TODO: Incomplete (missing one big chunk of pcode with memory pool allocations)
+    this->pGameInstance = param_2;
+    this->bPaused = false;
+
     if ( gpConfig->bWindowed || gpConfig->FullscreenMode == eFullscreenMode::FM_Desktop ) {
         renderWidth = gpConfig->WindowWidth;
         renderHeight = gpConfig->WindowHeight;
@@ -1389,13 +1404,18 @@ void GSRender::bindBucket(RenderBucket *param_2)
 void GSRender::endScene()
 {
     // FUN_005143d0
-    // TODO: This should probably be NOP since all this stuff is set in the render pass descriptor
+    resolveMSAA(gSceneRenderer.pActiveScene->getFlags() >> 5 & 1);
 
-    // ResolveMSAA(gSceneRenderer.pActiveScene->getFlags() >> 5 & 1);
-    // if (gClipPlaneEnabled != 0) {
-    //     pD3DDevice->SetRenderState(D3DRS_CLIPPLANEENABLE,0);
-    //     gClipPlaneEnabled = 0;
-    // }
+    if (gStateCache.ClipPlaneEnabled != 0) {
+        pRenderDevice->setClipPlaneEnabled(0);
+        gStateCache.ClipPlaneEnabled = 0;
+    }
+}
+
+void GSRender::resolveMSAA(bool param_1)
+{
+    // FUN_005f1720
+    OTDU_UNIMPLEMENTED;
 }
 
 void GSRender::bindMaterial(Material* param_2)
@@ -1416,6 +1436,50 @@ void GSRender::bindPrimitive(Primitive *param_1, LOD* param_2)
                 OTDU_LOG_ERROR("Failed to upload Primitive to GPU!\n");
                 return;
             }
+        }
+
+        GeomtryBufferWithHeader* pVertexBuffer = param_1->pVertexBuffer;
+        pVertexBuffer->Buffer.uploadVerticesToGPU();
+
+        GeomtryBufferWithHeader* pIndexBuffer = param_1->pIndexBuffer;
+        pIndexBuffer->Buffer.uploadIndicesToGPU();
+
+        PrimtiveVertexAttributes* peVar9 = &param_1->VertexStreams;
+        uint32_t iVar5 = param_1->VertexStreams.getNumAttributes();                                                 
+        if (iVar5 < 0x11) {
+            GeometryBuffer* peVar6 = &pVertexBuffer->Buffer;
+
+            uint32_t StreamNumber = 0;
+            uint32_t* ppVar8 = param_1->pVertexAttributeOffsets;
+
+#define OTDU_BIND_VERTEX_ATTRIB( attribute )\
+if ((peVar9->attribute).Number != '\0') {\
+    do {\
+        int32_t iVar5 = GetVertexAttributeSize((peVar9->attribute).Format);\
+        gpRender->bindVertexBuffer(peVar6->pGPUBuffer, StreamNumber, *ppVar8, iVar5);\
+        StreamNumber++;\
+        ppVar8++;\
+    } while (StreamNumber < peVar9->attribute.Number);\
+}\
+
+            OTDU_BIND_VERTEX_ATTRIB( Position );
+            OTDU_BIND_VERTEX_ATTRIB( Normal );
+            OTDU_BIND_VERTEX_ATTRIB( Diffuse );
+            OTDU_BIND_VERTEX_ATTRIB( Specular );
+            OTDU_BIND_VERTEX_ATTRIB( UV );
+            OTDU_BIND_VERTEX_ATTRIB( Tangent );
+            OTDU_BIND_VERTEX_ATTRIB( Binormal );
+            OTDU_BIND_VERTEX_ATTRIB( Bones );
+            OTDU_BIND_VERTEX_ATTRIB( BoneWeight );
+
+#undef OTDU_BIND_VERTEX_ATTRIB       
+            if (param_1->pVertexDeclaration == nullptr) {
+                Render3DG::CreateVertexDeclaration(param_1);
+            }
+            bindVertexLayout(param_1->pVertexDeclaration);
+            gpActiveVertexLayout = param_1->pVertexDeclaration;
+
+            bindIndexBuffer(pIndexBuffer->Buffer.pGPUBuffer);
         }
     }
 }
@@ -1509,6 +1573,8 @@ void GSRender::drawHeightmap(Primitive *param_1, LOD *param_2)
     // FUN_00515810
     // FUN_005ff060 (inlined)
     OTDU_UNIMPLEMENTED;
+
+    pRenderDevice->drawIndexedPrimitive(param_1->Type, 0, param_1->VertexOffset, param_1->NumVertex, param_1->IndexOffset, primCount);
 }
 
 void GSRender::setColorWriteChannels(bool bWriteRed, bool bWriteGreen, bool bWriteBlue, bool bWriteAlpha)
@@ -1523,5 +1589,13 @@ void GSRender::setColorWriteChannels(bool bWriteRed, bool bWriteGreen, bool bWri
         gStateCache.bWriteChannelG = bWriteGreen;
         gStateCache.bWriteChannelB = bWriteBlue;
         gStateCache.bWriteChannelA = bWriteAlpha;
+    }
+}
+
+void GSRender::bindIndexBuffer(GPUBuffer *param_1)
+{
+    if (gStateCache.pIndexBuffer != param_1) {
+        pRenderDevice->bindIndexBuffer(param_1);
+        gStateCache.pIndexBuffer = param_1;
     }
 }
