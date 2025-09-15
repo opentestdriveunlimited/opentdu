@@ -6,6 +6,7 @@
 struct LOD;
 
 static constexpr uint32_t kPrimitiveMagic       = 0x4d495250; // PRIM (PRIMitive)
+static constexpr uint32_t kGeometryBufferMagic  = 0x54534c44; // DLST (DrawLiST)
 
 struct PrimtiveVertexAttributes {
     static constexpr uint32_t kMaxNumAttributes = 14;
@@ -70,6 +71,12 @@ struct Primitive {
     x86Pointer_t                pVertexAttributeOffsets;
 };
 OTDU_SIZE_MUST_MATCH(Primitive, 0x7c);
+
+struct DrawPrimitive {
+    RenderFile::Section Section;
+    Primitive           Primitive;
+    uint32_t            pOffsets[32];
+};
 
 class Render3DG : public RenderFile {
 public:

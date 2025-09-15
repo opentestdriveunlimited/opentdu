@@ -3,6 +3,7 @@
 
 #include "render/gs_render_helper.h"
 #include "render/gs_render.h"
+#include "render/geometry_buffer.h"
 
 static constexpr uint32_t kGeometryArrayMagic   =  0x414f4547; // GEOA (GEOmetry Array)
 
@@ -166,15 +167,17 @@ bool Render3DG::UploadPrimitiveToGPU(Primitive *param_1, LOD* param_2)
         uint32_t uVar8 = uVar2;
         GPUBuffer* pVertexBuffer = gpRender->getRenderDevice()->createBuffer(&vboDesc);
         if (pVertexBuffer != nullptr) {
-            *(x86Pointer_t*)(peVar1Header + 0x10) = param_2;
-            *(x86Pointer_t*)(peVar1Header + 0x10 + 0x04) = peVar3;
-            *(int32_t*)(peVar1Header + 0x10 + 0x08) = uVar2;
-            *(int32_t*)(peVar1Header + 0x10 + 0x0c) = 0;
-            *(int32_t*)(peVar1Header + 0x10 + 0x10) = uVar2;
-            *(int32_t*)(peVar1Header + 0x10 + 0x14) = 0;
-            *(uint8_t*)(peVar1Header + 0x10 + 0x1a) = 1;
-            *(uint8_t*)(peVar1Header + 0x10 + 0x1b) = 0x10; // TODO: Check constness at runtime
-            *(int32_t*)(peVar1Header + 0x10 + 0x1c) = 0;
+            GeometryBuffer* pStreamingHeader = (GeometryBuffer*)(peVar1Header + 0x10);
+            pStreamingHeader->pGPUBuffer = pVertexBuffer;
+            pStreamingHeader->pCPUBuffer = peVar3;
+            pStreamingHeader->ByteSize = uVar2;
+            pStreamingHeader->LockStart = 0;
+            pStreamingHeader->LockEnd = uVar2;
+            pStreamingHeader->pCPUBufferCopy = nullptr;
+            pStreamingHeader->DataOffset = 0;
+            pStreamingHeader->bLocked = true;
+            pStreamingHeader->Flags = 0x10; // TODO: Check constness at runtime
+            pStreamingHeader->pGPUBufferCopy = nullptr;
             
             peVar3 = param_1->pIndexBuffer;
             uVar2 = param_1->NumIndex;
@@ -195,16 +198,18 @@ bool Render3DG::UploadPrimitiveToGPU(Primitive *param_1, LOD* param_2)
 
             GPUBuffer* pIndexBuffer = gpRender->getRenderDevice()->createBuffer(&iboDesc);
             if (pIndexBuffer != nullptr) {
-                *(uint32_t*)(peVar3 + 0x10) = uVar8;
-                *(x86Pointer_t*)(peVar3 + 0x10 + 0x04) = (peVar3 + 0x40);
-                *(int32_t*)(peVar3 + 0x10 + 0x08) = uVar2;
-                *(int32_t*)(peVar3 + 0x10 + 0x0c) = 0;
-                *(int32_t*)(peVar3 + 0x10 + 0x10) = uVar2;
-                *(int32_t*)(peVar3 + 0x10 + 0x14) = 0;
-                *(uint8_t*)(peVar3 + 0x10 + 0x1a) = 1;
-                *(uint8_t*)(peVar3 + 0x10 + 0x1b) = 0x20;
-                *(int32_t*)(peVar3 + 0x10 + 0x1c) = 0;
-                
+                GeometryBuffer* pStreamingHeader = (GeometryBuffer*)(peVar3 + 0x10);
+                pStreamingHeader->pGPUBuffer = pIndexBuffer;
+                pStreamingHeader->pCPUBuffer = (peVar3 + 0x40);
+                pStreamingHeader->ByteSize = uVar2;
+                pStreamingHeader->LockStart = 0;
+                pStreamingHeader->LockEnd = uVar2;
+                pStreamingHeader->pCPUBufferCopy = nullptr;
+                pStreamingHeader->DataOffset = 0;
+                pStreamingHeader->bLocked = true;
+                pStreamingHeader->Flags = 0x20; // TODO: Check constness at runtime
+                pStreamingHeader->pGPUBufferCopy = nullptr;
+
                 gNumPrimitives++;
                 CreateVertexDeclaration(param_1);
                 param_1->bUploaded = true;
