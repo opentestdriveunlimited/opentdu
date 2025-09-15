@@ -1,6 +1,6 @@
 #include "shared.h"
 #include "draw_list.h"
-
+#include "geometry_buffer.h"
 #include "gs_render.h"
 
 static uint32_t CalculatePoolSize( 
@@ -211,16 +211,16 @@ bool DrawList::initialize(
 
     memoryPool.allocate( numPrimitives, numVertices, numIndices, param_8, param_10 );
 
-    pVertexBuffer = reinterpret_cast<GeometryBuffer*>( memoryPool.pCurrent );
+    pVertexBuffer = reinterpret_cast<GeomtryBufferWithHeader*>( memoryPool.pCurrent );
 
     uint32_t vertexMemoryUsage = vertexSize * numVertices + 0x7f & 0xfffffff0;
     memoryPool.currentUsage += vertexMemoryUsage;
     memoryPool.pCurrent += vertexMemoryUsage;
     
-    memset(pVertexBuffer, 0, sizeof(GeometryBuffer));
+    memset(pVertexBuffer, 0, sizeof(GeomtryBufferWithHeader));
     pVertexBuffer->Section.Type = kGeometryBufferMagic;
 
-    pIndexBuffer = reinterpret_cast<GeometryBuffer*>( memoryPool.pCurrent );
+    pIndexBuffer = reinterpret_cast<GeomtryBufferWithHeader*>( memoryPool.pCurrent );
 
     uint32_t indicesMemoryUsage = maxIndex * indexSize + 0x7f & 0xfffffff0;
     memoryPool.currentUsage += indicesMemoryUsage;
@@ -269,8 +269,9 @@ bool DrawList::initialize(
 
 void DrawList::destroy()
 {
-    gpRender->getRenderDevice()->destroyBuffer( pIndexBuffer->pGPUBuffer );
-    gpRender->getRenderDevice()->destroyBuffer( pVertexBuffer->pGPUBuffer );
+    OTDU_UNIMPLEMENTED;
+    // gpRender->getRenderDevice()->destroyBuffer( pIndexBuffer->pGPUBuffer );
+    // gpRender->getRenderDevice()->destroyBuffer( pVertexBuffer->pGPUBuffer );
 }
 
 void DrawList::reset()
@@ -463,14 +464,14 @@ bool DrawList::initializePrimitive(ePrimitiveType param_2, uint32_t numVertex, u
       activePrimitive.pOffsets = puVar9;
       
       int32_t iVar5 = numVertex * sizeof(Eigen::Vector3f);
-      activePrimitive.pVertexPosition = static_cast<Eigen::Vector3f*>(pVertexBuffer->lock(currentVertexOffset, iVar5));
+      activePrimitive.pVertexPosition = static_cast<Eigen::Vector3f*>(pVertexBuffer->Buffer.lock(currentVertexOffset, iVar5));
       *puVar9 = currentVertexOffset;
       currentVertexOffset += iVar5;
       puVar9++;
 
       // TODO: Quantify
       for (uint32_t i = 0; i < streams.Normals; i++) {
-        activePrimitive.pVertexNormal[i] = static_cast<Eigen::Vector3f*>(pVertexBuffer->lock(currentVertexOffset, iVar5));
+        activePrimitive.pVertexNormal[i] = static_cast<Eigen::Vector3f*>(pVertexBuffer->Buffer.lock(currentVertexOffset, iVar5));
         *puVar9 = currentVertexOffset;
         currentVertexOffset += iVar5;
         puVar9++;
@@ -479,14 +480,14 @@ bool DrawList::initializePrimitive(ePrimitiveType param_2, uint32_t numVertex, u
       int32_t iVar4 = numVertex * sizeof(uint32_t);
       
       for (uint32_t i = 0; i < streams.Diffuse; i++) {
-        activePrimitive.pVertexDiffuse[i] = static_cast<uint32_t*>(pVertexBuffer->lock(currentVertexOffset, iVar4));
+        activePrimitive.pVertexDiffuse[i] = static_cast<uint32_t*>(pVertexBuffer->Buffer.lock(currentVertexOffset, iVar4));
         *puVar9 = currentVertexOffset;
         currentVertexOffset += iVar4;
         puVar9++;
       }
     
       for (uint32_t i = 0; i < streams.Specular; i++) {
-        activePrimitive.pVertexSpecular[i] = static_cast<uint32_t*>(pVertexBuffer->lock(currentVertexOffset, iVar4));
+        activePrimitive.pVertexSpecular[i] = static_cast<uint32_t*>(pVertexBuffer->Buffer.lock(currentVertexOffset, iVar4));
         *puVar9 = currentVertexOffset;
         currentVertexOffset += iVar4;
         puVar9++;
@@ -495,21 +496,21 @@ bool DrawList::initializePrimitive(ePrimitiveType param_2, uint32_t numVertex, u
       iVar4 = numVertex * sizeof(Eigen::Vector2f);
       
       for (uint32_t i = 0; i < streams.UVMap; i++) {
-        activePrimitive.pVertexUV[i] = static_cast<Eigen::Vector2f*>(pVertexBuffer->lock(currentVertexOffset, iVar4));
+        activePrimitive.pVertexUV[i] = static_cast<Eigen::Vector2f*>(pVertexBuffer->Buffer.lock(currentVertexOffset, iVar4));
         *puVar9 = currentVertexOffset;
         currentVertexOffset += iVar4;
         puVar9++;
       }
 
       for (uint32_t i = 0; i < streams.Tangent; i++) {
-        activePrimitive.pVertexTangent[i] = static_cast<Eigen::Vector3f*>(pVertexBuffer->lock(currentVertexOffset, iVar5));
+        activePrimitive.pVertexTangent[i] = static_cast<Eigen::Vector3f*>(pVertexBuffer->Buffer.lock(currentVertexOffset, iVar5));
         *puVar9 = currentVertexOffset;
         currentVertexOffset += iVar5;
         puVar9++;
       }
 
       for (uint32_t i = 0; i < streams.Binormal; i++) {
-        activePrimitive.pVertexBinormal[i] = static_cast<Eigen::Vector3f*>(pVertexBuffer->lock(currentVertexOffset, iVar5));
+        activePrimitive.pVertexBinormal[i] = static_cast<Eigen::Vector3f*>(pVertexBuffer->Buffer.lock(currentVertexOffset, iVar5));
         *puVar9 = currentVertexOffset;
         currentVertexOffset += iVar5;
         puVar9++;
@@ -519,7 +520,7 @@ bool DrawList::initializePrimitive(ePrimitiveType param_2, uint32_t numVertex, u
       uint32_t indiceLock = activePrimitive.pPrimitive->IndexOffset * uVar7;
       uint32_t indiceLockSize = numIndices * uVar7;
 
-      activePrimitive.pVertexIndices = static_cast<uint32_t*>(pVertexBuffer->lock(indiceLock, indiceLockSize));
+      activePrimitive.pVertexIndices = static_cast<uint32_t*>(pVertexBuffer->Buffer.lock(indiceLock, indiceLockSize));
       *puVar9 = currentVertexOffset;
       return true;
     }
@@ -536,23 +537,23 @@ bool DrawList::allocateBuffers(bool bImmediateUpload)
     vertexBufferDesc.Stride = vertexSize;
     vertexBufferDesc.bDynamic = bDynamic;
 
-    pVertexBuffer->pGPUBuffer = gpRender->getRenderDevice()->createBuffer( &vertexBufferDesc );
-    OTDU_ASSERT( pVertexBuffer->pGPUBuffer );
+    pVertexBuffer->Buffer.pGPUBuffer = gpRender->getRenderDevice()->createBuffer( &vertexBufferDesc );
+    OTDU_ASSERT( pVertexBuffer->Buffer.pGPUBuffer );
 
-    if (pVertexBuffer->pGPUBuffer == nullptr) {
+    if (pVertexBuffer->Buffer.pGPUBuffer == nullptr) {
         return false;
     }
 
-    pVertexBuffer->pCPUBuffer = pVertexBuffer + 1;
-    pVertexBuffer->ByteSize = bufferSize;
-    pVertexBuffer->bLocked = false;
-    pVertexBuffer->pCPUBufferCopy = nullptr;
-    pVertexBuffer->pGPUBufferCopy = nullptr;
-    pVertexBuffer->Flags = 0;
-    pVertexBuffer->LockStart = -1;
-    pVertexBuffer->LockEnd = 0;
+    pVertexBuffer->Buffer.pCPUBuffer = pVertexBuffer + 1;
+    pVertexBuffer->Buffer.ByteSize = bufferSize;
+    pVertexBuffer->Buffer.bLocked = false;
+    pVertexBuffer->Buffer.pCPUBufferCopy = nullptr;
+    pVertexBuffer->Buffer.pGPUBufferCopy = nullptr;
+    pVertexBuffer->Buffer.Flags = 0;
+    pVertexBuffer->Buffer.LockStart = -1;
+    pVertexBuffer->Buffer.LockEnd = 0;
     if (bDynamic) {
-        pVertexBuffer->Flags = ( pVertexBuffer->Flags & 0xf1 | 1 );
+        pVertexBuffer->Buffer.Flags = ( pVertexBuffer->Buffer.Flags & 0xf1 | 1 );
     }
     
     uint32_t indexBufferSize = maxIndex * indexSize;
@@ -563,69 +564,39 @@ bool DrawList::allocateBuffers(bool bImmediateUpload)
     indexBufferDesc.Stride = (streams.Index != '\0') ? sizeof(uint16_t) : sizeof(uint32_t);
     indexBufferDesc.bDynamic = bDynamic;
 
-    pIndexBuffer->pGPUBuffer = gpRender->getRenderDevice()->createBuffer( &indexBufferDesc );
-    OTDU_ASSERT( pIndexBuffer->pGPUBuffer );
+    pIndexBuffer->Buffer.pGPUBuffer = gpRender->getRenderDevice()->createBuffer( &indexBufferDesc );
+    OTDU_ASSERT( pIndexBuffer->Buffer.pGPUBuffer );
 
-    if ( pIndexBuffer->pGPUBuffer != nullptr ) {
+    if ( pIndexBuffer->Buffer.pGPUBuffer != nullptr ) {
         return false;
     }
     
-    pIndexBuffer->pCPUBuffer = pIndexBuffer + 1;
-    pIndexBuffer->ByteSize = indexBufferSize;
-    pIndexBuffer->bLocked = false;
-    pIndexBuffer->pCPUBufferCopy = nullptr;
-    pIndexBuffer->pGPUBufferCopy = nullptr;
-    pIndexBuffer->Flags = 0x20;
-    pIndexBuffer->LockStart = -1;
-    pIndexBuffer->LockEnd = 0;
+    pIndexBuffer->Buffer.pCPUBuffer = pIndexBuffer + 1;
+    pIndexBuffer->Buffer.ByteSize = indexBufferSize;
+    pIndexBuffer->Buffer.bLocked = false;
+    pIndexBuffer->Buffer.pCPUBufferCopy = nullptr;
+    pIndexBuffer->Buffer.pGPUBufferCopy = nullptr;
+    pIndexBuffer->Buffer.Flags = 0x20;
+    pIndexBuffer->Buffer.LockStart = -1;
+    pIndexBuffer->Buffer.LockEnd = 0;
     if (bDynamic) {
-        pIndexBuffer->Flags = ( pVertexBuffer->Flags & 0xf1 | 1 );
+        pIndexBuffer->Buffer.Flags = ( pVertexBuffer->Buffer.Flags & 0xf1 | 1 );
     }
 
     if (bImmediateUpload) {
-        pVertexBuffer->LockStart = 0;
-        pVertexBuffer->LockEnd = pVertexBuffer->ByteSize;
-        pVertexBuffer->bLocked = true;
+        pVertexBuffer->Buffer.LockStart = 0;
+        pVertexBuffer->Buffer.LockEnd = pVertexBuffer->Buffer.ByteSize;
+        pVertexBuffer->Buffer.bLocked = true;
 
-        pIndexBuffer->LockStart = 0;
-        pIndexBuffer->LockEnd = pIndexBuffer->ByteSize;
-        pIndexBuffer->bLocked = true;
+        pIndexBuffer->Buffer.LockStart = 0;
+        pIndexBuffer->Buffer.LockEnd = pIndexBuffer->Buffer.ByteSize;
+        pIndexBuffer->Buffer.bLocked = true;
     
-        updateGPUBuffer( pVertexBuffer );
-        updateGPUBuffer( pIndexBuffer );
+        pVertexBuffer->Buffer.uploadVerticesToGPU();
+        pIndexBuffer->Buffer.uploadIndicesToGPU();
       }
       
     return true;
-}
-
-void DrawList::updateGPUBuffer( GeometryBuffer* pGeometryBuffer )
-{
-    if (pGeometryBuffer->bLocked) {
-        uint32_t mapSize = pGeometryBuffer->LockEnd - pGeometryBuffer->LockStart;
-        void* pGPUBufferMemory = gpRender->getRenderDevice()->lockBuffer( pGeometryBuffer->pGPUBuffer, pGeometryBuffer->LockStart, mapSize );
-
-        uint8_t* pCPUBufferMemory = reinterpret_cast<uint8_t*>( pGeometryBuffer->pCPUBuffer ) + pGeometryBuffer->LockStart;
-        memcpy( pGPUBufferMemory, pCPUBufferMemory, mapSize );
-        gpRender->getRenderDevice()->unlockBuffer( pGeometryBuffer->pGPUBuffer );
-
-        pGeometryBuffer->LockStart = -1;
-        pGeometryBuffer->LockEnd = 0;
-        pGeometryBuffer->bLocked = false;
-
-        // TODO: No idea what's this is used for (could be for stats/debug?)
-        //   if (((param_1->super).pCPUBufferCopy != (void *)0x0) && ((int)gNumGeomHeader < 1024)) {
-        //     gpGeomHeaderArray[gNumGeomHeader] = param_1;
-        //     gNumGeomHeader = gNumGeomHeader + 1;
-        //   }
-    } else if ((pGeometryBuffer->Flags & 2) != 0) {
-        std::swap(pGeometryBuffer->pCPUBuffer, pGeometryBuffer->pCPUBufferCopy);
-        if (pGeometryBuffer->pGPUBufferCopy != nullptr) {
-            std::swap(pGeometryBuffer->pGPUBuffer, pGeometryBuffer->pGPUBufferCopy);
-        }
-        pGeometryBuffer->Flags |= 2;
-    }
-    
-    pGeometryBuffer->Flags &= 0xfd;
 }
 
 DrawList::ActiveDrawCommand::ActiveDrawCommand()
@@ -639,18 +610,6 @@ DrawList::ActiveDrawCommand::ActiveDrawCommand()
     UVMap.reserve( kDrawCommandsInitialNumVertexAttributes );
     VertexColorDiffuse.reserve( kDrawCommandsInitialNumVertexAttributes );
     VertexColorSpecular.reserve( kDrawCommandsInitialNumVertexAttributes );
-}
-
-void* GeometryBuffer::lock(const uint32_t startOffset, const uint32_t length)
-{
-    void* pDataPointer = static_cast<uint8_t*>( pCPUBuffer ) + startOffset;
-    LockStart = Min(LockStart, startOffset);
-    bLocked = true;
-
-    uint32_t endOffset = startOffset + length;
-    LockEnd = Max(LockEnd, endOffset);
-
-    return pDataPointer;
 }
 
 ActivePrimitive::ActivePrimitive()

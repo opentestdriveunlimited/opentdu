@@ -10,6 +10,7 @@
 
 struct Material;
 struct GPUBuffer;
+struct GeomtryBufferWithHeader;
 
 struct DrawStreams {
     uint8_t Normals;
@@ -25,34 +26,8 @@ struct DrawStreams {
     DrawStreams& operator = (DrawStreams& other);
 };
 
-static constexpr uint32_t kGeometryBufferMagic  = 0x54534c44; // DLST (DrawLiST)
-
 // This is only used to match what TDU1 uses (TDU1 uses C arrays)
 static constexpr uint32_t kDrawCommandsInitialNumVertexAttributes = 16; 
-
-struct GeometryBuffer {
-    RenderFile::Section Section;
-
-    GPUBuffer* pGPUBuffer;
-    void* pCPUBuffer;
-    uint32_t ByteSize;
-    int32_t LockStart;
-    int32_t LockEnd;
-    void* pCPUBufferCopy;
-    uint16_t DataOffset;
-    uint8_t bLocked;
-    uint8_t Flags;
-    GPUBuffer* pGPUBufferCopy;
-    char pUnknown[16];
-
-    void* lock(const uint32_t startOffset, const uint32_t length);
-};
-
-struct DrawPrimitive {
-    RenderFile::Section Section;
-    Primitive           Primitive;
-    uint32_t            pOffsets[32];
-};
 
 struct ActivePrimitive {
     Primitive* pPrimitive;
@@ -141,8 +116,8 @@ private:
     ActiveDrawCommand   activeCommand;
     ActivePrimitive     activePrimitive;
 
-    GeometryBuffer*     pVertexBuffer;
-    GeometryBuffer*     pIndexBuffer;
+    GeomtryBufferWithHeader*     pVertexBuffer;
+    GeomtryBufferWithHeader*     pIndexBuffer;
     DrawPrimitive*      pMemPrimsList;
     Eigen::Matrix4f*    pMatrices;
     Material**          ppMaterials;
@@ -177,7 +152,6 @@ private:
 
 private:
     bool allocateBuffers(bool bImmediateUpload);
-    void updateGPUBuffer( GeometryBuffer* pGeometryBuffer );
     void initializePrimitiveList();
 
     PrimtiveVertexAttributes generateListVertexAttributes() const;
