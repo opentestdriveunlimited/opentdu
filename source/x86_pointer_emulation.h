@@ -13,6 +13,16 @@ struct OTDUPointer
     const OTDUPointer& operator = (const void* pPointer) const;
     operator void*() const;
 
+    bool operator == (std::nullptr_t) {
+        const void* thisPtr = this;
+        return thisPtr == nullptr;
+    }
+
+    bool operator != (std::nullptr_t) {
+        const void* thisPtr = this;
+        return thisPtr != nullptr;
+    }
+
     template<typename T> operator T*() const { 
         const void* thisPtr = this; 
         return (T*)thisPtr;
