@@ -35,14 +35,15 @@ private:
     static constexpr uint32_t kMaxNumDrawCommand = 0x7d;
 
 private:
-    GPUBuffer* pVertexBuffer;
-    GPUBuffer* pIndexBuffer;
+    GPUBuffer* pIndexBuffer; // Area/lowest quality LOD?
+    GPUBuffer* pIndexBuffer2; // Sector LOD
 
     std::array<DrawCommand, kMaxNumDrawCommand> drawCommands;
     uint32_t primitiveCount;
 
 private:
-    void uploadIndexBuffer();
+    void createAreaIndexBuffer();
+    uint32_t calculateNumIndexes();
 };
 
 extern HeightmapTileRenderer gHeightmapTileRenderer;
