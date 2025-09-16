@@ -236,7 +236,9 @@ file( GLOB OTDU_SRC "${OTDU_SRC_FOLDER}/tdu_instance.cpp"
                     "${OTDU_SRC_FOLDER}/game/scenaric/game_intro_tutorial.cpp"
                     "${OTDU_SRC_FOLDER}/x86_pointer_emulation.cpp"
                     "${OTDU_SRC_FOLDER}/render/render_buckets.cpp"
-                    "${OTDU_SRC_FOLDER}/render/scene_renderer.cpp"  )
+                    "${OTDU_SRC_FOLDER}/render/scene_renderer.cpp"
+                    "${OTDU_SRC_FOLDER}/render/geometry_buffer.cpp" 
+                    "${OTDU_SRC_FOLDER}/render/heightmap_renderer.cpp" )
 
 file( GLOB OTDU_INC "${OTDU_SRC_FOLDER}/tdu_instance.h"
                     "${OTDU_SRC_FOLDER}/gs_pub.h"
@@ -435,7 +437,9 @@ file( GLOB OTDU_INC "${OTDU_SRC_FOLDER}/tdu_instance.h"
                     "${OTDU_SRC_FOLDER}/game/scenaric/game_intro_tutorial.h"
                     "${OTDU_SRC_FOLDER}/x86_pointer_emulation.h"
                     "${OTDU_SRC_FOLDER}/render/render_buckets.h"
-                    "${OTDU_SRC_FOLDER}/render/scene_renderer.h" )
+                    "${OTDU_SRC_FOLDER}/render/scene_renderer.h"
+                    "${OTDU_SRC_FOLDER}/render/geometry_buffer.h" 
+                    "${OTDU_SRC_FOLDER}/render/heightmap_renderer.h" )
 
 file( GLOB OTDU_THIRDPARTY_SRC "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/city.cc"
                                "${OTDU_THIRDPARTY_FOLDER}/cityhash/src/city.h"
