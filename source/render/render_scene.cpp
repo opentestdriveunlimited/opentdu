@@ -246,7 +246,7 @@ void RenderScene::submitDrawListToBucket(DrawList * param_2)
         if ( ( ( ( peVar7->FXFlags >> 3 ) & 1 ) != 0 )
         &&  gpRender->getActiveScene()->FUN_00508930(peVar7) ) {
             const Eigen::Matrix4f& modelMatrix = param_2->getMatrixAtIndex( iVar6 );
-            const DrawPrimitive& primitive = param_2->getPrimitiveAtIndex( iVar6 );
+            DrawPrimitive& primitive = param_2->getPrimitiveAtIndex( iVar6 );
             AddPrimToBucket(peVar7, param_2, modelMatrix, &primitive.Primitive, peVar4, 0);
         }
     }

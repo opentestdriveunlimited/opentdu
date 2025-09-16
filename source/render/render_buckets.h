@@ -173,6 +173,6 @@ struct RenderBucketData
 void AllocateRenderBuckets();
 void FreeRenderBuckets();
 void AddPrimToBucket(Material* param_1, Instance* param_2, Primitive* param_3, const uint32_t isHeightmap, Eigen::Vector4f& boundingSphereAndRadius, LOD* param_6);
-void AddPrimToBucket(Material* param_1, DrawList* param_2, const Eigen::Matrix4f& param_3, const Primitive* param_4, SetupGraph* param_5, const uint32_t isHeightmap);
+void AddPrimToBucket(Material* param_1, DrawList* param_2, const Eigen::Matrix4f& param_3, Primitive* param_4, SetupGraph* param_5, const uint32_t isHeightmap);
 
 extern RenderBucketData* gRenderBucketDatas;

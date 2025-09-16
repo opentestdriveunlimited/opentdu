@@ -38,7 +38,7 @@ inline DrawCommandMaterial* InsertBasedOnDepth(SceneSetupCommand* sceneSetup, fl
     return &sceneSetup->MaterialCommands.back();
 }
 
-void AddPrimToBucket(Material* param_1, DrawList* param_2, const Eigen::Matrix4f& param_3, const Primitive* param_4, SetupGraph* param_5, const uint32_t isHeightmap)
+void AddPrimToBucket(Material* param_1, DrawList* param_2, const Eigen::Matrix4f& param_3, Primitive* param_4, SetupGraph* param_5, const uint32_t isHeightmap)
 {
     // FUN_005f23c0
     RenderBucketData& pBucket = GetBucket(param_1->OT);

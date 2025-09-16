@@ -76,7 +76,7 @@ public:
     Material* getMaterialAtIndex( const uint32_t index ) const { return ppMaterials[index]; }
     SetupGraph* getSetupAtIndex( const uint32_t index ) const { return ppSetups[index]; }
     const Eigen::Matrix4f& getMatrixAtIndex( const uint32_t index ) const { return pMatrices[index]; }
-    const DrawPrimitive& getPrimitiveAtIndex( const uint32_t index ) const { return pMemPrimsList[index]; }
+    DrawPrimitive& getPrimitiveAtIndex( const uint32_t index ) { return pMemPrimsList[index]; }
     
 private:
     struct Pool {

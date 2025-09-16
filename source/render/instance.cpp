@@ -244,7 +244,7 @@ bool InstanceRenderer::initialize()
         desc.bDynamic = true;
         desc.Size = 0x1900;
 
-        pInstanceBuffer = gpRender->getRenderDevice()->createBuffer();
+        pInstanceBuffer = gpRender->getRenderDevice()->createBuffer(&desc);
     }
 
     numInstances = 0;
@@ -292,7 +292,7 @@ bool InstanceRenderer::uploadInstance(Instance *param_1, TransformMatrixCommand 
 {
     // FUN_00604400
     if (pMappedBuffer == nullptr) {
-        pMappedBuffer = (InstanceEntry*)gpRender->getRenderDevice()->lockBuffer(pInstanceBuffer, 0, 0);
+        pMappedBuffer = (InstanceEntry*)gpRender->getRenderDevice()->lockBuffer(pInstanceBuffer, 0, 0, true);
         if (pMappedBuffer == nullptr) {
             return true;
         }

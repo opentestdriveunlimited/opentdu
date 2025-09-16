@@ -44,7 +44,7 @@ void PostFXRenderer::createResources(RenderDevice *pRenderDevice)
     pScreenQuadVertexBuffer = pRenderDevice->createBuffer( &desc );
     OTDU_ASSERT_FATAL( pScreenQuadVertexBuffer );
 
-    void* pBufferContent = pRenderDevice->lockBuffer( pScreenQuadVertexBuffer, 0, sizeof( float ) * 8 );
+    void* pBufferContent = pRenderDevice->lockBuffer( pScreenQuadVertexBuffer, 0, sizeof( float ) * 8, true);
     OTDU_ASSERT( pBufferContent );
 
     float* pScreenQuadVertices = (float*)pBufferContent;
@@ -197,7 +197,7 @@ void PostFXRenderer::drawFullscreenQuad(bool bClearColor, bool bClearDepth, bool
     }
     
     gpRender->getRenderDevice()->beginRenderPass();
-    gpRender->getRenderDevice()->bindVertexBuffer(pScreenQuadVertexBuffer, 0, 8);
+    gpRender->getRenderDevice()->bindVertexBuffer(pScreenQuadVertexBuffer, 0, 8, 0);
     gpRender->getRenderDevice()->draw(4, 1);
 }
 

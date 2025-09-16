@@ -1363,7 +1363,7 @@ void GSRender::beginRenderPass()
     passViewport.Height = round(((float)uVar7 + 0.5f) * fVar5);
     pRenderDevice->setViewport(passViewport);
 
-    uint32_t uVar6 = pActiveViewport->Flags;
+    uVar6 = pActiveViewport->Flags;
     bool bClearColor = (uVar6 & 1) != 0;
     bool bClearDepth = ((uVar6 >> 1 & 1) != 0);
     bool bClearStencil = ((uVar6 >> 2 & 1) != 0);
@@ -1573,8 +1573,6 @@ void GSRender::drawHeightmap(Primitive *param_1, LOD *param_2)
     // FUN_00515810
     // FUN_005ff060 (inlined)
     OTDU_UNIMPLEMENTED;
-
-    pRenderDevice->drawIndexedPrimitive(param_1->Type, 0, param_1->VertexOffset, param_1->NumVertex, param_1->IndexOffset, primCount);
 }
 
 void GSRender::setColorWriteChannels(bool bWriteRed, bool bWriteGreen, bool bWriteBlue, bool bWriteAlpha)

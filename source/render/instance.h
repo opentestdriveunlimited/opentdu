@@ -7,6 +7,10 @@
 
 class Camera;
 struct Material;
+struct TransformMatrixCommand;
+struct Primitive;
+struct GPUBuffer;
+struct GPUVertexLayout;
 
 static constexpr uint32_t kMaxNumLOD = 4;
 

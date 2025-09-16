@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gs_render_helper.h"
+#include "render_file.h"
 
 struct GeometryBuffer {
     x86Pointer_t pGPUBuffer;
