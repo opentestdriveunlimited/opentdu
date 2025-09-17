@@ -8,6 +8,8 @@
 #include "render/shaders/shader_register.h"
 #include "render/scene_renderer.h"
 
+static bool DAT_00fac558 = false; // DAT_00fac558
+
 PostFXRenderer gPostFXRenderer = {};
 
 PostFXRenderer::PostFXRenderer()
@@ -21,6 +23,9 @@ PostFXRenderer::PostFXRenderer()
     , pDefaultPixelShader( nullptr )
     , pScreenQuadVertexBuffer( nullptr )
     , renderPassDimensions{ 0.0f, 0.0f, 0.0f, 0.0f }
+    , pDepthStencilRT(nullptr)
+    , pVertexLayout(nullptr)
+    , pVertexLayout2(nullptr)
 {
 
 }
@@ -33,7 +38,20 @@ PostFXRenderer::~PostFXRenderer()
     }
 }
 
-void PostFXRenderer::createResources(RenderDevice *pRenderDevice)
+bool PostFXRenderer::initialize()
+{
+    // FUN_00604d70
+    if (DAT_00fac558) {
+        pDepthStencilRT = gpRender->getRenderDevice()->createRenderTarget(gpRender->getWidth(), gpRender->getHeight(), eViewFormat::VF_D24S8, eAntiAliasingMethod::AAM_Disabled);
+        if (pDepthStencilRT == nullptr) {
+            return false;
+        }
+    }
+    
+    return createResources(gpRender->getRenderDevice());
+}
+
+bool PostFXRenderer::createResources(RenderDevice *pRenderDevice)
 {
     // FUN_006048f0
     GPUBufferDesc desc;
@@ -42,76 +60,97 @@ void PostFXRenderer::createResources(RenderDevice *pRenderDevice)
     desc.Stride = sizeof( float ) * 2;
 
     pScreenQuadVertexBuffer = pRenderDevice->createBuffer( &desc );
-    OTDU_ASSERT_FATAL( pScreenQuadVertexBuffer );
+    if (pScreenQuadVertexBuffer != nullptr) {
+        void* pBufferContent = pRenderDevice->lockBuffer(pScreenQuadVertexBuffer, 0, sizeof( float ) * 8, true);
+        if (pBufferContent != nullptr) {             
+            float* pScreenQuadVertices = (float*)pBufferContent;
+            *pScreenQuadVertices = -1.0;
+            pScreenQuadVertices[1] = -1.0;
+            pScreenQuadVertices[2] = -1.0;
+            pScreenQuadVertices[3] = 1.0;
+            pScreenQuadVertices[4] = 1.0;
+            pScreenQuadVertices[5] = -1.0;
+            pScreenQuadVertices[6] = 1.0;
+            pScreenQuadVertices[7] = 1.0;
 
-    void* pBufferContent = pRenderDevice->lockBuffer( pScreenQuadVertexBuffer, 0, sizeof( float ) * 8, true);
-    OTDU_ASSERT( pBufferContent );
+            pRenderDevice->unlockBuffer( pScreenQuadVertexBuffer );
 
-    float* pScreenQuadVertices = (float*)pBufferContent;
-    *pScreenQuadVertices = -1.0;
-    pScreenQuadVertices[1] = -1.0;
-    pScreenQuadVertices[2] = -1.0;
-    pScreenQuadVertices[3] = 1.0;
-    pScreenQuadVertices[4] = 1.0;
-    pScreenQuadVertices[5] = -1.0;
-    pScreenQuadVertices[6] = 1.0;
-    pScreenQuadVertices[7] = 1.0;
-
-    pRenderDevice->unlockBuffer( pScreenQuadVertexBuffer );
-
-    if ( p2DMBuffer == nullptr ) {
-        uint32_t uVar3 = Render2DM::CalcSize( 2, 0x20 );
-        uVar3 = uVar3 + 0xf & 0xfffffff0;
-        p2DMBuffer = TestDrive::Alloc( uVar3 );
-    }
-    pMaterial = Render2DM::Create( p2DMBuffer, 0xfffffffffffff000, 0, 2, 0x20, 0 );
+            VertexLayoutAttribute DStack_28[2] = {
+                { 0, 0, eVertexAttributeFormat::VAF_TEXCOORD_R32G32_SFLOAT, 0, 0, 0 },
+                kVertexLayoutSentinel
+            };
+            pVertexLayout = pRenderDevice->createVertexLayout(DStack_28);
     
-    MaterialShaderParameterArray* peVar5 = ( MaterialShaderParameterArray* )pMaterial->getParameterByIndex( 0 );
-    if ( peVar5->NumParameters != 0 ) {
-        MaterialShaderParameter* peVar6 = ( MaterialShaderParameter* )peVar5->getParameterDataByIndex( 0 );
-        peVar6->Size = 0x10;
-        peVar6->bBindToVS = 1;
-        peVar6->Format = 2;
-        peVar6->Type = 0x7e;
+            if (pVertexLayout != nullptr) {  
+                if ( p2DMBuffer == nullptr ) {
+                    uint32_t uVar3 = Render2DM::CalcSize( 2, 0x20 );
+                    uVar3 = uVar3 + 0xf & 0xfffffff0;
+                    p2DMBuffer = TestDrive::Alloc( uVar3 );
+                }
+                pMaterial = Render2DM::Create( p2DMBuffer, 0xfffffffffffff000, 0, 2, 0x20, 0 );
+                
+                MaterialShaderParameterArray* peVar5 = ( MaterialShaderParameterArray* )pMaterial->getParameterByIndex( 0 );
+                if ( peVar5->NumParameters != 0 ) {
+                    MaterialShaderParameter* peVar6 = ( MaterialShaderParameter* )peVar5->getParameterDataByIndex( 0 );
+                    peVar6->Size = 0x10;
+                    peVar6->bBindToVS = 1;
+                    peVar6->Format = 2;
+                    peVar6->Type = 0x7e;
 
-        peVar6 = ( MaterialShaderParameter* )peVar5->getParameterDataByIndex( 1 );
-        peVar6->bBindToVS = 1;
-        peVar6->Size = 0x10;
-        peVar6->Format = 2;
-        peVar6->Type = 0x96;
-    }
+                    peVar6 = ( MaterialShaderParameter* )peVar5->getParameterDataByIndex( 1 );
+                    peVar6->bBindToVS = 1;
+                    peVar6->Size = 0x10;
+                    peVar6->Format = 2;
+                    peVar6->Type = 0x96;
+                }
 
-    render2DM.initialize( p2DMBuffer );
-    pActiveVertexShader = pMaterial->pVertexShaders[0];
-    pActivePixelShader = pMaterial->pPixelShaders[0];
+                render2DM.initialize( p2DMBuffer );
+                pActiveVertexShader = pMaterial->pVertexShaders[0];
+                pActivePixelShader = pMaterial->pPixelShaders[0];
 
-    void* puVar7 = nullptr;
+                void* puVar7 = nullptr;
 
-    if ( peVar5->NumParameters != 0 ) {
-        uint32_t uVar3 = peVar5->NumParameters;
-        if ( uVar3 - 1 < uVar3 ) {
-            // NOTE Had to hand translate this (as Ghidra output was non sense)
-            //00604AA6 | 8D41 05 | lea eax, dword ptr ds : [ecx + 5] |
-            //00604AA9 | C1E0 04 | shl eax, 4 |
-            //00604AAC | 03C7 | add eax, edi |
-            //00604AAE | 83C0 10 | add eax, 10 |
-            uint32_t eax = ( uVar3 - 1 ) + 5;
-            eax <<= 4;
-            uint8_t* edi = ( uint8_t* )peVar5;
-            edi += eax;
-            edi += 0x10;
+                if ( peVar5->NumParameters != 0 ) {
+                    uint32_t uVar3 = peVar5->NumParameters;
+                    if ( uVar3 - 1 < uVar3 ) {
+                        // NOTE Had to hand translate this (as Ghidra output was non sense)
+                        //00604AA6 | 8D41 05 | lea eax, dword ptr ds : [ecx + 5] |
+                        //00604AA9 | C1E0 04 | shl eax, 4 |
+                        //00604AAC | 03C7 | add eax, edi |
+                        //00604AAE | 83C0 10 | add eax, 10 |
+                        uint32_t eax = ( uVar3 - 1 ) + 5;
+                        eax <<= 4;
+                        uint8_t* edi = ( uint8_t* )peVar5;
+                        edi += eax;
+                        edi += 0x10;
 
-            puVar7 = edi;
-        } else {
-            puVar7 = (void*)0x10; // TODO: I assume this could be int based on param type?
+                        puVar7 = edi;
+                    } else {
+                        puVar7 = (void*)0x10; // TODO: I assume this could be int based on param type?
+                    }
+                }
+
+                pNextParameterAvailable = puVar7;
+                bindRasterState( nullptr );
+
+                VertexLayoutAttribute DStack_18[3] = {
+                    { 0, 0, eVertexAttributeFormat::VAF_TEXCOORD_R32G32_SFLOAT, 0, 0, 0 },
+                    { 0, 8, eVertexAttributeFormat::VAF_TEXCOORD_R32G32_SFLOAT, 0, 5, 0 },
+                    kVertexLayoutSentinel
+                };
+                pVertexLayout2 = pRenderDevice->createVertexLayout(DStack_18);
+                
+                if (pVertexLayout2 != nullptr) {
+                    pDefaultVertexShader = gShaderRegister.getShader( pRenderDevice, eShaderType::ST_Vertex, 0xfffffffffffff000 );
+                    pDefaultPixelShader = gShaderRegister.getShader( pRenderDevice, eShaderType::ST_Pixel, 0x0ffffffffffff000 );
+
+                    return true;
+                }
+            }
         }
     }
 
-    pNextParameterAvailable = puVar7;
-    bindRasterState( nullptr );
-
-    pDefaultVertexShader = gShaderRegister.getShader( pRenderDevice, eShaderType::ST_Vertex, 0xfffffffffffff000 );
-    pDefaultPixelShader = gShaderRegister.getShader( pRenderDevice, eShaderType::ST_Pixel, 0x0ffffffffffff000 );
+    return false;
 }
 
 void PostFXRenderer::releaseResources(RenderDevice *pRenderDevice)

@@ -12,7 +12,9 @@ public:
     PostFXRenderer();
     ~PostFXRenderer();
 
-    void createResources( RenderDevice* pRenderDevice );
+    bool initialize();
+
+    bool createResources( RenderDevice* pRenderDevice );
     void releaseResources( RenderDevice* pRenderDevice );
 
     void bindShaders( const GPUShader* pVertexShader = nullptr, const GPUShader* pPixelShader = nullptr );
@@ -40,6 +42,10 @@ private:
     GPUBuffer* pScreenQuadVertexBuffer;
 
     float renderPassDimensions[4];
+
+    GPUTexture* pDepthStencilRT;
+    GPUVertexLayout* pVertexLayout;
+    GPUVertexLayout* pVertexLayout2;
 };
 
 extern PostFXRenderer gPostFXRenderer; // DAT_00f47800
