@@ -10,7 +10,7 @@
 
 #include "shaders/shader_register.h"
 #include "postfx/postfx_stack.h"
-
+#include "postfx/postfx_renderer.h"
 #include "postfx/effects/postfx_texture_sample.h"
 #include "postfx/effects/postfx_downscale.h"
 #include "postfx/effects/postfx_blit.h"
@@ -22,6 +22,7 @@
 #include "scene_renderer.h"
 #include "3dg.h"
 #include "geometry_buffer.h"
+#include "text_renderer.h"
 
 GSRender* gpRender = nullptr;
 eViewFormat gDepthStencilFormat = eViewFormat::VF_D24S8F; // DAT_00fac8e4
@@ -34,6 +35,9 @@ static Eigen::Vector4f DAT_00fac360 = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 // Only written to?
 static void* gpActiveVertexLayout = nullptr; // DAT_00fe7a98
+
+static uint8_t DAT_00fadaa0 = 0;
+static bool DAT_00faccc0 = false;
 
 // TODO: Move this to a separate file
 static constexpr uint32_t kMaxNumVertexStreams = 0x10;
@@ -55,6 +59,7 @@ struct StateCache {
     uint8_t bWriteChannelA : 1;
 
     uint32_t ClipPlaneEnabled; // DAT_00fade70
+    uint32_t PointSize; // DAT_00fade78
 
     StateCache() 
         : pVertexLayout( nullptr )
@@ -64,10 +69,19 @@ struct StateCache {
         , bWriteChannelA( true )
         , pIndexBuffer( nullptr )
         , ClipPlaneEnabled( 0 )
+        , PointSize( 0 )
     {
         memset(VertexBuffersFrequency, 0, sizeof(uint32_t) * kMaxNumVertexStreams);
     }
+
+    bool reset()
+    {
+        // FUN_005f15b0
+        OTDU_UNIMPLEMENTED;
+        return true;
+    }
 };
+
 StateCache gStateCache;
 
 GSRender::GSRender()
@@ -1596,4 +1610,57 @@ void GSRender::bindIndexBuffer(GPUBuffer *param_1)
         pRenderDevice->bindIndexBuffer(param_1);
         gStateCache.pIndexBuffer = param_1;
     }
+}
+
+bool GSRender::initializeRenderers()
+{
+    // FUN_005f5630
+    bool bVar1 = gStateCache.reset();
+    if (!bVar1) {
+        return false;
+    }
+
+    bVar1 = resetPointSize();
+    if (!bVar1) {
+        return false;
+    }
+
+    bVar1 = gPostFXRenderer.initialize();
+    if (!bVar1) {
+        return false;
+    }
+
+    bVar1 = gTextRenderer.initialize();
+    if (!bVar1) {
+        return false;
+    }
+
+    bVar1 = FUN_00512390();
+    if (!bVar1) {
+        return false;
+    }
+    
+    OTDU_UNIMPLEMENTED;
+
+    return false;
+}
+
+bool GSRender::resetPointSize()
+{
+    // FUN_00512e50 
+    if (((DAT_00fadaa0 & 2) != 0) && (gStateCache.PointSize != 0x54534e49)) {
+        pRenderDevice->setPointSize(0x54534e49);
+        gStateCache.PointSize = 0x54534e49;
+    }
+    return true;
+}
+
+bool GSRender::FUN_00512390()
+{
+    if (DAT_00faccc0) {
+        OTDU_UNIMPLEMENTED;
+        DAT_00faccc0 = false;
+    }   
+
+    return true;
 }

@@ -140,6 +140,9 @@ public:
     inline RenderScene* getActiveScene() const { return pActiveScene; }
     inline Frustum* getActiveFrustum() const { return pActiveFrustum; }
 
+    inline uint32_t getWidth() const { return renderWidth; }
+    inline uint32_t getHeight() const { return renderHeight; }
+
 public:
     GSRender();
     ~GSRender();
@@ -475,6 +478,9 @@ private:
     void endScene();
 
     void resolveMSAA(bool param_1);
+    bool initializeRenderers();
+    bool resetPointSize();
+    bool FUN_00512390();
 };
 
 extern GSRender* gpRender;
