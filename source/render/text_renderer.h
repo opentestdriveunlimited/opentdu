@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/color.h"
+
 struct GPUTexture;
 struct GPUBuffer;
 
