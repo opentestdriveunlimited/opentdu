@@ -152,6 +152,8 @@ public:
     void setClipPlaneEnabled(uint32_t param_1);
     void bindIndexBuffer(GPUBuffer* param_1);
 
+    void setPointSize(uint32_t param_1);
+
 private:
     VkInstance          instance;
     std::vector<const char*> instanceExtensions;

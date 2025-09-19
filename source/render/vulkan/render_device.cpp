@@ -338,6 +338,7 @@ void RenderDevice::initialize()
 
 GPUTexture* RenderDevice::createTexture( Texture* pTexture )
 {
+    // FUN_00512620
     uint16_t uVar1 = pTexture->Width;
     if ( pTexture->Width < pTexture->Height ) {
         uVar1 = pTexture->Height;
@@ -750,6 +751,11 @@ void RenderDevice::setClipPlaneEnabled(uint32_t param_1)
 }
 
 void RenderDevice::bindIndexBuffer(GPUBuffer* param_1)
+{
+    OTDU_UNIMPLEMENTED;
+}
+
+void RenderDevice::setPointSize(uint32_t param_1)
 {
     OTDU_UNIMPLEMENTED;
 }
