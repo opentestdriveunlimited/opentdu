@@ -23,14 +23,27 @@ void RenderFile::destroy()
 
 void RenderFile::reset()
 {
-    // FUN_00505020
+    // FUN_00505eb0
     pHeader = nullptr;
     pSections = nullptr;
 }
 
 void RenderFile::unparse()
 {
-    OTDU_UNIMPLEMENTED;
+    // FUN_00506010
+    uint8_t* peVar2 = (uint8_t*)pSections;
+    uint8_t* peVar3 = (uint8_t*)pHeader + pHeader->Size;  
+    while (peVar2 != nullptr) {
+        RenderFile::Section* pSection = (RenderFile::Section*)peVar2;
+        unparseSection(pSection);
+        unparseSubSections(pSection);
+        peVar2 += pSection->Size;
+
+        if (peVar3 != nullptr & peVar3 <= peVar2) {     
+            break;
+        }
+    }
+    pHeader->Flags &= 0xfffffffe;
 }
 
 bool RenderFile::parseHeader( void* pFileStream )
@@ -117,4 +130,31 @@ bool RenderFile::readSection(Section *pSection)
         }
     }
     return cVar2;
+}
+
+void RenderFile::unparseSubSections(Section *param_2)
+{
+    // FUN_00505f90
+    uint8_t* peVar1 = (uint8_t*)param_2 + param_2->Size;
+    uint8_t* peVar2 = (uint8_t*)param_2 + param_2->DataSize;
+
+    if (peVar1 <= peVar2) {
+        peVar2 = nullptr;
+    }
+
+    while( true ) {
+        do {
+            if (peVar2 == nullptr) {
+                return;
+            }
+            Section* pSubSection = (Section*)peVar2;
+            unparseSection(pSubSection);
+            unparseSubSections(pSubSection);
+            peVar2 += pSubSection->Size;
+        } while (peVar1 == nullptr);
+
+        if (peVar1 <= peVar2) {
+            return;
+        }
+    }
 }

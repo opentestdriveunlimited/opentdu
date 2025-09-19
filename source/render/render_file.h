@@ -39,6 +39,9 @@ public:
 protected:
     Header* pHeader;
     Section* pSections;
+
+private:
+    void unparseSubSections( Section* pSection );
 };
 
 OTDU_SIZE_MUST_MATCH(RenderFile::Header, 0x10);
