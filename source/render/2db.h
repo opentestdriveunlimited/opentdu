@@ -2,6 +2,7 @@
 
 #include "render_file.h"
 #include "gs_render_helper.h"
+#include "render_pool.h"
 
 struct GPUTexture;
 
@@ -38,12 +39,15 @@ public:
     bool hasBeenUploaded() const;
     Texture* getFirstBitmap() const;
     
+    virtual void destroy() override;
     virtual bool parseSection(RenderFile::Section* pSection) override;
+    virtual void unparseSection( Section* pSection ) override;
 
-    static bool CreateTexture( Texture* pTexture );
+    static bool CreateTexture( RenderFile::Section* pBitmapSection );
     static bool PrepareTexture( Texture* pTexture );
     static bool UploadTextureToGPU( Texture* pTexture );
-    
+    static bool CreateAndUploadTexture( Texture* pTexture );
+
     static uint32_t CalcPitch( uint32_t width, eViewFormat format );
     static int32_t CalcMipSize( int32_t width, int32_t height, eViewFormat format );
     static void* GetTexelsPointer( Texture* pTexture, uint32_t mipIndex );
@@ -61,8 +65,13 @@ public:
         eViewFormat format,
         uint32_t flags );
 
+    static void UploadBitmap( RenderFile::Section* param_1 );
+
 protected:
     RenderFile::Section* pBitmap;
+
+private:
+    void unparseBitmapSection(RenderFile::Section* pSection);
 };
 
 class RuntimeRender2DB : public Render2DB {
@@ -84,3 +93,5 @@ public:
 private:
     void*   pBuffer;
 };
+
+extern RenderPool<RenderFile::Section> gBitmapPool;

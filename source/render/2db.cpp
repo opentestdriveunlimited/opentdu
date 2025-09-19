@@ -13,6 +13,21 @@ static constexpr uint32_t k2DBMagic    = 0x4244322e; // .2DB (2DBitmap)
 static constexpr uint32_t k2DBSize = sizeof(Texture) + sizeof(RenderFile::Header) + sizeof(RenderFile::Section);
 static_assert(k2DBSize == 0x50, "Must match (or else 2DB parsing will fail!)");
 
+static uint32_t DAT_00f46dd0 = 0xffffffff; // DAT_00f46dd0
+static uint32_t DAT_00f46dd4 = 0xffffffff; // DAT_00f46dd4
+static uint32_t DAT_00f46dd8 = 0xffffffff; // DAT_00f46dd8
+static uint32_t DAT_00f46ddc = 0xffffffff; // DAT_00f46ddc
+static eViewFormat DAT_00f46de0 = eViewFormat::VF_DXT5; // NOTE: Original code uses D3DDECL // DAT_00f46de0
+static uint32_t DAT_00f46de4 = 0xffffffff; // DAT_00f46de4
+
+RenderPool<RenderFile::Section> gBitmapPool; // DAT_00faccc8
+
+static void FUN_005f2920(Texture* pTexture)
+{
+    // FUN_005f2920
+    OTDU_UNIMPLEMENTED;
+}
+
 Render2DB::Render2DB()
     : RenderFile()
     , pBitmap( nullptr )
@@ -40,8 +55,10 @@ Texture* Render2DB::getFirstBitmap() const
 
 void Render2DB::create( void* pBuffer, uint32_t width, uint32_t height, uint32_t depth, uint32_t numMips, eViewFormat format, uint32_t flags, const char* pName )
 {
+    // FUN_00505bd0
     uint64_t hashcode = GetIdentifier64bit(pName);
 
+    // FUN_005058f0 (inlined)
     uint32_t size = Render2DB::CalcTextureSize(width, height, depth, numMips, format, flags);
 
     uint8_t* puVar3 = (uint8_t*)pBuffer; //((uint32_t)((uint8_t*)pBuffer + 0xf) & 0xfffffff0);
@@ -76,6 +93,7 @@ void Render2DB::create( void* pBuffer, uint32_t width, uint32_t height, uint32_t
 
 bool Render2DB::initialize( void* pBuffer )
 {
+    // FUN_00504a30
     if (pBuffer == nullptr) {
         return false;
     }
@@ -97,53 +115,57 @@ bool Render2DB::initialize( void* pBuffer )
     return false;
 }
 
-bool Render2DB::parseSection(RenderFile::Section* pSection)
+void Render2DB::destroy()
+{
+    // FUN_00505020
+    if (pHeader != nullptr) {
+        unparse();
+        reset();
+    }
+}
+
+bool Render2DB::parseSection(RenderFile::Section *pSection)
 {  
+    // FUN_00504a80
     if (pSection->Type == kBitmapMagic) {
         pBitmap = pSection;
-        
-        Texture* pTexture = reinterpret_cast<Texture*>(reinterpret_cast<uint8_t*>(pSection) + sizeof(RenderFile::Section));
-        return CreateTexture(pTexture);
+        return CreateTexture(pSection);
     }
     return true;
 }
 
-bool Render2DB::CreateTexture(Texture* pTexture)
+void Render2DB::unparseSection(Section *pSection)
+{
+    // FUN_00504ab0
+     if (pSection->Type == kBitmapMagic) {
+        unparseBitmapSection(pSection);
+    }
+}
+
+bool Render2DB::CreateTexture( RenderFile::Section* pBitmapSection )
 {
     // FUN_005121d0
-    if (pTexture == nullptr) {
+    if (pBitmapSection == nullptr) {
         return false;
     }
 
+    Texture* pTexture = (Texture*)(pBitmapSection + 1);
     if ((pTexture->Type & 3) != 0) {
-        uint32_t uVar1 = pTexture->Width;
-        if (pTexture->Width < pTexture->Height) {
-            uVar1 = pTexture->Height;
-        }
-        uint32_t iVar4 = 0;
-        for (; uVar1 != 0; uVar1 = uVar1 >> 1) {
-            iVar4 = iVar4 + 1;
-        }
-        if (iVar4 < pTexture->NumMipmap) {
-            pTexture->NumMipmap = static_cast<uint8_t>(iVar4);
-        }
- 
-        GPUTexture* pGPUTexture = gpRender->getRenderDevice()->createTexture( pTexture );
-        if (pGPUTexture == nullptr) {
-            OTDU_LOG_ERROR("Failed to create 2DB!\n");
+        bool bVar1 = CreateAndUploadTexture(pTexture);
+        if (!bVar1) {
             return false;
         }
-        pTexture->pTexture = pGPUTexture;
-        if ((pTexture->Flags & 0x400) != 0) {
-            PrepareTexture(pTexture);
-        }
+    
+        gBitmapPool.addToPool(pBitmapSection);
+        return true;
     }
-   
-    return true;
+
+    return false;
 }
 
 bool Render2DB::PrepareTexture(Texture *pTexture)
 {
+    // FUN_005f2890
     if (pTexture->pTexture == nullptr) {
         return false;
     }
@@ -162,6 +184,7 @@ bool Render2DB::PrepareTexture(Texture *pTexture)
 
 uint32_t Render2DB::CalcRenderTargetSize( Texture* param_1 )
 {
+    // FUN_00512540
     uint32_t texSize = 0;
     if ( param_1->Width != 0 && param_1->Height != 0 && param_1->NumMipmap != 0 ) {
         uint32_t mipWidth = param_1->Width;
@@ -191,8 +214,8 @@ uint32_t Render2DB::CalcRenderTargetSize( Texture* param_1 )
 
 uint32_t Render2DB::CalcTextureSize( uint32_t width, uint32_t height, uint32_t depth, uint32_t numMips, eViewFormat format, uint32_t flags )
 {
-    if ( ( flags & 0x200 ) != 0 ) 
-    {
+    // FUN_00504f30
+    if ( ( flags & 0x200 ) != 0 ) {
         return 0;
     }
 
@@ -208,16 +231,46 @@ uint32_t Render2DB::CalcTextureSize( uint32_t width, uint32_t height, uint32_t d
 
 int32_t Render2DB::CalcSize( uint32_t width, uint32_t height, uint32_t depth, uint32_t numMips, eViewFormat format, uint32_t flags )
 {
-    if ( ( flags & 0x200 ) != 0 ) 
-    {
+    // FUN_00505880
+    DAT_00f46dd0 = width;
+    DAT_00f46dd4 = height;
+    DAT_00f46dd8 = depth;
+    DAT_00f46ddc = numMips;
+    DAT_00f46de0 = format;
+    DAT_00f46de4 = flags;
+
+    if ( ( flags & 0x200 ) != 0 ) {
         return k2DBSize;
     }
 
     return CalcTextureSize( width, height, depth, numMips, format, flags ) + 0x5f & 0xfffffff0;
 }
 
+void Render2DB::UploadBitmap(RenderFile::Section *param_1)
+{
+    // FUN_00512390
+    if (param_1 != nullptr) {
+        Texture* pTexture = (Texture*)( param_1 + 1);
+        CreateAndUploadTexture(pTexture);
+    }
+}
+
+void Render2DB::unparseBitmapSection(RenderFile::Section *pSection)
+{
+    // FUN_00512210
+    if (pBitmap != nullptr) {
+        Texture* pTexture = (Texture*)( pBitmap + 1 );
+        if ((pTexture->Type & 3) != 0) {
+            gBitmapPool.removeFromPool(pBitmap);
+        }
+
+        FUN_005f2920(pTexture);
+    }
+}
+
 uint32_t Render2DB::CalcPitch( uint32_t width, eViewFormat format )
 {
+    // FUN_005f2d00
     uint32_t uVar1 = width * 4;
 
     if ( IsBlockCompressedFormat( format ) ) {
@@ -297,6 +350,7 @@ void* Render2DB::GetTexelsPointer( Texture* pTexture, uint32_t mipIndex )
 
 int32_t Render2DB::CalcMipSize( int32_t width, int32_t height, eViewFormat format )
 {
+    // FUN_005f2de0
     return CalcPitch( width, format ) * height;
 }
 
@@ -357,6 +411,25 @@ bool Render2DB::UploadTextureToGPU( Texture* param_1 )
     return peVar8;
 }
 
+bool Render2DB::CreateAndUploadTexture(Texture *pTexture)
+{
+    // FUN_00512980
+    if (pTexture != nullptr) {   
+        GPUTexture* pGPUTexture = gpRender->getRenderDevice()->createTexture( pTexture );
+        if (pGPUTexture == nullptr) {
+            OTDU_LOG_ERROR("Failed to create 2DB!\n");
+            return false;
+        }
+        pTexture->pTexture = pGPUTexture;
+        if ((pTexture->Flags & 0x400) != 0) {
+            PrepareTexture(pTexture);
+        }
+        return true;
+    }
+
+    return false;
+}
+
 RuntimeRender2DB::RuntimeRender2DB()
     : Render2DB()
     , pBuffer(nullptr)
@@ -392,6 +465,7 @@ bool RuntimeRender2DB::allocateAndCreate(uint32_t width,
     const char* pLabel
 )
 {
+    // FUN_0098f380
     uint32_t uVar1 = Render2DB::CalcSize(width, height, depth, mipCount, format, flags);
     if (uVar1 != 0) {
         pBuffer = TestDrive::Alloc( uVar1 );
