@@ -23,6 +23,7 @@
 #include "3dg.h"
 #include "geometry_buffer.h"
 #include "text_renderer.h"
+#include "draw_list.h"
 
 GSRender* gpRender = nullptr;
 eViewFormat gDepthStencilFormat = eViewFormat::VF_D24S8F; // DAT_00fac8e4
@@ -1639,7 +1640,7 @@ bool GSRender::initializeRenderers()
     if (!bVar1) {
         return false;
     }
-    
+
     OTDU_UNIMPLEMENTED;
 
     return false;
@@ -1657,10 +1658,32 @@ bool GSRender::resetPointSize()
 
 bool GSRender::FUN_00512390()
 {
+    // FUN_00512390
     if (DAT_00faccc0) {
-        OTDU_UNIMPLEMENTED;
+        gBitmapPool.flushPendingAllocs(Render2DB::UploadBitmap);
+        gPrimitivePool.flushPendingAllocs(Render3DG::Upload);
+        gDrawListPool.flushPendingAllocs(DrawList::Create);
+    
         DAT_00faccc0 = false;
     }   
 
     return true;
+}
+
+void GSRender::FUN_00512170(int32_t param_1, int32_t param_2, int32_t param_3)
+{
+    // FUN_00512170
+    gBitmapPool.allocate(param_2);
+    gPrimitivePool.allocate(param_1);
+    gDrawListPool.allocate(param_3);
+
+    DAT_00faccc0 = false;
+}
+
+void GSRender::resetPoolMemoryAllocation()
+{
+    // FUN_005121b0
+    gDrawListPool.invalidatePoolPointer();
+    gBitmapPool.invalidatePoolPointer();
+    gPrimitivePool.invalidatePoolPointer();
 }

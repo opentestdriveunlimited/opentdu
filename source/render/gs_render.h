@@ -481,6 +481,8 @@ private:
     bool initializeRenderers();
     bool resetPointSize();
     bool FUN_00512390();
+    void FUN_00512170(int32_t param_1, int32_t param_2, int32_t param_3);
+    void resetPoolMemoryAllocation();
 };
 
 extern GSRender* gpRender;
