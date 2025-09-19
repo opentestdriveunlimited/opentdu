@@ -2,6 +2,8 @@
 
 struct GPUShader;
 struct GPUBuffer;
+struct GPUTexture;
+struct GPUVertexLayout;
 struct Material;
 class RenderDevice;
 
