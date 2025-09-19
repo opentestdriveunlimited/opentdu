@@ -2,6 +2,7 @@
 
 #include "render_file.h"
 #include "gs_render_helper.h"
+#include "render_pool.h"
 
 struct LOD;
 
@@ -92,6 +93,8 @@ public:
 
     static void CreateVertexDeclaration(Primitive* param_1);
 
+    static void Upload(Primitive* param_1);
+
 private:
     RenderFile::Section* pGeometryArray;
 
@@ -106,3 +109,5 @@ private:
     static bool WritePatchedVertices(int8_t *pPatchedHeader, PrimtiveVertexAttributes::Stream& pPatched, int8_t *pOriginalHeader, const PrimtiveVertexAttributes::Stream& pOriginal, uint32_t numVertex);
     static void WriteAttributeOffsets(int8_t *pOffsetTable, PrimtiveVertexAttributes &patchedVA, uint32_t numVertex);
 };
+
+extern RenderPool<Primitive> gPrimitivePool;

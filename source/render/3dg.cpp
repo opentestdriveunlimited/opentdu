@@ -4,12 +4,11 @@
 #include "render/gs_render_helper.h"
 #include "render/gs_render.h"
 #include "render/geometry_buffer.h"
-#include "render/render_pool.h"
 
 static constexpr uint32_t kGeometryArrayMagic   =  0x414f4547; // GEOA (GEOmetry Array)
 
 static uint32_t gNumPrimitives = 0u; // DAT_00fe88a0
-static RenderPool<Primitive> gPrimitivePool; // DAT_00fad0d0
+RenderPool<Primitive> gPrimitivePool; // DAT_00fad0d0
 
 // TODO: Move this to a separate header?
 inline void UnpackRGB10ToFloat32Vertex(int32_t iVar5, float* pfVar1)
@@ -235,6 +234,20 @@ void Render3DG::CreateVertexDeclaration(Primitive *param_1)
     // FUN_005fdbb0
     if (param_1->VertexStreams.getNumAttributes() < 0x11) {
         OTDU_UNIMPLEMENTED;
+    }
+}
+
+void Render3DG::Upload(Primitive *param_1)
+{
+    // FUN_005122f0
+    if (param_1 == nullptr) {
+        return;
+    }
+
+    if (param_1->Type == ePrimitiveType::PT_HMap) {
+        UploadHeightmapToGPU(param_1, nullptr);
+    } else {
+        UploadPrimitiveToGPU(param_1, nullptr);
     }
 }
 
