@@ -79,6 +79,8 @@ public:
     const Eigen::Matrix4f& getMatrixAtIndex( const uint32_t index ) const { return pMatrices[index]; }
     DrawPrimitive& getPrimitiveAtIndex( const uint32_t index ) { return pMemPrimsList[index]; }
     
+    static void Create(DrawList* param_1);
+
 private:
     struct Pool {
         Pool();

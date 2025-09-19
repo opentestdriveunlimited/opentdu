@@ -348,6 +348,14 @@ uint32_t DrawList::getNumPrimitives() const
     return numPrimitives;
 }
 
+void DrawList::Create(DrawList *param_1)
+{
+    // FUN_00512340
+    if (param_1 != nullptr) {
+        param_1->allocateBuffers(true);
+    }
+}
+
 void DrawList::initializePrimitiveList()
 {
     PrimtiveVertexAttributes listVertexAttributes = generateListVertexAttributes();
@@ -531,6 +539,7 @@ bool DrawList::initializePrimitive(ePrimitiveType param_2, uint32_t numVertex, u
 
 bool DrawList::allocateBuffers(bool bImmediateUpload)
 {
+    // FUN_00507950
     uint32_t bufferSize = numVertices * vertexSize;
 
     GPUBufferDesc vertexBufferDesc;
