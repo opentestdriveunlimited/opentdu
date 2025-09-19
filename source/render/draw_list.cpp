@@ -3,6 +3,8 @@
 #include "geometry_buffer.h"
 #include "gs_render.h"
 
+RenderPool<DrawList> gDrawListPool; // DAT_00fad4d8
+
 static uint32_t CalculatePoolSize( 
     uint32_t numPrimitive, 
     uint32_t numVertices, 

@@ -5,6 +5,7 @@
 #include "core/color.h"
 #include "render/3dg.h"
 #include "render/setup_node.h"
+#include "render/render_pool.h"
 
 #include <Eigen/Dense>
 
@@ -158,3 +159,5 @@ private:
     
     bool initializePrimitive(ePrimitiveType param_2, uint32_t numVertex, uint32_t numIndices);
 };
+
+extern RenderPool<DrawList> gDrawListPool;
