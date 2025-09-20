@@ -171,6 +171,7 @@ bool DrawList::initialize(
     char* pName, 
     bool param_10 )
 {
+    // FUN_00508690
     if (pName != nullptr) {
         name = std::string(pName);
     }
@@ -264,16 +265,28 @@ bool DrawList::initialize(
     initializePrimitiveList();
     pCopy = this;
 
-    // FUN_00512310(this); // TODO: register this drawlist in some global class. Do we need this?
+    addToPool();
 
     return true;
 }
 
 void DrawList::destroy()
 {
-    OTDU_UNIMPLEMENTED;
-    // gpRender->getRenderDevice()->destroyBuffer( pIndexBuffer->pGPUBuffer );
-    // gpRender->getRenderDevice()->destroyBuffer( pVertexBuffer->pGPUBuffer );
+    // FUN_00507180
+    releaseResources();
+    bInitialized = false;
+}
+
+void DrawList::releaseGeometryBuffers()
+{
+    // FUN_00507ae0
+    if (pVertexBuffer != nullptr) {
+        gpRender->getRenderDevice()->destroyBuffer( pVertexBuffer->Buffer.pGPUBuffer );
+    }
+
+    if (pIndexBuffer != nullptr) {
+        gpRender->getRenderDevice()->destroyBuffer( pIndexBuffer->Buffer.pGPUBuffer );
+    }
 }
 
 void DrawList::reset()
@@ -353,6 +366,14 @@ void DrawList::Create(DrawList *param_1)
     // FUN_00512340
     if (param_1 != nullptr) {
         param_1->allocateBuffers(true);
+    }
+}
+
+void DrawList::Release(DrawList *param_1)
+{
+    // FUN_00512330
+    if (param_1 != nullptr) {
+        param_1->releaseGeometryBuffers();
     }
 }
 
@@ -535,6 +556,27 @@ bool DrawList::initializePrimitive(ePrimitiveType param_2, uint32_t numVertex, u
       return true;
     }
     return false;
+}
+
+void DrawList::addToPool()
+{
+    // FUN_00512310
+    gDrawListPool.addToPool(this);
+}
+
+void DrawList::removeFromPool()
+{
+    // FUN_00512320
+    gDrawListPool.removeFromPool(this);
+}
+
+void DrawList::releaseResources()
+{
+    // FUN_00507b10
+    releaseGeometryBuffers();
+    if (pCopy == this) {
+        removeFromPool();
+    }
 }
 
 bool DrawList::allocateBuffers(bool bImmediateUpload)

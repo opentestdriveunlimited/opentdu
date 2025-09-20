@@ -66,6 +66,7 @@ public:
         uint32_t flags );
 
     static void UploadBitmap( RenderFile::Section* param_1 );
+    static void ReleaseUploadedBitmap( RenderFile::Section* param_1 );
 
 protected:
     RenderFile::Section* pBitmap;

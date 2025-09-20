@@ -255,6 +255,17 @@ void Render2DB::UploadBitmap(RenderFile::Section *param_1)
     }
 }
 
+void Render2DB::ReleaseUploadedBitmap(RenderFile::Section *param_1)
+{
+    // FUN_00512240
+    if (param_1 != nullptr) {
+        Texture* pTexture = (Texture*)(param_1 + 1);
+        if (pTexture != nullptr) {
+            FUN_005f2920(pTexture);
+        }
+    }
+}
+
 void Render2DB::unparseBitmapSection(RenderFile::Section *pSection)
 {
     // FUN_00512210

@@ -94,6 +94,7 @@ public:
     static void CreateVertexDeclaration(Primitive* param_1);
 
     static void Upload(Primitive* param_1);
+    static void ReleaseUploadedPrimitive(Primitive* param_1);
 
 private:
     RenderFile::Section* pGeometryArray;
@@ -102,8 +103,8 @@ private:
     bool parsePrimitiveSection(RenderFile::Section* pSection);
     void unstreamPrimitive(RenderFile::Section* pSection);
     
-    void unstreamHeightmap(Primitive* param_1);
-    void unstreamGeometry(Primitive* param_1);
+    static void UnstreamHeightmap(Primitive* param_1);
+    static void UnstreamGeometry(Primitive* param_1);
 
     static bool WritePrimitiveHeader(int8_t *pPatchedHeader, PrimtiveVertexAttributes &patchedVA, int8_t *pOriginalHeader, const PrimtiveVertexAttributes &originalVA, uint32_t numVertex);
     static bool WritePatchedVertices(int8_t *pPatchedHeader, PrimtiveVertexAttributes::Stream& pPatched, int8_t *pOriginalHeader, const PrimtiveVertexAttributes::Stream& pOriginal, uint32_t numVertex);

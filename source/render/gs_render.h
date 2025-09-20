@@ -480,7 +480,8 @@ private:
     void resolveMSAA(bool param_1);
     bool initializeRenderers();
     bool resetPointSize();
-    bool FUN_00512390();
+    bool doPoolReallocations();
+    void doPoolDeallocations();
     void FUN_00512170(int32_t param_1, int32_t param_2, int32_t param_3);
     void resetPoolMemoryAllocation();
 };

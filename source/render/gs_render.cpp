@@ -24,6 +24,8 @@
 #include "geometry_buffer.h"
 #include "text_renderer.h"
 #include "draw_list.h"
+#include "instance.h"
+#include "heightmap_renderer.h"
 
 GSRender* gpRender = nullptr;
 eViewFormat gDepthStencilFormat = eViewFormat::VF_D24S8F; // DAT_00fac8e4
@@ -1636,7 +1638,22 @@ bool GSRender::initializeRenderers()
         return false;
     }
 
-    bVar1 = FUN_00512390();
+    bVar1 = doPoolReallocations();
+    if (!bVar1) {
+        return false;
+    }
+
+    bVar1 = gInstanceRenderer.initialize();
+    if (!bVar1) {
+        return false;
+    }
+
+    bVar1 = gHeightmapRenderer.initialize();
+    if (!bVar1) {
+        return false;
+    }
+
+    bVar1 = gHeightmapTileRenderer.initialize();
     if (!bVar1) {
         return false;
     }
@@ -1656,7 +1673,7 @@ bool GSRender::resetPointSize()
     return true;
 }
 
-bool GSRender::FUN_00512390()
+bool GSRender::doPoolReallocations()
 {
     // FUN_00512390
     if (DAT_00faccc0) {
@@ -1668,6 +1685,18 @@ bool GSRender::FUN_00512390()
     }   
 
     return true;
+}
+
+void GSRender::doPoolDeallocations()
+{
+    // FUN_00512350
+    if (!DAT_00faccc0) {
+        gBitmapPool.flushPendingAllocs(Render2DB::ReleaseUploadedBitmap);
+        gPrimitivePool.flushPendingAllocs(Render3DG::ReleaseUploadedPrimitive);
+        gDrawListPool.flushPendingAllocs(DrawList::Release);
+
+        DAT_00faccc0 = true;
+    }
 }
 
 void GSRender::FUN_00512170(int32_t param_1, int32_t param_2, int32_t param_3)

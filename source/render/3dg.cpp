@@ -251,6 +251,20 @@ void Render3DG::Upload(Primitive *param_1)
     }
 }
 
+void Render3DG::ReleaseUploadedPrimitive(Primitive *param_1)
+{
+    // FUN_005122d0
+    if (param_1 == nullptr) {
+        return;
+    }
+
+    if (param_1->Type == ePrimitiveType::PT_HMap) {
+        UnstreamHeightmap(param_1);
+    } else {
+        UnstreamGeometry(param_1);
+    }
+}
+
 bool Render3DG::parsePrimitiveSection(RenderFile::Section *pSection)
 {
     // FUN_00512280
@@ -271,13 +285,13 @@ void Render3DG::unstreamPrimitive(RenderFile::Section *pSection)
     Primitive* param_1 = (Primitive*)(pSection + 1);
     gPrimitivePool.removeFromPool(param_1);
     if (param_1->Type == ePrimitiveType::PT_HMap) {
-        unstreamHeightmap(param_1);
+        UnstreamHeightmap(param_1);
     } else {
-        unstreamGeometry(param_1);
+        UnstreamGeometry(param_1);
     }
 }
 
-void Render3DG::unstreamHeightmap(Primitive *param_1)
+void Render3DG::UnstreamHeightmap(Primitive *param_1)
 {
     // FUN_005ff010
     if (!param_1->bUploaded) {
@@ -292,7 +306,7 @@ void Render3DG::unstreamHeightmap(Primitive *param_1)
     // *piVar2 = nullptr;
 }
 
-void Render3DG::unstreamGeometry(Primitive *param_1)
+void Render3DG::UnstreamGeometry(Primitive *param_1)
 {
     // FUN_005fe670
     OTDU_UNIMPLEMENTED;

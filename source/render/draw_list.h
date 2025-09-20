@@ -61,6 +61,7 @@ public:
     );
 
     void destroy();
+    void releaseGeometryBuffers();
     void reset();
 
     bool beginPrimitive(ePrimitiveType param_2, int32_t numVertex);
@@ -80,6 +81,7 @@ public:
     DrawPrimitive& getPrimitiveAtIndex( const uint32_t index ) { return pMemPrimsList[index]; }
     
     static void Create(DrawList* param_1);
+    static void Release(DrawList* param_1);
 
 private:
     struct Pool {
@@ -160,6 +162,10 @@ private:
     PrimtiveVertexAttributes generateListVertexAttributes() const;
     
     bool initializePrimitive(ePrimitiveType param_2, uint32_t numVertex, uint32_t numIndices);
+
+    void addToPool();
+    void removeFromPool();
+    void releaseResources();
 };
 
 extern RenderPool<DrawList> gDrawListPool;
